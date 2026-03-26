@@ -9,6 +9,7 @@ export function NotificationProvider({ children }) {
       return JSON.parse(localStorage.getItem('fliplearn_notifications') || '[]');
     } catch { return []; }
   });
+  const [hasNew, setHasNew] = useState(false);
 
   const addNotification = useCallback((notif) => {
     const newNotif = {
@@ -23,6 +24,8 @@ export function NotificationProvider({ children }) {
       localStorage.setItem('fliplearn_notifications', JSON.stringify(updated));
       return updated;
     });
+    setHasNew(true);
+    setTimeout(() => setHasNew(false), 3000);
   }, []);
 
   const markAllRead = useCallback(() => {
@@ -73,7 +76,7 @@ export function NotificationProvider({ children }) {
   const unreadCount = notifications.filter(n => !n.read).length;
 
   return (
-    <NotificationContext.Provider value={{ notifications, addNotification, addSystemNotification, markAllRead, clearAll, unreadCount }}>
+    <NotificationContext.Provider value={{ notifications, addNotification, addSystemNotification, markAllRead, clearAll, unreadCount, hasNew }}>
       {children}
     </NotificationContext.Provider>
   );

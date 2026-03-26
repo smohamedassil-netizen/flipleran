@@ -41,6 +41,43 @@ export const uploadVideo = async (req, res) => {
       createdBy:   req.user.id,
     });
 
+    // Notify students about new video
+    try {
+      const { sendNotificationEmail } = await import('../services/emailService.js');
+      const Course = (await import('../models/Course.js')).default;
+      const User = (await import('../models/User.js')).default;
+      const course = await Course.findById(courseId);
+      if (course) {
+        const students = await User.find({
+          role: 'etudiant',
+          filiere: course.filiere,
+          isActive: { $ne: false },
+        }).select('email prenom').limit(50);
+
+        for (const student of students) {
+          if (student.email) {
+            sendNotificationEmail(
+              student.email,
+              'Nouvelle vidéo disponible',
+              `Une nouvelle vidéo <strong>"${titre}"</strong> a été ajoutée au cours <strong>"${course.titre}"</strong>. Regardez-la pour progresser !`
+            );
+          }
+        }
+      }
+
+      // Also emit socket notification
+      const io = req.app.get('io');
+      if (io && course) {
+        io.emit('notification', {
+          type: 'video',
+          message: `Nouvelle vidéo "${titre}" dans le cours "${course.titre}"`,
+          createdAt: new Date().toISOString(),
+        });
+      }
+    } catch (notifErr) {
+      console.error('Video notification error:', notifErr.message);
+    }
+
     res.status(201).json(video);
   } catch (err) {
     res.status(500).json({ message: err.message });

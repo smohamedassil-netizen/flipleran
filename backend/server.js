@@ -308,7 +308,7 @@ io.on('connection', (socket) => {
   ══════════════════════════════════════════════════════════════════════ */
 
   /* Créer une salle de bataille */
-  socket.on('battle:create', (data, callback) => {
+  socket.on('battle:create', async (data, callback) => {
     const roomId = 'battle_' + Date.now();
     battleRooms.set(roomId, {
       players: [{ id: socket.id, name: data.name, odgerId: data.userId, score: 0 }],
@@ -319,6 +319,35 @@ io.on('connection', (socket) => {
     });
     socket.join(roomId);
     if (typeof callback === 'function') callback({ roomId });
+
+    // Notify all connected users about the new battle room
+    socket.broadcast.emit('notification', {
+      type: 'quiz_battle',
+      message: `${data.name} a créé une salle de Quiz Battle ! Rejoignez-le !`,
+      createdAt: new Date().toISOString(),
+    });
+
+    // Send email to classmates about quiz battle
+    try {
+      const { sendNotificationEmail } = await import('./services/emailService.js');
+      const students = await User.find({
+        role: 'etudiant',
+        isActive: { $ne: false },
+        _id: { $ne: data.userId },
+      }).select('email prenom').limit(30);
+
+      for (const student of students) {
+        if (student.email) {
+          sendNotificationEmail(
+            student.email,
+            'Invitation Quiz Battle',
+            `<strong>${data.name}</strong> vous invite à un Quiz Battle sur FlipLearn ! Connectez-vous pour relever le défi ! ⚔️`
+          );
+        }
+      }
+    } catch (err) {
+      console.error('Quiz battle email error:', err.message);
+    }
   });
 
   /* Rejoindre une salle */

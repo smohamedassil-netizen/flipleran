@@ -296,7 +296,7 @@ function Topbar({ onMenuClick, title, user, role, mobileOpen, setMobileOpen }) {
   const notifRef = useRef(null);
   const navigate = useNavigate();
   const { logout } = useAuth();
-  const { notifications, markAllRead, clearAll, unreadCount } = useNotifications();
+  const { notifications, markAllRead, clearAll, unreadCount, hasNew } = useNotifications();
 
   useEffect(() => {
     function handleClickOutside(e) {
@@ -364,7 +364,7 @@ function Topbar({ onMenuClick, title, user, role, mobileOpen, setMobileOpen }) {
             aria-label="Notifications"
             onClick={() => setNotifOpen((v) => !v)}
           >
-            <Bell size={17} />
+            <Bell size={17} style={hasNew ? { animation: 'bell-ring 0.5s ease-in-out 3' } : {}} />
             {unreadCount > 0 && (
               <span
                 style={{

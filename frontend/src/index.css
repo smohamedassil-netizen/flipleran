@@ -728,6 +728,13 @@ body {
 }
 .celebrate { animation: pop-in 500ms ease both; }
 
+@keyframes bell-ring {
+  0%, 100% { transform: rotate(0); }
+  25% { transform: rotate(15deg); }
+  50% { transform: rotate(-15deg); }
+  75% { transform: rotate(10deg); }
+}
+
 /* ═══════════════════════════════════════════════════════════════════════════
    RESPONSIVE — Media Queries
 ═══════════════════════════════════════════════════════════════════════════ */
