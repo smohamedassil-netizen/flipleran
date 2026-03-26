@@ -65,7 +65,11 @@ export const getContacts = async (req, res) => {
         isActive: { $ne: false },
       }).select('nom prenom email role filiere avatar');
 
-      contacts = [...professors, ...classmates];
+      // Ajouter les admins (support)
+      const admins = await User.find({
+        role: 'admin', isActive: { $ne: false },
+      }).select('nom prenom email role filiere avatar');
+      contacts = [...admins, ...professors, ...classmates];
     } else if (me.role === 'professeur') {
       // Étudiants de mes cours + autres professeurs
       const myCourses = await Course.find({ professorId: me._id }).select('filiere promotion');
@@ -86,7 +90,11 @@ export const getContacts = async (req, res) => {
         }).select('nom prenom email role filiere avatar'),
       ]);
 
-      contacts = [...otherProfs, ...students];
+      // Ajouter les admins (support)
+      const admins = await User.find({
+        role: 'admin', _id: { $ne: me._id }, isActive: { $ne: false },
+      }).select('nom prenom email role filiere avatar');
+      contacts = [...admins, ...otherProfs, ...students];
     } else {
       // Admin : tous les utilisateurs
       contacts = await User.find({

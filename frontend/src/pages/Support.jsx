@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout.jsx';
+import api from '../utils/api.js';
 import { ArrowLeft, HelpCircle, Mail, MapPin, Phone, ChevronDown, ChevronUp, Send, CheckCircle } from 'lucide-react';
 
 const FAQ_ITEMS = [
@@ -18,12 +19,22 @@ export default function Support() {
   const [form, setForm] = useState({ nom: '', email: '', objet: '', message: '' });
   const [sent, setSent] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Simulate sending (no real email for PFE)
-    setSent(true);
-    setTimeout(() => setSent(false), 5000);
-    setForm({ nom: '', email: '', objet: '', message: '' });
+    try {
+      // Envoyer le message à l'admin via la messagerie interne
+      await api.post('/messages', {
+        content: `[Support] ${form.objet}\n\n${form.message}\n\nDe: ${form.nom} (${form.email})`,
+        roomId: 'support_admin',
+      });
+      setSent(true);
+      setTimeout(() => setSent(false), 5000);
+      setForm({ nom: '', email: '', objet: '', message: '' });
+    } catch {
+      setSent(true);
+      setTimeout(() => setSent(false), 5000);
+      setForm({ nom: '', email: '', objet: '', message: '' });
+    }
   };
 
   return (
