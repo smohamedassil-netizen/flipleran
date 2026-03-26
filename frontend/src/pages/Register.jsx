@@ -81,10 +81,12 @@ export default function Register() {
       style={{
         minHeight: '100vh',
         display: 'flex',
+        flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
         backgroundColor: 'var(--color-bg)',
-        padding: '24px',
+        padding: '16px',
+        overflow: 'hidden',
       }}
     >
       <div

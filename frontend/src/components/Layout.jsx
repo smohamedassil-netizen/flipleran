@@ -349,7 +349,7 @@ function Topbar({ onMenuClick, title, user, role, mobileOpen, setMobileOpen }) {
         }}
       >
         {title}
-        <span style={{ fontSize: 12, color: '#94a3b8', fontWeight: 400, marginLeft: 8 }}>
+        <span className="hide-mobile" style={{ fontSize: 12, color: '#94a3b8', fontWeight: 400, marginLeft: 8 }}>
           Plateforme de classe inversée
         </span>
       </span>
@@ -465,8 +465,8 @@ function Topbar({ onMenuClick, title, user, role, mobileOpen, setMobileOpen }) {
           )}
         </div>
 
-        {/* Role badge */}
-        <span className={ROLE_BADGE_CLASS[role] ?? 'badge badge-neutral'}>
+        {/* Role badge — caché sur mobile */}
+        <span className={`hide-mobile ${ROLE_BADGE_CLASS[role] ?? 'badge badge-neutral'}`}>
           {ROLE_LABEL[role] ?? role}
         </span>
 
@@ -478,6 +478,7 @@ function Topbar({ onMenuClick, title, user, role, mobileOpen, setMobileOpen }) {
         >
           <div className="avatar">{getInitials(user)}</div>
           <span
+            className="hide-mobile"
             style={{
               fontSize: 'var(--font-size-sm)',
               fontWeight: 600,
