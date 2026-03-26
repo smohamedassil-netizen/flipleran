@@ -95,6 +95,14 @@ export const getContacts = async (req, res) => {
       }).select('nom prenom email role filiere avatar').limit(100);
     }
 
+    // Fallback: si aucun contact trouvé, montrer tous les utilisateurs actifs
+    if (contacts.length === 0) {
+      contacts = await User.find({
+        _id: { $ne: me._id },
+        isActive: { $ne: false },
+      }).select('nom prenom email role filiere avatar').limit(50);
+    }
+
     res.json(contacts);
   } catch (err) {
     res.status(500).json({ message: err.message });
