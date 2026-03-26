@@ -42,7 +42,7 @@ export function NotificationProvider({ children }) {
   useEffect(() => {
     let user;
     try {
-      user = JSON.parse(localStorage.getItem('fliplearn_user') || 'null');
+      user = JSON.parse(sessionStorage.getItem('fliplearn_user') || 'null');
     } catch { user = null; }
     if (!user?.token || !user?._id) return;
 

@@ -13,7 +13,7 @@ const STORAGE_KEY = 'fliplearn_user';
 
 function getToken() {
   try {
-    return JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null')?.token ?? null;
+    return JSON.parse(sessionStorage.getItem(STORAGE_KEY) || 'null')?.token ?? null;
   } catch {
     return null;
   }

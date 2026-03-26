@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth, ROLE_HOME } from '../context/AuthContext.jsx';
 import Logo from '../components/Logo.jsx';
@@ -10,9 +10,16 @@ export default function Login() {
   const [error, setError]       = useState('');
   const [loading, setLoading]   = useState(false);
 
-  const { login } = useAuth();
+  const { login, logout, user: currentUser } = useAuth();
   const navigate  = useNavigate();
   const location  = useLocation();
+
+  // Déconnecter l'utilisateur précédent quand on arrive sur /login
+  useEffect(() => {
+    if (currentUser) {
+      logout();
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleChange = (e) =>
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));

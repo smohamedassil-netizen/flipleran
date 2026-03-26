@@ -6,7 +6,7 @@ import { ArrowLeft, Swords, Users, Clock, Trophy, Plus, RefreshCw, Zap, CheckCir
 
 const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || (import.meta.env.PROD ? '' : 'http://localhost:5000');
 const STORAGE_KEY = 'fliplearn_user';
-const getToken = () => JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null')?.token ?? null;
+const getToken = () => JSON.parse(sessionStorage.getItem(STORAGE_KEY) || 'null')?.token ?? null;
 const TIMER_SECONDS = 15;
 
 export default function QuizBattle() {
@@ -15,7 +15,7 @@ export default function QuizBattle() {
   const timerRef = useRef(null);
 
   const [user] = useState(() => {
-    try { return JSON.parse(localStorage.getItem(STORAGE_KEY)); } catch { return null; }
+    try { return JSON.parse(sessionStorage.getItem(STORAGE_KEY)); } catch { return null; }
   });
 
   const [phase, setPhase] = useState('lobby'); // lobby | waiting | playing | result

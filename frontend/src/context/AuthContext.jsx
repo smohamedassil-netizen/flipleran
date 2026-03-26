@@ -17,24 +17,24 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser]       = useState(null);
   const [loading, setLoading] = useState(true);
 
-  /* Rehydrate from localStorage on mount */
+  /* Rehydrate from sessionStorage on mount */
   useEffect(() => {
     try {
-      const stored = localStorage.getItem(STORAGE_KEY);
+      const stored = sessionStorage.getItem(STORAGE_KEY);
       if (stored) setUser(JSON.parse(stored));
     } catch {
-      localStorage.removeItem(STORAGE_KEY);
+      sessionStorage.removeItem(STORAGE_KEY);
     } finally {
       setLoading(false);
     }
   }, []);
 
-  /* Persist user to localStorage whenever it changes */
+  /* Persist user to sessionStorage whenever it changes */
   useEffect(() => {
     if (user) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(user));
+      sessionStorage.setItem(STORAGE_KEY, JSON.stringify(user));
     } else {
-      localStorage.removeItem(STORAGE_KEY);
+      sessionStorage.removeItem(STORAGE_KEY);
     }
   }, [user]);
 
