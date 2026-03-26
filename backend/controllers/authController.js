@@ -109,6 +109,29 @@ export const getUserById = async (req, res) => {
   }
 };
 
+/* ─── PUT /api/auth/avatar ────────────────────────────────────────────────── */
+export const uploadAvatar = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ message: 'Aucun fichier fourni.' });
+    }
+    const { uploadBuffer } = await import('../config/cloudinary.js');
+    const result = await uploadBuffer(req.file.buffer, {
+      folder: 'fliplearn/avatars',
+      resource_type: 'image',
+      transformation: [{ width: 200, height: 200, crop: 'fill', gravity: 'face' }],
+    });
+    const user = await (await import('../models/User.js')).default.findByIdAndUpdate(
+      req.user.id,
+      { avatar: result.secure_url },
+      { new: true }
+    ).select('-password');
+    res.json(user);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
 /* ─── PUT /api/auth/password ──────────────────────────────────────────────── */
 export const changePassword = async (req, res) => {
   try {

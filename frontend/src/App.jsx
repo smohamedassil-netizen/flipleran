@@ -2,6 +2,8 @@ import { BrowserRouter, Routes, Route, Navigate, Link } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext.jsx';
 import { GamificationProvider } from './context/GamificationContext.jsx';
 import { ToastProvider } from './context/ToastContext.jsx';
+import { NotificationProvider } from './context/NotificationContext.jsx';
+import { ThemeProvider } from './context/ThemeContext.jsx';
 import ProtectedRoute from './components/ProtectedRoute.jsx';
 
 import Login                from './pages/Login.jsx';
@@ -26,6 +28,8 @@ import ChatContacts         from './pages/ChatContacts.jsx';
 import Settings             from './pages/Settings.jsx';
 import ResourcesHub         from './pages/ResourcesHub.jsx';
 import ProfessorQCMHub      from './pages/ProfessorQCMHub.jsx';
+import BadgeManagement      from './pages/BadgeManagement.jsx';
+import Support              from './pages/Support.jsx';
 
 /* ── Pages d'erreur ────────────────────────────────────────────────────────── */
 function ErrorPage({ code, title, description }) {
@@ -66,7 +70,9 @@ function NotFound() {
 
 export default function App() {
   return (
+    <ThemeProvider>
     <AuthProvider>
+      <NotificationProvider>
       <GamificationProvider>
       <ToastProvider>
       <BrowserRouter>
@@ -96,6 +102,7 @@ export default function App() {
             <Route path="/quiz-battle"                  element={<QuizBattle />} />
             <Route path="/settings"                    element={<Settings />} />
             <Route path="/resources"                   element={<ResourcesHub />} />
+            <Route path="/support"                    element={<Support />} />
           </Route>
 
           {/* Professeur + Admin only */}
@@ -105,6 +112,7 @@ export default function App() {
             <Route path="/professor/courses/:courseId/upload"    element={<ProfessorUpload />} />
             <Route path="/professor/videos/:videoId/qcm"        element={<ProfessorCreateQCM />} />
             <Route path="/professor/qcm"                       element={<ProfessorQCMHub />} />
+            <Route path="/professor/badges"                    element={<BadgeManagement />} />
           </Route>
 
           {/* Admin only */}
@@ -120,6 +128,8 @@ export default function App() {
       </BrowserRouter>
       </ToastProvider>
       </GamificationProvider>
+      </NotificationProvider>
     </AuthProvider>
+    </ThemeProvider>
   );
 }

@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Award, BookOpen, CheckCircle, Zap, BarChart2, Clock, ArrowLeft, Edit2, Lock } from 'lucide-react';
+import { Award, BookOpen, CheckCircle, Zap, BarChart2, Clock, ArrowLeft, Edit2, Lock, Users, ClipboardList, Video, Camera } from 'lucide-react';
 import Layout from '../components/Layout.jsx';
 import api from '../utils/api.js';
 import { useAuth } from '../hooks/useAuth.js';
@@ -25,22 +25,52 @@ function StatCard({ icon: Icon, label, value, color = 'var(--primary)' }) {
 
 export default function StudentProfile() {
   const { user, refreshMe } = useAuth();
+  const isProf = user?.role === 'professeur';
+  const avatarInputRef = useRef(null);
+
+  const handleAvatarUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const formData = new FormData();
+    formData.append('avatar', file);
+    try {
+      await api.put('/auth/avatar', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      refreshMe?.();
+    } catch (err) {
+      console.error('Avatar upload failed:', err);
+    }
+  };
 
   const [allBadges,  setAllBadges]  = useState([]);
   const [progresses, setProgresses] = useState([]);
+  const [profStats,  setProfStats]  = useState({ courses: 0, videos: 0, qcms: 0, students: 0 });
   const [loading,    setLoading]    = useState(true);
 
   useEffect(() => {
-    Promise.all([
-      api.get('/badges'),
-      api.get('/progress'),
-    ])
-      .then(([badgesRes, progressRes]) => {
-        setAllBadges(badgesRes.data ?? []);
-        setProgresses(Array.isArray(progressRes.data) ? progressRes.data : []);
-      })
-      .catch(console.error)
-      .finally(() => setLoading(false));
+    if (isProf) {
+      api.get('/professor/courses')
+        .then((res) => {
+          const courses = Array.isArray(res.data) ? res.data : [];
+          const videos = courses.reduce((s, c) => s + (c.videos?.length ?? 0), 0);
+          const students = courses.reduce((s, c) => s + (c.students?.length ?? 0), 0);
+          setProfStats({ courses: courses.length, videos, qcms: 0, students });
+        })
+        .catch(console.error)
+        .finally(() => setLoading(false));
+    } else {
+      Promise.all([
+        api.get('/badges'),
+        api.get('/progress'),
+      ])
+        .then(([badgesRes, progressRes]) => {
+          setAllBadges(badgesRes.data ?? []);
+          setProgresses(Array.isArray(progressRes.data) ? progressRes.data : []);
+        })
+        .catch(console.error)
+        .finally(() => setLoading(false));
+    }
 
     refreshMe?.();
   }, []);
@@ -87,22 +117,31 @@ export default function StudentProfile() {
         }}
       >
         {/* Avatar */}
-        <div
-          style={{
-            width:          72,
-            height:         72,
-            borderRadius:   '50%',
-            background:     'rgba(255,255,255,0.2)',
-            border:         '3px solid rgba(255,255,255,0.4)',
-            display:        'flex',
-            alignItems:     'center',
-            justifyContent: 'center',
-            fontSize:       '24px',
-            fontWeight:     800,
-            flexShrink:     0,
-          }}
-        >
-          {initials}
+        <div style={{ position: 'relative', cursor: 'pointer', flexShrink: 0 }} onClick={() => avatarInputRef.current?.click()}>
+          {user?.avatar ? (
+            <img src={user.avatar} alt="Avatar" style={{ width: 72, height: 72, borderRadius: '50%', objectFit: 'cover', border: '3px solid rgba(255,255,255,0.4)' }} />
+          ) : (
+            <div
+              style={{
+                width:          72,
+                height:         72,
+                borderRadius:   '50%',
+                background:     'rgba(255,255,255,0.2)',
+                border:         '3px solid rgba(255,255,255,0.4)',
+                display:        'flex',
+                alignItems:     'center',
+                justifyContent: 'center',
+                fontSize:       '24px',
+                fontWeight:     800,
+              }}
+            >
+              {initials}
+            </div>
+          )}
+          <div style={{ position: 'absolute', bottom: 0, right: 0, width: 24, height: 24, borderRadius: '50%', background: '#1B4F72', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid white' }}>
+            <Camera size={12} color="white" />
+          </div>
+          <input ref={avatarInputRef} type="file" accept="image/*" hidden onChange={handleAvatarUpload} />
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
           <h2 style={{ margin: 0, fontSize: '20px', fontWeight: 800 }}>
@@ -114,66 +153,83 @@ export default function StudentProfile() {
             {user?.promotion && <span className="badge" style={{ background: 'rgba(255,255,255,0.2)', color: '#fff', border: 'none' }}>Promo {user.promotion}</span>}
           </div>
         </div>
-        {/* Points big display */}
-        <div style={{ textAlign: 'center', flexShrink: 0 }}>
-          <div style={{ fontSize: '36px', fontWeight: 800, lineHeight: 1 }}>{user?.points ?? 0}</div>
-          <div style={{ fontSize: '12px', opacity: 0.8, marginTop: '2px', display: 'flex', alignItems: 'center', gap: '4px', justifyContent: 'center' }}>
-            <Zap size={12} fill="#E8A838" stroke="#E8A838" />
-            points
+        {/* Points big display (students only) / Role badge (professors) */}
+        {isProf ? (
+          <div style={{ textAlign: 'center', flexShrink: 0 }}>
+            <span className="badge badge-accent" style={{ fontSize: '14px', padding: '6px 16px' }}>Professeur</span>
           </div>
-        </div>
+        ) : (
+          <div style={{ textAlign: 'center', flexShrink: 0 }}>
+            <div style={{ fontSize: '36px', fontWeight: 800, lineHeight: 1 }}>{user?.points ?? 0}</div>
+            <div style={{ fontSize: '12px', opacity: 0.8, marginTop: '2px', display: 'flex', alignItems: 'center', gap: '4px', justifyContent: 'center' }}>
+              <Zap size={12} fill="#E8A838" stroke="#E8A838" />
+              points
+            </div>
+          </div>
+        )}
       </div>
 
       {/* ── Stats row ──────────────────────────────────────────────────── */}
-      <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginBottom: '24px' }}>
-        <StatCard icon={Zap}       label="Points totaux"    value={user?.points ?? 0}          color="#E8A838" />
-        <StatCard icon={BookOpen}  label="Vidéos complétées" value={totalVideos}                color="#3B82F6" />
-        <StatCard icon={CheckCircle} label="QCM complétés"  value={allQcm.length}              color="#10B981" />
-        <StatCard icon={BarChart2} label="Score moyen QCM"  value={allQcm.length ? `${avgQcm}%` : '—'} color="#8B5CF6" />
-        <StatCard icon={Award}     label="Badges gagnés"    value={earnedBadges.length}        color="#F59E0B" />
-      </div>
-
-      {/* ── Mes récompenses ─────────────────────────────────────────────── */}
-      <section style={{ marginBottom: '32px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
-          <Award size={18} color="var(--accent)" />
-          <h2 style={{ margin: 0, fontSize: '16px', fontWeight: 700 }}>Mes récompenses</h2>
-          {earnedBadges.length > 0 && (
-            <span className="badge badge-success">{earnedBadges.length} obtenu{earnedBadges.length > 1 ? 's' : ''}</span>
-          )}
+      {isProf ? (
+        <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginBottom: '24px' }}>
+          <StatCard icon={BookOpen}      label="Cours créés"        value={profStats.courses}  color="#3B82F6" />
+          <StatCard icon={Video}         label="Vidéos uploadées"   value={profStats.videos}   color="#8B5CF6" />
+          <StatCard icon={ClipboardList} label="QCM créés"          value={profStats.qcms}     color="#10B981" />
+          <StatCard icon={Users}         label="Étudiants suivis"   value={profStats.students} color="#F59E0B" />
         </div>
+      ) : (
+        <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginBottom: '24px' }}>
+          <StatCard icon={Zap}         label="Points totaux"      value={user?.points ?? 0}                    color="#E8A838" />
+          <StatCard icon={BookOpen}    label="Vidéos complétées"  value={totalVideos}                          color="#3B82F6" />
+          <StatCard icon={CheckCircle} label="QCM complétés"      value={allQcm.length}                       color="#10B981" />
+          <StatCard icon={BarChart2}   label="Score moyen QCM"    value={allQcm.length ? `${avgQcm}%` : '—'}  color="#8B5CF6" />
+          <StatCard icon={Award}       label="Badges gagnés"      value={earnedBadges.length}                 color="#F59E0B" />
+        </div>
+      )}
 
-        {loading && <div className="empty-state" style={{ padding: '32px' }}>Chargement…</div>}
-
-        {!loading && earnedBadges.length === 0 && (
-          <div className="empty-state" style={{ padding: '32px' }}>
-            <Award size={32} />
-            <p>Aucun badge pour l'instant — regardez des vidéos et faites des QCM !</p>
+      {/* ── Mes récompenses (students only) ────────────────────────────── */}
+      {user?.role === 'etudiant' && (
+        <section style={{ marginBottom: '32px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
+            <Award size={18} color="var(--accent)" />
+            <h2 style={{ margin: 0, fontSize: '16px', fontWeight: 700 }}>Mes récompenses</h2>
+            {earnedBadges.length > 0 && (
+              <span className="badge badge-success">{earnedBadges.length} obtenu{earnedBadges.length > 1 ? 's' : ''}</span>
+            )}
           </div>
-        )}
 
-        {!loading && earnedBadges.length > 0 && (
-          <div
-            style={{
-              display:             'grid',
-              gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))',
-              gap:                 '12px',
-            }}
-          >
-            {earnedBadges.map((b) => (
-              <BadgeCard key={b._id} badge={b} />
-            ))}
-          </div>
-        )}
-      </section>
+          {loading && <div className="empty-state" style={{ padding: '32px' }}>Chargement...</div>}
 
-      {/* ── Badges à débloquer ───────────────────────────────────────────── */}
-      {!loading && lockedBadges.length > 0 && (
+          {!loading && earnedBadges.length === 0 && (
+            <div className="empty-state" style={{ padding: '32px' }}>
+              <Award size={32} />
+              <p>Aucun badge pour l'instant -- regardez des videos et faites des QCM !</p>
+            </div>
+          )}
+
+          {!loading && earnedBadges.length > 0 && (
+            <div
+              style={{
+                display:             'grid',
+                gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))',
+                gap:                 '12px',
+              }}
+            >
+              {earnedBadges.map((b) => (
+                <BadgeCard key={b._id} badge={b} />
+              ))}
+            </div>
+          )}
+        </section>
+      )}
+
+      {/* ── Badges a debloquer (students only) ─────────────────────────── */}
+      {user?.role === 'etudiant' && !loading && lockedBadges.length > 0 && (
         <section>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
             <Award size={18} color="var(--text-muted)" />
             <h2 style={{ margin: 0, fontSize: '16px', fontWeight: 700, color: 'var(--text-muted)' }}>
-              Badges à débloquer
+              Badges a debloquer
             </h2>
           </div>
           <div
@@ -186,6 +242,34 @@ export default function StudentProfile() {
             {lockedBadges.map((b) => (
               <BadgeCard key={b._id} badge={b} locked />
             ))}
+          </div>
+        </section>
+      )}
+
+      {/* ── Professor: Mes cours section ───────────────────────────────── */}
+      {isProf && (
+        <section style={{ marginBottom: '32px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
+            <BookOpen size={18} color="var(--color-primary, #1B4F72)" />
+            <h2 style={{ margin: 0, fontSize: '16px', fontWeight: 700 }}>Mes cours</h2>
+            <span className="badge badge-primary">{profStats.courses} cours</span>
+          </div>
+          <div className="card" style={{ padding: 20, color: 'var(--text-muted)', fontSize: 14 }}>
+            Vous avez cree <strong>{profStats.courses}</strong> cours avec <strong>{profStats.videos}</strong> videos au total.
+          </div>
+        </section>
+      )}
+
+      {/* ── Professor: QCM crees section ───────────────────────────────── */}
+      {isProf && (
+        <section style={{ marginBottom: '32px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
+            <ClipboardList size={18} color="#10B981" />
+            <h2 style={{ margin: 0, fontSize: '16px', fontWeight: 700 }}>QCM crees</h2>
+            <span className="badge badge-success">{profStats.qcms} QCM</span>
+          </div>
+          <div className="card" style={{ padding: 20, color: 'var(--text-muted)', fontSize: 14 }}>
+            Vous avez cree <strong>{profStats.qcms}</strong> QCM pour vos etudiants.
           </div>
         </section>
       )}

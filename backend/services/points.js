@@ -83,6 +83,9 @@ async function awardBadge(user, badgeKey) {
 
 /* ─── Check and award all applicable badges ────────────────────────────────── */
 async function checkBadges(user, { videosCompleted = 0, qcmResults = [] } = {}) {
+  // Only students can earn badges
+  if (user.role !== 'etudiant') return [];
+
   const newBadges = [];
 
   // "Premier pas" — 1st video
@@ -153,6 +156,9 @@ async function getAllQCMResults(userId) {
 export async function addPoints(userId, amount, reason) {
   const user = await User.findById(userId);
   if (!user) throw new Error('User not found');
+
+  // Only students accumulate points
+  if (user.role !== 'etudiant') return { newPoints: user.points ?? 0, newBadges: [] };
 
   user.points = (user.points ?? 0) + amount;
 

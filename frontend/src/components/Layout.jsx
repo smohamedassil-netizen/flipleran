@@ -1,12 +1,15 @@
 import { useState, useRef, useEffect } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
+import { useNotifications } from '../context/NotificationContext.jsx';
 import Logo from './Logo.jsx';
 import {
   LayoutDashboard,
   BookOpen,
   BarChart2,
+  BarChart3,
   Users,
+  User,
   GraduationCap,
   Settings,
   LogOut,
@@ -22,8 +25,11 @@ import {
   MessageSquare,
   Swords,
   Library,
+  Layers,
   FolderOpen,
   ClipboardList,
+  HelpCircle,
+  Award,
 } from 'lucide-react';
 
 /* ─── Nav config per role ───────────────────────────────────────────────────── */
@@ -34,8 +40,8 @@ const NAV = {
       items: [
         { label: 'Tableau de bord', icon: LayoutDashboard, to: '/' },
         { label: 'Mes cours',       icon: BookOpen,        to: '/courses' },
-        { label: 'Ressources',     icon: FolderOpen,      to: '/resources' },
-        { label: 'Mes decks',       icon: Library,         to: '/decks' },
+        { label: 'Ressources',      icon: FolderOpen,      to: '/resources' },
+        { label: 'Mes decks',       icon: Layers,          to: '/decks' },
       ],
     },
     {
@@ -44,7 +50,13 @@ const NAV = {
         { label: 'Classement',      icon: Trophy,          to: '/leaderboard' },
         { label: 'Quiz Battle',     icon: Swords,          to: '/quiz-battle' },
         { label: 'Messages',        icon: MessageSquare,   to: '/chat' },
-        { label: 'Mon profil',      icon: UserCircle,      to: '/profile' },
+      ],
+    },
+    {
+      section: 'Mon espace',
+      items: [
+        { label: 'Mon profil',      icon: User,            to: '/profile' },
+        { label: 'Aide & Support',  icon: HelpCircle,      to: '/support' },
       ],
     },
   ],
@@ -54,15 +66,28 @@ const NAV = {
       items: [
         { label: 'Tableau de bord', icon: LayoutDashboard, to: '/professor/dashboard' },
         { label: 'Mes cours',       icon: BookOpen,        to: '/courses' },
-        { label: 'Ressources',     icon: FolderOpen,      to: '/resources' },
-        { label: 'Gérer les QCM',  icon: ClipboardList,   to: '/professor/qcm' },
+        { label: 'Ressources',      icon: FolderOpen,      to: '/resources' },
+        { label: 'Gérer les QCM',   icon: ClipboardList,   to: '/professor/qcm' },
+      ],
+    },
+    {
+      section: 'Gestion',
+      items: [
+        { label: 'Gérer les badges', icon: Award,          to: '/professor/badges' },
+        { label: 'Suivi étudiants',  icon: BarChart3,      to: '/professor/dashboard' },
       ],
     },
     {
       section: 'Communication',
       items: [
         { label: 'Messages',        icon: MessageSquare,   to: '/chat' },
-        { label: 'Mon profil',      icon: UserCircle,      to: '/profile' },
+      ],
+    },
+    {
+      section: 'Mon espace',
+      items: [
+        { label: 'Mon profil',      icon: User,            to: '/profile' },
+        { label: 'Aide & Support',  icon: HelpCircle,      to: '/support' },
       ],
     },
   ],
@@ -266,14 +291,20 @@ function Sidebar({ collapsed, onToggle, role, user, mobileOpen, setMobileOpen })
 /* ─── Topbar ────────────────────────────────────────────────────────────────── */
 function Topbar({ onMenuClick, title, user, role, mobileOpen, setMobileOpen }) {
   const [profileOpen, setProfileOpen] = useState(false);
+  const [notifOpen, setNotifOpen] = useState(false);
   const profileRef = useRef(null);
+  const notifRef = useRef(null);
   const navigate = useNavigate();
   const { logout } = useAuth();
+  const { notifications, markAllRead, clearAll, unreadCount } = useNotifications();
 
   useEffect(() => {
     function handleClickOutside(e) {
       if (profileRef.current && !profileRef.current.contains(e.target)) {
         setProfileOpen(false);
+      }
+      if (notifRef.current && !notifRef.current.contains(e.target)) {
+        setNotifOpen(false);
       }
     }
     document.addEventListener('mousedown', handleClickOutside);
@@ -326,26 +357,113 @@ function Topbar({ onMenuClick, title, user, role, mobileOpen, setMobileOpen }) {
       {/* Right actions */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
         {/* Notifications */}
-        <button
-          className="btn-ghost btn btn-sm"
-          style={{ position: 'relative' }}
-          aria-label="Notifications"
-        >
-          <Bell size={17} />
-          {/* Indicator dot */}
-          <span
-            style={{
-              position: 'absolute',
-              top: 6,
-              right: 6,
-              width: 7,
-              height: 7,
-              borderRadius: '50%',
-              backgroundColor: 'var(--color-accent)',
-              border: '1.5px solid var(--color-surface)',
-            }}
-          />
-        </button>
+        <div ref={notifRef} style={{ position: 'relative' }}>
+          <button
+            className="btn-ghost btn btn-sm"
+            style={{ position: 'relative' }}
+            aria-label="Notifications"
+            onClick={() => setNotifOpen((v) => !v)}
+          >
+            <Bell size={17} />
+            {unreadCount > 0 && (
+              <span
+                style={{
+                  position: 'absolute',
+                  top: 2,
+                  right: 2,
+                  minWidth: 16,
+                  height: 16,
+                  borderRadius: 8,
+                  backgroundColor: '#ef4444',
+                  color: 'white',
+                  fontSize: 10,
+                  fontWeight: 700,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  padding: '0 4px',
+                  border: '1.5px solid var(--color-surface)',
+                }}
+              >
+                {unreadCount > 9 ? '9+' : unreadCount}
+              </span>
+            )}
+          </button>
+
+          {/* Notification dropdown */}
+          {notifOpen && (
+            <div
+              style={{
+                position: 'absolute',
+                top: '100%',
+                right: 0,
+                background: 'white',
+                borderRadius: 12,
+                boxShadow: '0 8px 30px rgba(0,0,0,0.12)',
+                border: '1px solid #e5e7eb',
+                width: 320,
+                maxHeight: 400,
+                zIndex: 1000,
+                marginTop: 8,
+                overflow: 'hidden',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', borderBottom: '1px solid #e5e7eb' }}>
+                <span style={{ fontWeight: 600, color: '#1e293b', fontSize: 14 }}>Notifications</span>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  {unreadCount > 0 && (
+                    <button onClick={() => markAllRead()} style={{ background: 'none', border: 'none', color: '#1B4F72', fontSize: 12, cursor: 'pointer', fontWeight: 500 }}>
+                      Marquer tout lu
+                    </button>
+                  )}
+                  {notifications.length > 0 && (
+                    <button onClick={() => clearAll()} style={{ background: 'none', border: 'none', color: '#94a3b8', fontSize: 12, cursor: 'pointer', fontWeight: 500 }}>
+                      Effacer
+                    </button>
+                  )}
+                </div>
+              </div>
+              <div style={{ overflowY: 'auto', maxHeight: 340 }}>
+                {notifications.length === 0 ? (
+                  <div style={{ padding: '24px 16px', textAlign: 'center', color: '#94a3b8', fontSize: 13 }}>
+                    Aucune notification
+                  </div>
+                ) : (
+                  notifications.slice(0, 20).map((n) => (
+                    <div
+                      key={n.id}
+                      style={{
+                        padding: '10px 16px',
+                        borderBottom: '1px solid #f1f5f9',
+                        backgroundColor: n.read ? 'transparent' : '#f0f9ff',
+                        display: 'flex',
+                        gap: 10,
+                        alignItems: 'flex-start',
+                      }}
+                    >
+                      <div
+                        style={{
+                          width: 8,
+                          height: 8,
+                          borderRadius: '50%',
+                          backgroundColor: n.read ? 'transparent' : (n.type === 'success' ? '#22c55e' : n.type === 'warning' ? '#f59e0b' : '#3b82f6'),
+                          flexShrink: 0,
+                          marginTop: 5,
+                        }}
+                      />
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: 13, color: '#1e293b', lineHeight: 1.4 }}>{n.message}</div>
+                        <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 2 }}>
+                          {new Date(n.createdAt).toLocaleString('fr-FR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          )}
+        </div>
 
         {/* Role badge */}
         <span className={ROLE_BADGE_CLASS[role] ?? 'badge badge-neutral'}>
@@ -482,7 +600,7 @@ export default function Layout({ children, title = 'FlipLearn' }) {
         setMobileOpen={setMobileOpen}
       />
 
-      <div className="main-content">
+      <div className="main-content" style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
         <Topbar
           title={title}
           user={user}
@@ -491,7 +609,28 @@ export default function Layout({ children, title = 'FlipLearn' }) {
           mobileOpen={mobileOpen}
           setMobileOpen={setMobileOpen}
         />
-        <main className="page-body">{children}</main>
+        <main className="page-body" style={{ flex: 1 }}>{children}</main>
+
+        {/* Footer */}
+        <footer style={{
+          marginTop: 'auto',
+          padding: '20px 0',
+          borderTop: '1px solid #e5e7eb',
+          textAlign: 'center',
+          color: '#94a3b8',
+          fontSize: 12,
+          lineHeight: 1.8,
+        }}>
+          <div>FlipLearn &copy; 2025 &mdash; Plateforme de Classe Invers&eacute;e</div>
+          <div style={{ display: 'flex', justifyContent: 'center', gap: 16, marginTop: 4 }}>
+            <a href="/support" style={{ color: '#94a3b8', textDecoration: 'none' }}>Aide</a>
+            <span>&bull;</span>
+            <a href="/settings" style={{ color: '#94a3b8', textDecoration: 'none' }}>Param&egrave;tres</a>
+            <span>&bull;</span>
+            <a href="/profile" style={{ color: '#94a3b8', textDecoration: 'none' }}>Mon profil</a>
+          </div>
+          <div style={{ marginTop: 4 }}>Projet de Fin d&rsquo;&Eacute;tudes &mdash; Licence Informatique ISIL</div>
+        </footer>
       </div>
     </div>
   );

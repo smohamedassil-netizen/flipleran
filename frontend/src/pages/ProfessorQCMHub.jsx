@@ -2,14 +2,25 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout.jsx';
 import api from '../utils/api.js';
-import { ArrowLeft, ClipboardList, Video, Plus, CheckCircle, ChevronRight } from 'lucide-react';
+import { ArrowLeft, ClipboardList, Video, Plus, CheckCircle, ChevronRight, Edit, Trash2, AlertCircle } from 'lucide-react';
 
 export default function ProfessorQCMHub() {
   const navigate = useNavigate();
   const [courses, setCourses] = useState([]);
   const [videos, setVideos] = useState({});
+  const [qcmData, setQcmData] = useState({});
   const [loading, setLoading] = useState(true);
   const [expandedCourse, setExpandedCourse] = useState(null);
+  const [confirmDelete, setConfirmDelete] = useState(null); // { videoId, qcmId }
+
+  const fetchQCMForVideo = async (videoId) => {
+    try {
+      const { data } = await api.get(`/qcm/video/${videoId}`);
+      return data;
+    } catch {
+      return null;
+    }
+  };
 
   useEffect(() => {
     (async () => {
@@ -18,15 +29,27 @@ export default function ProfessorQCMHub() {
         setCourses(data);
         // Load videos for each course
         const videoMap = {};
+        const allVideos = [];
         await Promise.all(
           data.map(async (course) => {
             try {
               const { data: vids } = await api.get(`/videos/course/${course._id}`);
               videoMap[course._id] = vids;
+              allVideos.push(...vids);
             } catch { videoMap[course._id] = []; }
           })
         );
         setVideos(videoMap);
+
+        // Fetch QCM data for all videos
+        const qcmMap = {};
+        await Promise.all(
+          allVideos.map(async (video) => {
+            const qcm = await fetchQCMForVideo(video._id);
+            if (qcm) qcmMap[video._id] = qcm;
+          })
+        );
+        setQcmData(qcmMap);
       } catch (err) {
         console.error(err);
       } finally {
@@ -34,6 +57,21 @@ export default function ProfessorQCMHub() {
       }
     })();
   }, []);
+
+  const handleDelete = async (qcmId, videoId) => {
+    try {
+      await api.delete(`/qcm/${qcmId}`);
+      setQcmData(prev => {
+        const updated = { ...prev };
+        delete updated[videoId];
+        return updated;
+      });
+      setConfirmDelete(null);
+    } catch (err) {
+      alert(err.response?.data?.message || 'Erreur lors de la suppression');
+      setConfirmDelete(null);
+    }
+  };
 
   return (
     <Layout title="Gérer les QCM">
@@ -80,34 +118,112 @@ export default function ProfessorQCMHub() {
                           Aucune vidéo. Uploadez d'abord une vidéo pour créer un QCM.
                         </div>
                       ) : (
-                        courseVideos.map((video) => (
-                          <div key={video._id}
-                            onClick={() => navigate(`/professor/videos/${video._id}/qcm`)}
-                            style={{
+                        courseVideos.map((video) => {
+                          const qcm = qcmData[video._id];
+                          const hasQCM = !!qcm;
+                          const questionCount = qcm?.questions?.length || 0;
+
+                          return (
+                            <div key={video._id} style={{
                               display: 'flex', alignItems: 'center', gap: 12, padding: '12px 20px',
-                              cursor: 'pointer', transition: 'background 0.15s',
+                              transition: 'background 0.15s',
                             }}
                             onMouseEnter={(e) => e.currentTarget.style.background = '#f8fafc'}
                             onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}>
-                            <Video size={18} color="#1B4F72" />
-                            <div style={{ flex: 1 }}>
-                              <div style={{ fontWeight: 500, color: '#1e293b', fontSize: 14 }}>{video.titre}</div>
+                              <Video size={18} color="#1B4F72" />
+                              <div style={{ flex: 1 }}>
+                                <div style={{ fontWeight: 500, color: '#1e293b', fontSize: 14 }}>{video.titre}</div>
+                                {/* QCM status badge */}
+                                <div style={{ marginTop: 4 }}>
+                                  {hasQCM ? (
+                                    <span style={{
+                                      display: 'inline-flex', alignItems: 'center', gap: 4, padding: '3px 10px',
+                                      borderRadius: 6, fontSize: 12, fontWeight: 600,
+                                      background: '#F0FDF4', color: '#16A34A', border: '1px solid #BBF7D0',
+                                    }}>
+                                      <CheckCircle size={12} /> QCM créé &bull; {questionCount} question{questionCount > 1 ? 's' : ''}
+                                    </span>
+                                  ) : (
+                                    <span style={{
+                                      display: 'inline-flex', alignItems: 'center', gap: 4, padding: '3px 10px',
+                                      borderRadius: 6, fontSize: 12, fontWeight: 600,
+                                      background: '#FFF7ED', color: '#EA580C', border: '1px solid #FED7AA',
+                                    }}>
+                                      <AlertCircle size={12} /> Pas de QCM
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                              <div style={{ display: 'flex', gap: 6 }}>
+                                {hasQCM ? (
+                                  <>
+                                    <button
+                                      onClick={() => navigate(`/professor/videos/${video._id}/qcm`)}
+                                      style={{
+                                        display: 'flex', alignItems: 'center', gap: 5, padding: '6px 12px',
+                                        borderRadius: 7, fontSize: 12, fontWeight: 600, cursor: 'pointer',
+                                        background: '#EBF5FB', color: '#1B4F72', border: '1px solid #BFDBFE',
+                                      }}>
+                                      <Edit size={13} /> Modifier
+                                    </button>
+                                    <button
+                                      onClick={(e) => { e.stopPropagation(); setConfirmDelete({ videoId: video._id, qcmId: qcm._id }); }}
+                                      style={{
+                                        display: 'flex', alignItems: 'center', gap: 5, padding: '6px 12px',
+                                        borderRadius: 7, fontSize: 12, fontWeight: 600, cursor: 'pointer',
+                                        background: '#FEF2F2', color: '#DC2626', border: '1px solid #FECACA',
+                                      }}>
+                                      <Trash2 size={13} /> Supprimer
+                                    </button>
+                                  </>
+                                ) : (
+                                  <button
+                                    onClick={() => navigate(`/professor/videos/${video._id}/qcm`)}
+                                    style={{
+                                      display: 'flex', alignItems: 'center', gap: 5, padding: '6px 12px',
+                                      borderRadius: 7, fontSize: 12, fontWeight: 600, cursor: 'pointer',
+                                      background: '#EBF5FB', color: '#1B4F72', border: '1px solid #BFDBFE',
+                                    }}>
+                                    <Plus size={13} /> Créer
+                                  </button>
+                                )}
+                              </div>
                             </div>
-                            <div style={{
-                              display: 'flex', alignItems: 'center', gap: 6, padding: '4px 10px',
-                              borderRadius: 6, fontSize: 12, fontWeight: 500,
-                              background: '#EBF5FB', color: '#1B4F72'
-                            }}>
-                              <Plus size={12} /> Créer / Modifier QCM
-                            </div>
-                          </div>
-                        ))
+                          );
+                        })
                       )}
                     </div>
                   )}
                 </div>
               );
             })}
+          </div>
+        )}
+
+        {/* ── Confirm Delete Dialog ─────────────────────────────────────────── */}
+        {confirmDelete && (
+          <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
+            <div style={{ background: 'white', borderRadius: 16, padding: 28, width: '100%', maxWidth: 400, textAlign: 'center' }}>
+              <div style={{ width: 48, height: 48, borderRadius: '50%', background: '#FEF2F2', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+                <Trash2 size={24} color="#DC2626" />
+              </div>
+              <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#1e293b', marginBottom: 8 }}>Supprimer ce QCM ?</h3>
+              <p style={{ color: '#64748b', fontSize: 14, marginBottom: 24 }}>Cette action est irréversible. Toutes les questions et résultats associés seront supprimés.</p>
+              <div style={{ display: 'flex', gap: 10, justifyContent: 'center' }}>
+                <button onClick={() => setConfirmDelete(null)} style={{
+                  padding: '10px 24px', borderRadius: 8, border: '1px solid #d1d5db',
+                  background: 'white', color: '#374151', fontWeight: 600, fontSize: 14, cursor: 'pointer',
+                }}>
+                  Annuler
+                </button>
+                <button onClick={() => handleDelete(confirmDelete.qcmId, confirmDelete.videoId)} style={{
+                  padding: '10px 24px', borderRadius: 8, border: 'none',
+                  background: '#DC2626', color: 'white', fontWeight: 600, fontSize: 14, cursor: 'pointer',
+                }}>
+                  Supprimer
+                </button>
+              </div>
+            </div>
           </div>
         )}
       </div>

@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import Layout from '../components/Layout.jsx';
 import { Settings as SettingsIcon, Moon, Sun, Bell, Globe, Shield, Info, ChevronRight } from 'lucide-react';
+import { useTheme } from '../context/ThemeContext.jsx';
 
 export default function Settings() {
-  const [theme, setTheme] = useState('light');
+  const { theme, setTheme } = useTheme();
   const [notifications, setNotifications] = useState(true);
 
   const settingSections = [
@@ -16,7 +17,7 @@ export default function Settings() {
           description: 'Choisir le thème de l\'interface',
           type: 'select',
           value: theme,
-          options: [{ value: 'light', label: 'Clair' }, { value: 'dark', label: 'Sombre (bientôt)' }],
+          options: [{ value: 'light', label: 'Clair' }, { value: 'dark', label: 'Sombre' }],
           onChange: (v) => setTheme(v),
         }
       ]
