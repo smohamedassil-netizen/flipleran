@@ -1,10 +1,10 @@
-import { useState } from 'react';
-import { NavLink, Link, useNavigate } from 'react-router-dom';
+import { useState, useRef, useEffect } from 'react';
+import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
+import Logo from './Logo.jsx';
 import {
   LayoutDashboard,
   BookOpen,
-  Brain,
   BarChart2,
   Users,
   GraduationCap,
@@ -22,6 +22,8 @@ import {
   MessageSquare,
   Swords,
   Library,
+  FolderOpen,
+  ClipboardList,
 } from 'lucide-react';
 
 /* ─── Nav config per role ───────────────────────────────────────────────────── */
@@ -32,6 +34,7 @@ const NAV = {
       items: [
         { label: 'Tableau de bord', icon: LayoutDashboard, to: '/' },
         { label: 'Mes cours',       icon: BookOpen,        to: '/courses' },
+        { label: 'Ressources',     icon: FolderOpen,      to: '/resources' },
         { label: 'Mes decks',       icon: Library,         to: '/decks' },
       ],
     },
@@ -51,6 +54,8 @@ const NAV = {
       items: [
         { label: 'Tableau de bord', icon: LayoutDashboard, to: '/professor/dashboard' },
         { label: 'Mes cours',       icon: BookOpen,        to: '/courses' },
+        { label: 'Ressources',     icon: FolderOpen,      to: '/resources' },
+        { label: 'Gérer les QCM',  icon: ClipboardList,   to: '/professor/qcm' },
       ],
     },
     {
@@ -143,7 +148,7 @@ function Sidebar({ collapsed, onToggle, role, user, mobileOpen, setMobileOpen })
       }}
     >
       {/* Logo row */}
-      <Link
+      <NavLink
         to="/"
         style={{
           height: 'var(--topbar-height)',
@@ -157,34 +162,8 @@ function Sidebar({ collapsed, onToggle, role, user, mobileOpen, setMobileOpen })
           cursor: 'pointer',
         }}
       >
-        <div
-          style={{
-            width: 32,
-            height: 32,
-            borderRadius: 'var(--radius-md)',
-            backgroundColor: 'var(--color-primary)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            flexShrink: 0,
-          }}
-        >
-          <Brain size={18} color="#fff" />
-        </div>
-        {!collapsed && (
-          <span
-            style={{
-              fontWeight: 800,
-              fontSize: 'var(--font-size-lg)',
-              color: 'var(--color-primary)',
-              letterSpacing: '-0.02em',
-              whiteSpace: 'nowrap',
-            }}
-          >
-            FlipLearn
-          </span>
-        )}
-      </Link>
+        <Logo variant={collapsed ? 'icon' : 'full'} size={30} />
+      </NavLink>
 
       {/* Nav sections */}
       <nav
@@ -226,9 +205,9 @@ function Sidebar({ collapsed, onToggle, role, user, mobileOpen, setMobileOpen })
         }}
       >
         <NavLink
-          to="/profile"
+          to="/settings"
           className={({ isActive }) => `nav-item${isActive ? ' active' : ''}`}
-          title={collapsed ? 'Mon profil' : undefined}
+          title={collapsed ? 'Paramètres' : undefined}
           style={{ justifyContent: collapsed ? 'center' : undefined }}
           onClick={handleNavClick}
         >
@@ -286,6 +265,27 @@ function Sidebar({ collapsed, onToggle, role, user, mobileOpen, setMobileOpen })
 
 /* ─── Topbar ────────────────────────────────────────────────────────────────── */
 function Topbar({ onMenuClick, title, user, role, mobileOpen, setMobileOpen }) {
+  const [profileOpen, setProfileOpen] = useState(false);
+  const profileRef = useRef(null);
+  const navigate = useNavigate();
+  const { logout } = useAuth();
+
+  useEffect(() => {
+    function handleClickOutside(e) {
+      if (profileRef.current && !profileRef.current.contains(e.target)) {
+        setProfileOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleLogout = () => {
+    setProfileOpen(false);
+    logout();
+    navigate('/login');
+  };
+
   return (
     <header
       style={{
@@ -318,6 +318,9 @@ function Topbar({ onMenuClick, title, user, role, mobileOpen, setMobileOpen }) {
         }}
       >
         {title}
+        <span style={{ fontSize: 12, color: '#94a3b8', fontWeight: 400, marginLeft: 8 }}>
+          Plateforme de classe inversée
+        </span>
       </span>
 
       {/* Right actions */}
@@ -349,8 +352,12 @@ function Topbar({ onMenuClick, title, user, role, mobileOpen, setMobileOpen }) {
           {ROLE_LABEL[role] ?? role}
         </span>
 
-        {/* User avatar + name */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+        {/* User avatar + name with dropdown */}
+        <div
+          ref={profileRef}
+          style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', position: 'relative', cursor: 'pointer' }}
+          onClick={() => setProfileOpen((v) => !v)}
+        >
           <div className="avatar">{getInitials(user)}</div>
           <span
             style={{
@@ -365,6 +372,84 @@ function Topbar({ onMenuClick, title, user, role, mobileOpen, setMobileOpen }) {
           >
             {getDisplayName(user)}
           </span>
+
+          {/* Profile dropdown */}
+          {profileOpen && (
+            <div
+              style={{
+                position: 'absolute',
+                top: '100%',
+                right: 0,
+                background: 'white',
+                borderRadius: 12,
+                boxShadow: '0 8px 30px rgba(0,0,0,0.12)',
+                border: '1px solid #e5e7eb',
+                minWidth: 240,
+                zIndex: 1000,
+                padding: '8px 0',
+                marginTop: 8,
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* User info */}
+              <div style={{ padding: '12px 16px' }}>
+                <div style={{ fontWeight: 600, color: '#1e293b', fontSize: 14 }}>{getDisplayName(user)}</div>
+                <div style={{ color: '#64748b', fontSize: 13, marginTop: 2 }}>{user?.email ?? ''}</div>
+              </div>
+              <div style={{ height: 1, background: '#e5e7eb' }} />
+
+              {/* Mon profil */}
+              <NavLink
+                to="/profile"
+                onClick={() => setProfileOpen(false)}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 10,
+                  padding: '10px 16px', color: '#1e293b', textDecoration: 'none',
+                  fontSize: 14, transition: 'background 0.15s',
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.background = '#f3f4f6')}
+                onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+              >
+                <UserCircle size={16} color="#64748b" />
+                Mon profil
+              </NavLink>
+
+              {/* Paramètres */}
+              <NavLink
+                to="/settings"
+                onClick={() => setProfileOpen(false)}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 10,
+                  padding: '10px 16px', color: '#1e293b', textDecoration: 'none',
+                  fontSize: 14, transition: 'background 0.15s',
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.background = '#f3f4f6')}
+                onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+              >
+                <Settings size={16} color="#64748b" />
+                Paramètres
+              </NavLink>
+
+              <div style={{ height: 1, background: '#e5e7eb' }} />
+
+              {/* Déconnexion */}
+              <button
+                onClick={handleLogout}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 10,
+                  padding: '10px 16px', color: '#ef4444', fontSize: 14,
+                  width: '100%', border: 'none', background: 'none',
+                  cursor: 'pointer', transition: 'background 0.15s',
+                  textAlign: 'left',
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.background = '#f3f4f6')}
+                onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+              >
+                <LogOut size={16} color="#ef4444" />
+                Déconnexion
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </header>

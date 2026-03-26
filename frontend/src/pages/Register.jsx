@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth, ROLE_HOME } from '../context/AuthContext.jsx';
-import { Brain, User, Mail, Lock, Eye, EyeOff, GraduationCap, BookOpen, AlertCircle, ChevronDown } from 'lucide-react';
+import Logo from '../components/Logo.jsx';
+import { User, Mail, Lock, Eye, EyeOff, GraduationCap, BookOpen, AlertCircle, ChevronDown } from 'lucide-react';
 
 const ROLES = [
   { value: 'etudiant',   label: 'Étudiant',    icon: GraduationCap },
@@ -98,20 +99,8 @@ export default function Register() {
         }}
       >
         {/* Logo */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, marginBottom: 28 }}>
-          <div
-            style={{
-              width: 38, height: 38,
-              borderRadius: 'var(--radius-md)',
-              backgroundColor: 'var(--color-primary)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-            }}
-          >
-            <Brain size={20} color="#fff" />
-          </div>
-          <span style={{ fontWeight: 800, fontSize: 'var(--font-size-xl)', color: 'var(--color-primary)', letterSpacing: '-0.02em' }}>
-            FlipLearn
-          </span>
+        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 28 }}>
+          <Logo variant="full" />
         </div>
 
         {/* Heading */}
@@ -331,6 +320,17 @@ export default function Register() {
             Se connecter
           </Link>
         </p>
+      </div>
+
+      <div style={{
+        textAlign: 'center',
+        marginTop: 24,
+        color: '#94a3b8',
+        fontSize: 12,
+        lineHeight: 1.6
+      }}>
+        <div>Projet de Fin d'Études — Licence Informatique ISIL</div>
+        <div>Plateforme de Classe Inversée © 2025</div>
       </div>
     </div>
   );

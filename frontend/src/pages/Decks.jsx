@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout.jsx';
 import { useDecks } from '../hooks/useDecks.js';
-import { Plus, Trash2, Play, BookOpen } from 'lucide-react';
+import { Plus, Trash2, Play, BookOpen, ArrowLeft } from 'lucide-react';
 
 export default function Decks() {
   const { decks, loading, createDeck, deleteDeck } = useDecks();
@@ -19,6 +19,9 @@ export default function Decks() {
 
   return (
     <Layout title="Mes decks">
+      <button onClick={() => navigate('/')} style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'none', border: 'none', color: '#1B4F72', cursor: 'pointer', fontSize: 15, fontWeight: 500, padding: '8px 0', marginBottom: 12 }}>
+        <ArrowLeft size={18} /> Retour
+      </button>
       <div className="page-header" style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
         <div>
           <h1 className="page-title">Mes decks</h1>

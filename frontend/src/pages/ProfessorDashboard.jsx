@@ -10,7 +10,7 @@ import {
   Users, Video, CheckCircle, BarChart2,
   AlertTriangle, ChevronUp, ChevronDown,
   ChevronsUpDown, Search, RefreshCw, Upload,
-  BookOpen, Clock,
+  BookOpen, Clock, ArrowLeft,
 } from 'lucide-react';
 
 /* ══════════════════════════════════════════════════════════
@@ -427,6 +427,9 @@ export default function ProfessorDashboard() {
 
   return (
     <Layout title="Tableau de bord">
+      <button onClick={() => navigate(-1)} style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'none', border: 'none', color: '#1B4F72', cursor: 'pointer', fontSize: 15, fontWeight: 500, padding: '8px 0', marginBottom: 12 }}>
+        <ArrowLeft size={18} /> Retour
+      </button>
       {/* ── Header ────────────────────────────────────────── */}
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 24, gap: 16, flexWrap: 'wrap' }}>
         <div>

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { useParams, useLocation } from 'react-router-dom';
-import { MessageSquare, BookOpen, User, Bot } from 'lucide-react';
+import { useParams, useLocation, useNavigate } from 'react-router-dom';
+import { MessageSquare, BookOpen, User, Bot, ArrowLeft } from 'lucide-react';
 import Layout  from '../components/Layout.jsx';
 import ChatBox from '../components/ChatBox.jsx';
 import api     from '../utils/api.js';
@@ -18,6 +18,7 @@ function buildRoomId(type, { courseId, userId, myId }) {
 export default function ChatPage({ roomType = 'course' }) {
   const { courseId, userId } = useParams();
   const location             = useLocation();
+  const navigate             = useNavigate();
   const { user }             = useAuth();
 
   const [roomLabel, setRoomLabel] = useState('Chat');
@@ -83,6 +84,9 @@ export default function ChatPage({ roomType = 'course' }) {
 
   return (
     <Layout title={pageTitle}>
+      <button onClick={() => navigate('/chat')} style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'none', border: 'none', color: '#1B4F72', cursor: 'pointer', fontSize: 15, fontWeight: 500, padding: '8px 0', marginBottom: 12 }}>
+        <ArrowLeft size={18} /> Retour
+      </button>
       {/* ── En-tête de section ─────────────────────────────────────── */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
         <Icon size={18} color="var(--primary)" />

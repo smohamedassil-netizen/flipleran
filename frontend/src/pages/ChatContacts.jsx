@@ -6,6 +6,7 @@ import api from '../utils/api.js';
 import {
   Search, MessageSquare, Bot, User, Users,
   BookOpen, GraduationCap, ChevronRight,
+  ArrowLeft,
 } from 'lucide-react';
 
 /* ─── Role config ──────────────────────────────────────────────────────── */
@@ -122,6 +123,9 @@ export default function ChatContacts() {
   return (
     <Layout title="Messages">
       <div style={{ maxWidth: 700, margin: '0 auto' }}>
+        <button onClick={() => navigate('/')} style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'none', border: 'none', color: '#1B4F72', cursor: 'pointer', fontSize: 15, fontWeight: 500, padding: '8px 0', marginBottom: 12 }}>
+          <ArrowLeft size={18} /> Retour
+        </button>
         <div className="page-header">
           <h1 className="page-title">Messages</h1>
           <p className="page-subtitle">Discutez avec vos camarades, professeurs ou l'assistant IA.</p>

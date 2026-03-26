@@ -6,6 +6,7 @@ import api from '../utils/api.js';
 import {
   BookOpen, Users, Video, ChevronRight, Search,
   Plus, Upload, BarChart2, FileText,
+  ArrowLeft,
 } from 'lucide-react';
 
 /* ─── Course card ──────────────────────────────────────────────────────────── */
@@ -138,6 +139,9 @@ export default function CoursesPage() {
   return (
     <Layout title="Mes cours">
       <div style={{ maxWidth: 900, margin: '0 auto' }}>
+        <button onClick={() => navigate('/')} style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'none', border: 'none', color: '#1B4F72', cursor: 'pointer', fontSize: 15, fontWeight: 500, padding: '8px 0', marginBottom: 12 }}>
+          <ArrowLeft size={18} /> Retour
+        </button>
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
           <div>

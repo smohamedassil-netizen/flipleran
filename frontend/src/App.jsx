@@ -23,6 +23,9 @@ import ResourceLibrary      from './pages/ResourceLibrary.jsx';
 import QuizBattle           from './pages/QuizBattle.jsx';
 import AdminDashboard       from './pages/AdminDashboard.jsx';
 import ChatContacts         from './pages/ChatContacts.jsx';
+import Settings             from './pages/Settings.jsx';
+import ResourcesHub         from './pages/ResourcesHub.jsx';
+import ProfessorQCMHub      from './pages/ProfessorQCMHub.jsx';
 
 /* ── Pages d'erreur ────────────────────────────────────────────────────────── */
 function ErrorPage({ code, title, description }) {
@@ -91,6 +94,8 @@ export default function App() {
             <Route path="/chat/bot"                     element={<ChatPage roomType="bot" />} />
             <Route path="/courses/:courseId/resources"  element={<ResourceLibrary />} />
             <Route path="/quiz-battle"                  element={<QuizBattle />} />
+            <Route path="/settings"                    element={<Settings />} />
+            <Route path="/resources"                   element={<ResourcesHub />} />
           </Route>
 
           {/* Professeur + Admin only */}
@@ -99,6 +104,7 @@ export default function App() {
             <Route path="/professor/dashboard"                   element={<ProfessorDashboard />} />
             <Route path="/professor/courses/:courseId/upload"    element={<ProfessorUpload />} />
             <Route path="/professor/videos/:videoId/qcm"        element={<ProfessorCreateQCM />} />
+            <Route path="/professor/qcm"                       element={<ProfessorQCMHub />} />
           </Route>
 
           {/* Admin only */}
