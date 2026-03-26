@@ -113,6 +113,11 @@ export default function CoursesPage() {
   const [loading, setLoading] = useState(true);
   const [search,  setSearch]  = useState('');
 
+  /* ── Create course modal state ───────────────────────────────────────── */
+  const [showCreate, setShowCreate] = useState(false);
+  const [creating, setCreating]     = useState(false);
+  const [newCourse, setNewCourse]   = useState({ titre: '', description: '', filiere: '', promotion: '' });
+
   useEffect(() => {
     api.get('/courses')
       .then(({ data }) => setCourses(data))
@@ -136,6 +141,23 @@ export default function CoursesPage() {
     navigate(`/courses/${course._id}`);
   };
 
+  const handleCreateCourse = async (e) => {
+    e.preventDefault();
+    if (!newCourse.titre.trim()) return;
+    setCreating(true);
+    try {
+      const { data } = await api.post('/courses', newCourse);
+      setCourses((prev) => [data, ...prev]);
+      setNewCourse({ titre: '', description: '', filiere: '', promotion: '' });
+      setShowCreate(false);
+    } catch (err) {
+      console.error(err);
+      alert(err.response?.data?.message ?? 'Erreur lors de la création du cours');
+    } finally {
+      setCreating(false);
+    }
+  };
+
   return (
     <Layout title="Mes cours">
       <div style={{ maxWidth: 900, margin: '0 auto' }}>
@@ -155,10 +177,10 @@ export default function CoursesPage() {
           {role === 'professeur' && (
             <button
               className="btn btn-primary"
-              onClick={() => navigate('/professor/courses/new')}
+              onClick={() => setShowCreate(true)}
               style={{ flexShrink: 0 }}
             >
-              <Plus size={15} /> Nouveau cours
+              <Plus size={15} /> Cr&eacute;er un nouveau cours
             </button>
           )}
         </div>
@@ -213,6 +235,80 @@ export default function CoursesPage() {
                 onOpen={handleOpen}
               />
             ))}
+          </div>
+        )}
+
+        {/* ── Create course modal ─────────────────────────────────────── */}
+        {showCreate && (
+          <div
+            style={{
+              position: 'fixed', inset: 0, zIndex: 1000,
+              background: 'rgba(0,0,0,0.4)', display: 'flex',
+              alignItems: 'center', justifyContent: 'center',
+            }}
+            onClick={() => setShowCreate(false)}
+          >
+            <form
+              onClick={(e) => e.stopPropagation()}
+              onSubmit={handleCreateCourse}
+              className="card"
+              style={{ width: 460, padding: 28 }}
+            >
+              <h2 style={{ margin: '0 0 20px', fontSize: 'var(--font-size-xl)', fontWeight: 700, color: 'var(--color-text)' }}>
+                Cr&eacute;er un nouveau cours
+              </h2>
+
+              <label className="text-label" style={{ display: 'block', marginBottom: 4 }}>Titre *</label>
+              <input
+                className="form-input"
+                style={{ marginBottom: 14, width: '100%' }}
+                value={newCourse.titre}
+                onChange={(e) => setNewCourse({ ...newCourse, titre: e.target.value })}
+                required
+                placeholder="Ex : Algorithmique avancée"
+              />
+
+              <label className="text-label" style={{ display: 'block', marginBottom: 4 }}>Description</label>
+              <textarea
+                className="form-input"
+                style={{ marginBottom: 14, width: '100%', minHeight: 70, resize: 'vertical' }}
+                value={newCourse.description}
+                onChange={(e) => setNewCourse({ ...newCourse, description: e.target.value })}
+                placeholder="Description du cours..."
+              />
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 20 }}>
+                <div>
+                  <label className="text-label" style={{ display: 'block', marginBottom: 4 }}>Fili&egrave;re</label>
+                  <input
+                    className="form-input"
+                    style={{ width: '100%' }}
+                    value={newCourse.filiere}
+                    onChange={(e) => setNewCourse({ ...newCourse, filiere: e.target.value })}
+                    placeholder="Ex : Informatique"
+                  />
+                </div>
+                <div>
+                  <label className="text-label" style={{ display: 'block', marginBottom: 4 }}>Promotion</label>
+                  <input
+                    className="form-input"
+                    style={{ width: '100%' }}
+                    value={newCourse.promotion}
+                    onChange={(e) => setNewCourse({ ...newCourse, promotion: e.target.value })}
+                    placeholder="Ex : L3 2024"
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
+                <button type="button" className="btn btn-ghost" onClick={() => setShowCreate(false)}>
+                  Annuler
+                </button>
+                <button type="submit" className="btn btn-primary" disabled={creating}>
+                  {creating ? 'Cr\u00e9ation...' : 'Cr\u00e9er le cours'}
+                </button>
+              </div>
+            </form>
           </div>
         )}
       </div>

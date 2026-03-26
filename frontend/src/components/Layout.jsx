@@ -614,22 +614,15 @@ export default function Layout({ children, title = 'FlipLearn' }) {
         {/* Footer */}
         <footer style={{
           marginTop: 'auto',
-          padding: '20px 0',
+          padding: '16px 0',
           borderTop: '1px solid #e5e7eb',
           textAlign: 'center',
           color: '#94a3b8',
           fontSize: 12,
-          lineHeight: 1.8,
+          lineHeight: 1.6,
         }}>
           <div>FlipLearn &copy; 2025 &mdash; Plateforme de Classe Invers&eacute;e</div>
-          <div style={{ display: 'flex', justifyContent: 'center', gap: 16, marginTop: 4 }}>
-            <a href="/support" style={{ color: '#94a3b8', textDecoration: 'none' }}>Aide</a>
-            <span>&bull;</span>
-            <a href="/settings" style={{ color: '#94a3b8', textDecoration: 'none' }}>Param&egrave;tres</a>
-            <span>&bull;</span>
-            <a href="/profile" style={{ color: '#94a3b8', textDecoration: 'none' }}>Mon profil</a>
-          </div>
-          <div style={{ marginTop: 4 }}>Projet de Fin d&rsquo;&Eacute;tudes &mdash; Licence Informatique ISIL</div>
+          <div style={{ marginTop: 2 }}>Fait par Mohamed</div>
         </footer>
       </div>
     </div>

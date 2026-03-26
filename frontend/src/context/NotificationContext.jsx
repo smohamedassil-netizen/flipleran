@@ -1,4 +1,5 @@
-import { createContext, useContext, useState, useCallback } from 'react';
+import { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import { io } from 'socket.io-client';
 
 const NotificationContext = createContext();
 
@@ -36,6 +37,34 @@ export function NotificationProvider({ children }) {
     setNotifications([]);
     localStorage.removeItem('fliplearn_notifications');
   }, []);
+
+  /* ── Socket.io : écouter les notifications en temps réel ──────────── */
+  useEffect(() => {
+    let user;
+    try {
+      user = JSON.parse(localStorage.getItem('fliplearn_user') || 'null');
+    } catch { user = null; }
+    if (!user?.token || !user?._id) return;
+
+    const socketUrl = import.meta.env.VITE_SOCKET_URL || (import.meta.env.PROD ? '' : 'http://localhost:5000');
+    const socket = io(socketUrl, {
+      auth: { token: user.token },
+      transports: ['websocket', 'polling'],
+    });
+
+    socket.on('connect', () => {
+      socket.emit('join', `user_${user._id}`);
+    });
+
+    socket.on('notification', (data) => {
+      addNotification({
+        message: data.message,
+        type: data.type || 'info',
+      });
+    });
+
+    return () => socket.disconnect();
+  }, [addNotification]);
 
   const unreadCount = notifications.filter(n => !n.read).length;
 

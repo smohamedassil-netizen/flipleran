@@ -981,3 +981,73 @@ body.dark .nav-link:hover {
   color: #60a5fa;
   background: rgba(96, 165, 250, 0.1);
 }
+
+/* Dark mode — force ALL elements */
+body.dark,
+body.dark .main-content,
+body.dark .page-body {
+  background-color: #0f172a !important;
+  color: #e2e8f0 !important;
+}
+
+body.dark div[style],
+body.dark section[style],
+body.dark main[style],
+body.dark article[style] {
+  background-color: inherit;
+  color: inherit;
+}
+
+body.dark [style*="background: white"],
+body.dark [style*="background:'white'"],
+body.dark [style*="background: '#ffffff'"],
+body.dark [style*="background: '#fff'"] {
+  background: #1e293b !important;
+}
+
+body.dark [style*="color: '#1e293b'"],
+body.dark [style*="color: '#374151'"],
+body.dark [style*="color: '#1B4F72'"],
+body.dark [style*="color: #1e293b"],
+body.dark [style*="color: #374151"] {
+  color: #e2e8f0 !important;
+}
+
+body.dark [style*="color: '#64748b'"],
+body.dark [style*="color: '#94a3b8'"],
+body.dark [style*="color: #64748b"],
+body.dark [style*="color: #94a3b8"] {
+  color: #94a3b8 !important;
+}
+
+body.dark [style*="border: 1px solid #e5e7eb"],
+body.dark [style*="border: 1px solid #d1d5db"],
+body.dark [style*="borderBottom: '1px solid #e5e7eb'"],
+body.dark [style*="borderBottom: '1px solid #f3f4f6'"] {
+  border-color: #334155 !important;
+}
+
+body.dark [style*="background: '#f8fafc'"],
+body.dark [style*="background: '#f3f4f6'"],
+body.dark [style*="background: '#f9fafb'"],
+body.dark [style*="background: '#EBF5FB'"],
+body.dark [style*="background: #f8fafc"],
+body.dark [style*="background: #f3f4f6"],
+body.dark [style*="background: #f9fafb"] {
+  background: #162032 !important;
+}
+
+body.dark footer {
+  border-color: #334155 !important;
+  color: #64748b !important;
+}
+
+body.dark footer a {
+  color: #64748b !important;
+}
+
+body.dark .profile-dropdown,
+body.dark .notif-dropdown {
+  background: #1e293b !important;
+  border-color: #334155 !important;
+}

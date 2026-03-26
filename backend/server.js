@@ -46,6 +46,8 @@ const io = new Server(httpServer, {
   },
 });
 
+app.set('io', io);
+
 connectDB().then(() => seedBadges().catch(console.error));
 
 // Middleware
@@ -107,13 +109,9 @@ io.use(async (socket, next) => {
   }
 });
 
-/* ── Quiz Battle state ────────────────────────────────────────────────── */
-// onlineForBattle: userId → { socketId, nom, prenom, filiere, promotion }
-const onlineBattle = new Map();
-// battles: battleId → { p1, p2, questions, answers, status, startedAt }
-const battles      = new Map();
-// pendingChallenges: targetUserId → { battleId, challengerId, name }
-const challenges   = new Map();
+/* ── Quiz Battle state (room-based) ───────────────────────────────────── */
+// battleRooms: roomId → { players: [], questions: [], currentQ: 0, answers: {}, started: false }
+const battleRooms = new Map();
 
 /* ── roomUsers: roomId → Map<socketId, userInfo> ──────────────────────── */
 const roomUsers = new Map();
@@ -142,6 +140,14 @@ function leaveRoom(socket, roomId) {
 /* ── Connexion ─────────────────────────────────────────────────────────── */
 io.on('connection', (socket) => {
   const user = socket.user;
+
+  // Auto-join personal notification room
+  socket.join(`user_${user.id}`);
+
+  /* ── join (generic room join for notifications) ─────────────────────── */
+  socket.on('join', (room) => {
+    if (room) socket.join(room);
+  });
 
   /* ── join_room ─────────────────────────────────────────────────────── */
   socket.on('join_room', async (roomId) => {
@@ -194,6 +200,16 @@ io.on('connection', (socket) => {
 
       socket.to(roomId).emit('stop_typing', { userId: user.id });
       io.to(roomId).emit('receive_message', msg);
+
+      // 2b. Notification temps réel pour le destinataire (messages privés)
+      if (receiverId && !roomId.startsWith('bot_')) {
+        io.to(`user_${receiverId}`).emit('notification', {
+          type: 'message',
+          message: `Nouveau message de ${user.prenom} ${user.nom}`,
+          from: user.id,
+          createdAt: new Date().toISOString(),
+        });
+      }
 
       // 2. Si salle bot → déclencher l'IA
       if (roomId.startsWith('bot_')) {
@@ -260,172 +276,148 @@ io.on('connection', (socket) => {
   /* ── disconnect ────────────────────────────────────────────────────── */
   socket.on('disconnect', () => {
     if (socket.currentRoom) leaveRoom(socket, socket.currentRoom);
-    onlineBattle.delete(user.id);
+
+    // Clean up battle rooms on disconnect
+    battleRooms.forEach((room, id) => {
+      const idx = room.players.findIndex(p => p.id === socket.id);
+      if (idx !== -1) {
+        room.players.splice(idx, 1);
+        io.to(id).emit('battle:playerLeft', { message: 'L\'adversaire a quitté la partie' });
+        if (room.players.length === 0) battleRooms.delete(id);
+      }
+    });
   });
 
   /* ══════════════════════════════════════════════════════════════════════
-     QUIZ BATTLE EVENTS
+     QUIZ BATTLE EVENTS (room-based)
   ══════════════════════════════════════════════════════════════════════ */
 
-  /* Rejoindre le lobby de bataille */
-  socket.on('battle:online', () => {
-    onlineBattle.set(user.id, {
-      socketId:  socket.id,
-      nom:       user.nom,
-      prenom:    user.prenom,
-      role:      user.role,
+  /* Créer une salle de bataille */
+  socket.on('battle:create', (data, callback) => {
+    const roomId = 'battle_' + Date.now();
+    battleRooms.set(roomId, {
+      players: [{ id: socket.id, name: data.name, odgerId: data.userId, score: 0 }],
+      questions: [],
+      currentQ: 0,
+      answers: {},
+      started: false,
     });
-    socket.emit('battle:online_ack');
+    socket.join(roomId);
+    if (typeof callback === 'function') callback({ roomId });
   });
 
-  /* Défier un joueur */
-  socket.on('battle:challenge', ({ targetId }) => {
-    const target = onlineBattle.get(targetId);
-    if (!target) {
-      return socket.emit('battle:error', { message: 'Ce joueur n\'est plus disponible.' });
-    }
-    if (challenges.has(targetId)) {
-      return socket.emit('battle:error', { message: 'Ce joueur a déjà un défi en attente.' });
-    }
+  /* Rejoindre une salle */
+  socket.on('battle:join', ({ roomId, name, userId }, callback) => {
+    const room = battleRooms.get(roomId);
+    if (!room) return typeof callback === 'function' && callback({ error: 'Salle introuvable' });
+    if (room.players.length >= 2) return typeof callback === 'function' && callback({ error: 'Salle pleine' });
+    if (room.started) return typeof callback === 'function' && callback({ error: 'Partie déjà commencée' });
 
-    const battleId = `battle_${Date.now()}`;
-    challenges.set(targetId, { battleId, challengerId: user.id, challengerName: `${user.prenom} ${user.nom}` });
+    room.players.push({ id: socket.id, name, odgerId: userId, score: 0 });
+    socket.join(roomId);
+    if (typeof callback === 'function') callback({ success: true });
 
-    io.to(target.socketId).emit('battle:challenged', {
-      battleId,
-      challengerId:   user.id,
-      challengerName: `${user.prenom} ${user.nom}`,
-    });
-
-    socket.emit('battle:challenge_sent', { battleId, targetId });
+    // Notify both players
+    io.to(roomId).emit('battle:players', room.players.map(p => ({ name: p.name, odgerId: p.odgerId, score: p.score })));
   });
 
-  /* Accepter un défi */
-  socket.on('battle:accept', async ({ battleId, challengerId }) => {
-    const challenge = challenges.get(user.id);
-    if (!challenge || challenge.battleId !== battleId) {
-      return socket.emit('battle:error', { message: 'Défi introuvable ou expiré.' });
-    }
-    challenges.delete(user.id);
+  /* Démarrer la bataille */
+  socket.on('battle:start', async ({ roomId }) => {
+    const room = battleRooms.get(roomId);
+    if (!room || room.players.length < 2) return;
+    room.started = true;
 
-    const challenger = onlineBattle.get(challengerId);
-    if (!challenger) {
-      return socket.emit('battle:error', { message: 'L\'adversaire s\'est déconnecté.' });
-    }
-
-    // Charger 5 questions aléatoires depuis la base
+    // Charger des questions aléatoires depuis les QCMs existants
     let questions = [];
     try {
       const QCM = (await import('./models/QCM.js')).default;
       const qcms = await QCM.find({}).select('questions').limit(20);
-      const pool = qcms.flatMap((q) => q.questions.map((question) => ({
-        _id:           question._id,
-        texte:         question.texte,
-        options:       question.options,
-        correctAnswer: question.correctAnswer,
-      })));
+      const allQuestions = qcms.flatMap(q => q.questions || []);
       // Mélanger et prendre 5
-      questions = pool.sort(() => Math.random() - 0.5).slice(0, 5);
+      questions = allQuestions.sort(() => Math.random() - 0.5).slice(0, 5).map(q => ({
+        texte: q.texte,
+        options: q.options,
+        correctAnswer: q.correctAnswer,
+      }));
     } catch { /* pas de QCM disponible */ }
 
     if (questions.length < 2) {
       // Questions de démo si aucun QCM en base
       questions = [
-        { _id: '1', texte: 'Qu\'est-ce qu\'un algorithme ?', options: { A: 'Un programme', B: 'Une suite d\'instructions', C: 'Un langage', D: 'Un compilateur' }, correctAnswer: 'B' },
-        { _id: '2', texte: 'Quelle est la complexité d\'un tri fusion ?', options: { A: 'O(n)', B: 'O(n²)', C: 'O(n log n)', D: 'O(log n)' }, correctAnswer: 'C' },
-        { _id: '3', texte: 'SQL est un langage :', options: { A: 'Compilé', B: 'De requête', C: 'Objet', D: 'Fonctionnel' }, correctAnswer: 'B' },
-        { _id: '4', texte: 'HTTP est un protocole de :', options: { A: 'Réseau', B: 'Transport', C: 'Application', D: 'Liaison' }, correctAnswer: 'C' },
-        { _id: '5', texte: 'Un processus est :', options: { A: 'Un programme en mémoire', B: 'Un fichier', C: 'Un thread', D: 'Un CPU' }, correctAnswer: 'A' },
+        { texte: 'Qu\'est-ce qu\'un algorithme ?', options: { A: 'Un programme', B: 'Une suite d\'instructions', C: 'Un langage', D: 'Un compilateur' }, correctAnswer: 'B' },
+        { texte: 'Quelle est la complexité d\'un tri fusion ?', options: { A: 'O(n)', B: 'O(n²)', C: 'O(n log n)', D: 'O(log n)' }, correctAnswer: 'C' },
+        { texte: 'SQL est un langage :', options: { A: 'Compilé', B: 'De requête', C: 'Objet', D: 'Fonctionnel' }, correctAnswer: 'B' },
+        { texte: 'HTTP est un protocole de :', options: { A: 'Réseau', B: 'Transport', C: 'Application', D: 'Liaison' }, correctAnswer: 'C' },
+        { texte: 'Un processus est :', options: { A: 'Un programme en mémoire', B: 'Un fichier', C: 'Un thread', D: 'Un CPU' }, correctAnswer: 'A' },
       ];
     }
 
-    // Sanitiser — masquer les bonnes réponses pour l'envoi aux clients
-    const questionsForClient = questions.map(({ _id, texte, options }) => ({ _id, texte, options }));
+    room.questions = questions;
 
-    // Créer la salle de bataille
-    battles.set(battleId, {
-      p1:        { userId: challengerId,  socketId: challenger.socketId, score: 0, answers: [] },
-      p2:        { userId: user.id,       socketId: socket.id,           score: 0, answers: [] },
-      questions,
-      status:    'playing',
-      startedAt: Date.now(),
+    io.to(roomId).emit('battle:started', {
+      totalQuestions: room.questions.length,
+      question: {
+        texte: room.questions[0].texte,
+        options: room.questions[0].options,
+      },
+      questionIndex: 0,
     });
-
-    // Rejoindre la salle Socket.io
-    const challengerSocket = io.sockets.sockets.get(challenger.socketId);
-    challengerSocket?.join(battleId);
-    socket.join(battleId);
-
-    // Démarrer la bataille (3 s countdown géré côté client)
-    io.to(battleId).emit('battle:start', {
-      battleId,
-      questions: questionsForClient,
-      timerSeconds: 15,
-      p1: { userId: challengerId,  name: challenge.challengerName },
-      p2: { userId: user.id,       name: `${user.prenom} ${user.nom}` },
-    });
-  });
-
-  /* Décliner un défi */
-  socket.on('battle:decline', ({ challengerId }) => {
-    challenges.delete(user.id);
-    const challenger = onlineBattle.get(challengerId);
-    if (challenger) {
-      io.to(challenger.socketId).emit('battle:declined', { message: `${user.prenom} a décliné le défi.` });
-    }
   });
 
   /* Soumettre une réponse */
-  socket.on('battle:answer', ({ battleId, questionId, answer, timeLeft }) => {
-    const battle = battles.get(battleId);
-    if (!battle || battle.status !== 'playing') return;
+  socket.on('battle:answer', ({ roomId, questionIndex, answer }) => {
+    const room = battleRooms.get(roomId);
+    if (!room) return;
 
-    const isP1      = battle.p1.userId === user.id;
-    const player    = isP1 ? battle.p1 : battle.p2;
-    const opponent  = isP1 ? battle.p2 : battle.p1;
+    const playerIdx = room.players.findIndex(p => p.id === socket.id);
+    if (playerIdx === -1) return;
 
-    // Éviter les doublons pour la même question
-    if (player.answers.some((a) => a.questionId?.toString() === questionId?.toString())) return;
+    if (!room.answers[questionIndex]) room.answers[questionIndex] = {};
 
-    const question = battle.questions.find((q) => q._id?.toString() === questionId?.toString());
-    const correct  = !!question && question.correctAnswer === answer;
-    const points   = correct ? Math.max(1, timeLeft) : 0;  // plus vite = plus de points
+    // Prevent duplicate answers
+    if (room.answers[questionIndex][socket.id]) return;
 
-    player.score += points;
-    player.answers.push({ questionId, answer, correct, points });
+    const correct = room.questions[questionIndex]?.correctAnswer === answer;
+    if (correct) room.players[playerIdx].score += 10;
 
-    // Diffuser la mise à jour des scores
-    io.to(battleId).emit('battle:score_update', {
-      p1Score: battle.p1.score,
-      p2Score: battle.p2.score,
-      lastAnswer: {
-        userId:  user.id,
-        correct,
-        points,
-        questionId,
-      },
-    });
+    room.answers[questionIndex][socket.id] = { answer, correct };
 
-    // Vérifier si la bataille est terminée
-    const totalQ   = battle.questions.length;
-    const p1Done   = battle.p1.answers.length >= totalQ;
-    const p2Done   = battle.p2.answers.length >= totalQ;
+    // Check if both players answered
+    if (Object.keys(room.answers[questionIndex]).length === 2) {
+      const nextQ = questionIndex + 1;
 
-    if (p1Done && p2Done) {
-      battle.status = 'ended';
-      const winner =
-        battle.p1.score > battle.p2.score ? battle.p1.userId :
-        battle.p2.score > battle.p1.score ? battle.p2.userId :
-        null; // égalité
-
-      io.to(battleId).emit('battle:end', {
-        p1Score:  battle.p1.score,
-        p2Score:  battle.p2.score,
-        winner,
-        questions: battle.questions, // avec bonnes réponses
-      });
-      setTimeout(() => battles.delete(battleId), 30000);
+      if (nextQ >= room.questions.length) {
+        // Game over
+        io.to(roomId).emit('battle:finished', {
+          players: room.players.map(p => ({ name: p.name, score: p.score })),
+          correctAnswer: room.questions[questionIndex].correctAnswer,
+        });
+        setTimeout(() => battleRooms.delete(roomId), 5000);
+      } else {
+        // Next question
+        io.to(roomId).emit('battle:next', {
+          questionIndex: nextQ,
+          question: {
+            texte: room.questions[nextQ].texte,
+            options: room.questions[nextQ].options,
+          },
+          scores: room.players.map(p => ({ name: p.name, score: p.score })),
+          previousCorrect: room.questions[questionIndex].correctAnswer,
+        });
+      }
     }
+  });
+
+  /* Lister les salles disponibles */
+  socket.on('battle:list', (callback) => {
+    if (typeof callback !== 'function') return;
+    const available = [];
+    battleRooms.forEach((room, id) => {
+      if (!room.started && room.players.length === 1) {
+        available.push({ roomId: id, host: room.players[0].name });
+      }
+    });
+    callback(available);
   });
 });
 
