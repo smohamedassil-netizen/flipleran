@@ -44,72 +44,11 @@ export const getContacts = async (req, res) => {
     const me = await User.findById(req.user.id).select('role filiere promotion');
     if (!me) return res.status(404).json({ message: 'Utilisateur introuvable.' });
 
-    let contacts = [];
-
-    if (me.role === 'etudiant') {
-      // Camarades (même filière + promotion) + professeurs de mes cours
-      const [classmates, courses] = await Promise.all([
-        User.find({
-          _id: { $ne: me._id },
-          role: 'etudiant',
-          filiere: me.filiere,
-          promotion: me.promotion,
-          isActive: { $ne: false },
-        }).select('nom prenom email role filiere avatar').limit(50),
-        Course.find({ filiere: me.filiere, isActive: true }).select('professorId'),
-      ]);
-
-      const profIds = [...new Set(courses.map(c => c.professorId.toString()))];
-      const professors = await User.find({
-        _id: { $in: profIds },
-        isActive: { $ne: false },
-      }).select('nom prenom email role filiere avatar');
-
-      // Ajouter les admins (support)
-      const admins = await User.find({
-        role: 'admin', isActive: { $ne: false },
-      }).select('nom prenom email role filiere avatar');
-      contacts = [...admins, ...professors, ...classmates];
-    } else if (me.role === 'professeur') {
-      // Étudiants de mes cours + autres professeurs
-      const myCourses = await Course.find({ professorId: me._id }).select('filiere promotion');
-      const filters = myCourses.map(c => ({ filiere: c.filiere, promotion: c.promotion }));
-
-      const [students, otherProfs] = await Promise.all([
-        filters.length > 0
-          ? User.find({
-              role: 'etudiant',
-              isActive: { $ne: false },
-              $or: filters,
-            }).select('nom prenom email role filiere promotion avatar').limit(100)
-          : Promise.resolve([]),
-        User.find({
-          _id: { $ne: me._id },
-          role: 'professeur',
-          isActive: { $ne: false },
-        }).select('nom prenom email role filiere avatar'),
-      ]);
-
-      // Ajouter les admins (support)
-      const admins = await User.find({
-        role: 'admin', _id: { $ne: me._id }, isActive: { $ne: false },
-      }).select('nom prenom email role filiere avatar');
-      contacts = [...admins, ...otherProfs, ...students];
-    } else {
-      // Admin : tous les utilisateurs
-      contacts = await User.find({
-        _id: { $ne: me._id },
-        isActive: { $ne: false },
-      }).select('nom prenom email role filiere avatar').limit(100);
-    }
-
-    // Fallback: si aucun contact trouvé, montrer tous les utilisateurs actifs
-    if (contacts.length === 0) {
-      contacts = await User.find({
-        _id: { $ne: me._id },
-        isActive: { $ne: false },
-      }).select('nom prenom email role filiere avatar').limit(50);
-    }
+    // Tous les utilisateurs voient tous les autres utilisateurs actifs
+    const contacts = await User.find({
+      _id: { $ne: me._id },
+      isActive: { $ne: false },
+    }).select('nom prenom email role filiere promotion avatar').limit(200);
 
     res.json(contacts);
   } catch (err) {
