@@ -209,6 +209,21 @@ io.on('connection', (socket) => {
           from: user.id,
           createdAt: new Date().toISOString(),
         });
+
+        // Send email notification
+        try {
+          const { sendNotificationEmail } = await import('./services/emailService.js');
+          const recipient = await User.findById(receiverId).select('email prenom');
+          if (recipient?.email) {
+            sendNotificationEmail(
+              recipient.email,
+              'Nouveau message',
+              `Vous avez reçu un nouveau message de <strong>${user.prenom} ${user.nom}</strong> sur FlipLearn. Connectez-vous pour le lire !`
+            );
+          }
+        } catch (emailErr) {
+          console.error('Email notification error:', emailErr.message);
+        }
       }
 
       // 2. Si salle bot → déclencher l'IA

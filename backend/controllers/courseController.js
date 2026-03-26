@@ -14,6 +14,30 @@ export const createCourse = async (req, res) => {
   try {
     const { titre, description, filiere, promotion } = req.body;
     const course = await Course.create({ titre, description, filiere, promotion, professorId: req.user.id });
+
+    // Notify students by email
+    try {
+      const { sendNotificationEmail } = await import('../services/emailService.js');
+      const User = (await import('../models/User.js')).default;
+      const students = await User.find({
+        role: 'etudiant',
+        filiere: course.filiere,
+        isActive: true
+      }).select('email prenom').limit(50);
+
+      for (const student of students) {
+        if (student.email) {
+          sendNotificationEmail(
+            student.email,
+            'Nouveau cours disponible',
+            `Un nouveau cours <strong>"${course.titre}"</strong> a été ajouté à votre filière. Connectez-vous pour le consulter !`
+          );
+        }
+      }
+    } catch (emailErr) {
+      console.error('Course email notification error:', emailErr.message);
+    }
+
     res.status(201).json(course);
   } catch (err) { res.status(500).json({ message: err.message }); }
 };

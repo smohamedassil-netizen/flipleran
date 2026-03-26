@@ -66,10 +66,14 @@ export function NotificationProvider({ children }) {
     return () => socket.disconnect();
   }, [addNotification]);
 
+  const addSystemNotification = useCallback((message) => {
+    addNotification({ message, type: 'info' });
+  }, [addNotification]);
+
   const unreadCount = notifications.filter(n => !n.read).length;
 
   return (
-    <NotificationContext.Provider value={{ notifications, addNotification, markAllRead, clearAll, unreadCount }}>
+    <NotificationContext.Provider value={{ notifications, addNotification, addSystemNotification, markAllRead, clearAll, unreadCount }}>
       {children}
     </NotificationContext.Provider>
   );

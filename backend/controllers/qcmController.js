@@ -34,6 +34,38 @@ export const createQCM = async (req, res) => {
       pointsPerQuestion: pointsPerQuestion ?? 10,
       timerSeconds:      timerSeconds      ?? 30,
     });
+
+    // Notify students by email about new QCM
+    try {
+      const { sendNotificationEmail } = await import('../services/emailService.js');
+      const Course = (await import('../models/Course.js')).default;
+      const Video = (await import('../models/Video.js')).default;
+
+      const video = await Video.findById(qcm.videoId);
+      if (video) {
+        const course = await Course.findById(video.courseId);
+        if (course) {
+          const students = await User.find({
+            role: 'etudiant',
+            filiere: course.filiere,
+            isActive: true
+          }).select('email prenom').limit(50);
+
+          for (const student of students) {
+            if (student.email) {
+              sendNotificationEmail(
+                student.email,
+                'Nouveau QCM disponible',
+                `Un nouveau QCM <strong>"${qcm.titre}"</strong> est disponible pour le cours <strong>"${course.titre}"</strong>. Testez vos connaissances !`
+              );
+            }
+          }
+        }
+      }
+    } catch (emailErr) {
+      console.error('QCM email notification error:', emailErr.message);
+    }
+
     res.status(201).json(qcm);
   } catch (err) {
     res.status(500).json({ message: err.message });
