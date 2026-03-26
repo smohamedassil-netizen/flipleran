@@ -1,0 +1,27 @@
+services:
+  - type: web
+    name: fliplearn-api
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: node server.js
+    healthCheckPath: /
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: MONGODB_URI
+        sync: false          # à configurer manuellement sur Render
+      - key: JWT_SECRET
+        generateValue: true  # Render génère automatiquement
+      - key: CLIENT_URL
+        sync: false          # URL Vercel du frontend
+      - key: CLOUDINARY_CLOUD_NAME
+        sync: false
+      - key: CLOUDINARY_API_KEY
+        sync: false
+      - key: CLOUDINARY_API_SECRET
+        sync: false
+      - key: GROQ_API_KEY
+        sync: false

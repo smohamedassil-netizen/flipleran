@@ -1,0 +1,90 @@
+import { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import api from '../utils/api.js';
+
+const AuthContext = createContext(null);
+
+const STORAGE_KEY = 'fliplearn_user';
+
+/* ─── redirect map per role ──────────────────────────────────────────────── */
+export const ROLE_HOME = {
+  etudiant:   '/',
+  professeur: '/professor/dashboard',
+  admin:      '/admin',
+};
+
+/* ─── Provider ───────────────────────────────────────────────────────────── */
+export const AuthProvider = ({ children }) => {
+  const [user, setUser]       = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  /* Rehydrate from localStorage on mount */
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (stored) setUser(JSON.parse(stored));
+    } catch {
+      localStorage.removeItem(STORAGE_KEY);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  /* Persist user to localStorage whenever it changes */
+  useEffect(() => {
+    if (user) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(user));
+    } else {
+      localStorage.removeItem(STORAGE_KEY);
+    }
+  }, [user]);
+
+  /* ── login ─────────────────────────────────────────────────────────────── */
+  const login = useCallback(async (email, password) => {
+    const { data } = await api.post('/auth/login', { email, password });
+    setUser(data);
+    return data;
+  }, []);
+
+  /* ── register ──────────────────────────────────────────────────────────── */
+  const register = useCallback(async (payload) => {
+    const { data } = await api.post('/auth/register', payload);
+    setUser(data);
+    return data;
+  }, []);
+
+  /* ── logout ────────────────────────────────────────────────────────────── */
+  const logout = useCallback(() => setUser(null), []);
+
+  /* ── refreshMe — sync latest data from server ──────────────────────────── */
+  const refreshMe = useCallback(async () => {
+    try {
+      const { data } = await api.get('/auth/me');
+      setUser((prev) => ({ ...prev, ...data }));
+    } catch {
+      /* token expired → interceptor will handle redirect */
+    }
+  }, []);
+
+  return (
+    <AuthContext.Provider
+      value={{
+        user,
+        loading,
+        isAuthenticated: !!user,
+        login,
+        register,
+        logout,
+        refreshMe,
+      }}
+    >
+      {children}
+    </AuthContext.Provider>
+  );
+};
+
+/* ─── hook ───────────────────────────────────────────────────────────────── */
+export const useAuth = () => {
+  const ctx = useContext(AuthContext);
+  if (!ctx) throw new Error('useAuth must be used inside <AuthProvider>');
+  return ctx;
+};
