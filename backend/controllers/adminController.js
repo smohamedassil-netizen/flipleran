@@ -149,3 +149,80 @@ export const getProfessors = async (req, res) => {
     res.json(profs);
   } catch (err) { res.status(500).json({ message: err.message }); }
 };
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   MESSAGES (admin view)
+═══════════════════════════════════════════════════════════════════════════ */
+
+/* GET /api/admin/messages */
+export const getRecentMessages = async (req, res) => {
+  try {
+    const Message = (await import('../models/Message.js')).default;
+    const messages = await Message.find({ type: { $ne: 'bot' } })
+      .sort({ createdAt: -1 })
+      .limit(50)
+      .populate('senderId', 'nom prenom email role')
+      .populate('receiverId', 'nom prenom email role');
+    res.json(messages);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   ACTIVITY LOG
+═══════════════════════════════════════════════════════════════════════════ */
+
+/* GET /api/admin/activity */
+export const getActivity = async (req, res) => {
+  try {
+    const [recentUsers, recentCourses, recentVideos] = await Promise.all([
+      User.find().sort({ createdAt: -1 }).limit(10).select('nom prenom email role createdAt'),
+      Course.find().sort({ createdAt: -1 }).limit(10).select('titre filiere createdAt').populate('professorId', 'nom prenom'),
+      Video.find().sort({ createdAt: -1 }).limit(10).select('titre courseId createdAt').populate('courseId', 'titre'),
+    ]);
+
+    const activities = [
+      ...recentUsers.map(u => ({ type: 'user', message: `${u.prenom} ${u.nom} s'est inscrit (${u.role})`, date: u.createdAt, icon: 'UserPlus' })),
+      ...recentCourses.map(c => ({ type: 'course', message: `Cours "${c.titre}" créé par ${c.professorId?.prenom || ''} ${c.professorId?.nom || ''}`, date: c.createdAt, icon: 'BookOpen' })),
+      ...recentVideos.map(v => ({ type: 'video', message: `Vidéo "${v.titre}" ajoutée au cours "${v.courseId?.titre || ''}"`, date: v.createdAt, icon: 'Video' })),
+    ].sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 20);
+
+    res.json(activities);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   CREATE USER (admin)
+═══════════════════════════════════════════════════════════════════════════ */
+
+/* POST /api/admin/users */
+export const createUser = async (req, res) => {
+  try {
+    const bcrypt = (await import('bcryptjs')).default;
+    const { nom, prenom, email, password, role, filiere, promotion } = req.body;
+
+    if (!nom || !prenom || !email || !password) {
+      return res.status(400).json({ message: 'Nom, prénom, email et mot de passe requis.' });
+    }
+
+    const existing = await User.findOne({ email: email.toLowerCase() });
+    if (existing) return res.status(400).json({ message: 'Cet email est déjà utilisé.' });
+
+    const salt = await bcrypt.genSalt(10);
+    const hashed = await bcrypt.hash(password, salt);
+
+    const user = await User.create({
+      nom, prenom, email: email.toLowerCase(), password: hashed,
+      role: role || 'etudiant', filiere: filiere || '', promotion: promotion || '',
+    });
+
+    const userObj = user.toObject();
+    delete userObj.password;
+    res.status(201).json(userObj);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
