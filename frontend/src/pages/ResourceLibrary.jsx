@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import {
   FileText, Download, Trash2, Upload, BookOpen,
   File, Presentation, Archive, AlertCircle, Video,
-  Play, Plus,
+  Play, Plus, X, ClipboardList, ExternalLink,
 } from 'lucide-react';
 import Layout from '../components/Layout.jsx';
 import Breadcrumb from '../components/Breadcrumb.jsx';
@@ -62,7 +62,7 @@ function ResourceCard({ resource, canDelete, onDelete }) {
 }
 
 /* ─── VideoCard ──────────────────────────────────────────────────────────── */
-function VideoCard({ video, isProf, onWatch }) {
+function VideoCard({ video, isProf, onWatch, navigate }) {
   return (
     <div className="card" style={{ padding: '16px', display: 'flex', alignItems: 'center', gap: '14px' }}>
       <div style={{ width: 48, height: 48, borderRadius: '8px', background: '#f0fdf4', border: '1px solid #bbf7d030', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
@@ -74,12 +74,15 @@ function VideoCard({ video, isProf, onWatch }) {
           {video.description && <span>{video.description.slice(0, 80)}{video.description.length > 80 ? '…' : ''}</span>}
         </div>
       </div>
-      <div style={{ flexShrink: 0 }}>
-        {!isProf && (
-          <button onClick={() => onWatch(video._id)} className="btn btn-primary btn-sm" style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-            <Play size={13} /> Regarder
+      <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+        {isProf && navigate && (
+          <button onClick={() => navigate(`/professor/videos/${video._id}/qcm`)} className="btn btn-ghost btn-sm" style={{ display: 'flex', alignItems: 'center', gap: 5 }} title="Gérer le QCM">
+            <ClipboardList size={13} /> QCM
           </button>
         )}
+        <button onClick={() => onWatch(video._id)} className="btn btn-primary btn-sm" style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+          <Play size={13} /> {isProf ? 'Voir' : 'Regarder'}
+        </button>
       </div>
     </div>
   );
@@ -133,6 +136,120 @@ function UploadModal({ courseId, onSuccess, onClose }) {
   );
 }
 
+/* ─── VideoUploadModal ────────────────────────────────────────────────────── */
+function VideoUploadModal({ courseId, courseName, onSuccess, onClose, navigate }) {
+  const [file, setFile] = useState(null);
+  const [titre, setTitre] = useState('');
+  const [description, setDescription] = useState('');
+  const [ordre, setOrdre] = useState(1);
+  const [uploading, setUploading] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [error, setError] = useState('');
+  const [uploaded, setUploaded] = useState(null); // { videoId, titre }
+  const fileRef = useRef(null);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!file || !titre.trim()) { setError('Titre et fichier vidéo requis.'); return; }
+    if (file.size > 100 * 1024 * 1024) { setError('Fichier trop volumineux (max 100 Mo).'); return; }
+    setUploading(true); setError('');
+    const fd = new FormData();
+    fd.append('video', file);
+    fd.append('titre', titre.trim());
+    fd.append('description', description.trim());
+    fd.append('courseId', courseId);
+    fd.append('ordre', ordre);
+    try {
+      const { data } = await api.post('/videos/upload', fd, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+        timeout: 5 * 60 * 1000,
+        onUploadProgress: (e) => setProgress(Math.round((e.loaded / e.total) * 100)),
+      });
+      setUploaded({ videoId: data._id, titre: data.titre });
+      onSuccess(data);
+    } catch (err) {
+      setError(err.response?.data?.message ?? "Erreur lors de l'upload vidéo.");
+    } finally { setUploading(false); setProgress(0); }
+  };
+
+  return (
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '16px' }} onClick={(e) => e.target === e.currentTarget && !uploading && onClose()}>
+      <div className="card" style={{ width: '100%', maxWidth: '520px', padding: '24px' }}>
+        {!uploaded ? (
+          <>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+              <h2 style={{ margin: 0, fontSize: '16px', fontWeight: 700 }}>Ajouter une vidéo</h2>
+              <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8' }}><X size={18} /></button>
+            </div>
+            <div style={{ background: '#f0f9ff', borderRadius: 8, padding: '10px 14px', marginBottom: 16, fontSize: 12, color: '#0369a1', display: 'flex', gap: 8, alignItems: 'center' }}>
+              <BookOpen size={14} style={{ flexShrink: 0 }} />
+              <span>Cours : <strong>{courseName || 'Ce cours'}</strong></span>
+            </div>
+            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              <div>
+                <label className="form-label">Titre de la vidéo *</label>
+                <input className="form-input" value={titre} onChange={(e) => setTitre(e.target.value)} placeholder="ex: Introduction aux algorithmes" required />
+              </div>
+              <div>
+                <label className="form-label">Description (optionnel)</label>
+                <textarea className="form-input" rows={2} value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Brève description du contenu..." style={{ resize: 'vertical' }} />
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 12 }}>
+                <div>
+                  <label className="form-label">Fichier vidéo * (MP4, WebM — max 100 Mo)</label>
+                  <input ref={fileRef} type="file" accept="video/mp4,video/webm,video/mov,.mp4,.webm,.mov" onChange={(e) => setFile(e.target.files[0] ?? null)} className="form-input" />
+                </div>
+                <div>
+                  <label className="form-label">Ordre</label>
+                  <input type="number" min={1} className="form-input" value={ordre} onChange={(e) => setOrdre(Number(e.target.value))} style={{ width: 70 }} />
+                </div>
+              </div>
+              {error && <div className="alert alert-danger" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><AlertCircle size={14} /> {error}</div>}
+              {uploading && (
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: '#64748b', marginBottom: 4 }}>
+                    <span>Upload en cours...</span><span>{progress}%</span>
+                  </div>
+                  <div style={{ background: '#f1f5f9', borderRadius: '8px', height: '8px', overflow: 'hidden' }}>
+                    <div style={{ height: '100%', background: '#1B4F72', width: `${progress}%`, transition: 'width 0.3s' }} />
+                  </div>
+                </div>
+              )}
+              <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                <button type="button" className="btn btn-ghost" onClick={onClose} disabled={uploading}>Annuler</button>
+                <button type="submit" className="btn btn-primary" disabled={uploading}>
+                  <Upload size={14} /> {uploading ? `${progress}%…` : 'Uploader la vidéo'}
+                </button>
+              </div>
+            </form>
+          </>
+        ) : (
+          /* Post-upload: propose QCM creation */
+          <div style={{ textAlign: 'center', padding: '10px 0' }}>
+            <div style={{ width: 56, height: 56, borderRadius: '50%', background: '#f0fdf4', border: '2px solid #22c55e', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+              <Video size={24} color="#22c55e" />
+            </div>
+            <h3 style={{ margin: '0 0 6px', fontSize: 16, fontWeight: 700, color: '#1e293b' }}>Vidéo uploadée avec succès !</h3>
+            <p style={{ fontSize: 13, color: '#64748b', marginBottom: 20 }}>"{uploaded.titre}" a été ajoutée au cours.</p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, maxWidth: 300, margin: '0 auto' }}>
+              <button
+                className="btn btn-primary"
+                onClick={() => { onClose(); navigate(`/professor/videos/${uploaded.videoId}/qcm`); }}
+                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
+              >
+                <ClipboardList size={15} /> Créer un QCM pour cette vidéo
+              </button>
+              <button className="btn btn-ghost" onClick={onClose}>
+                Fermer
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 /* ═══════════════════════════════════════════════════════════════════════════
    Page principale
 ═══════════════════════════════════════════════════════════════════════════ */
@@ -149,6 +266,7 @@ export default function ResourceLibrary() {
   const [loading, setLoading] = useState(true);
   const [loadingVideos, setLoadingVideos] = useState(false);
   const [showUpload, setShowUpload] = useState(false);
+  const [showVideoUpload, setShowVideoUpload] = useState(false);
   const [filterType, setFilterType] = useState('all');
 
   useEffect(() => {
@@ -202,7 +320,7 @@ export default function ResourceLibrary() {
             </button>
           )}
           {canUpload && activeTab === 'videos' && (
-            <button className="btn btn-primary btn-sm" onClick={() => navigate(`/professor/courses/${courseId}/upload`)}>
+            <button className="btn btn-primary btn-sm" onClick={() => setShowVideoUpload(true)}>
               <Plus size={14} /> Ajouter une vidéo
             </button>
           )}
@@ -264,7 +382,7 @@ export default function ResourceLibrary() {
                 <Video size={32} />
                 <p>Aucune vidéo dans ce cours.</p>
                 {canUpload && (
-                  <button className="btn btn-primary" onClick={() => navigate(`/professor/courses/${courseId}/upload`)}>
+                  <button className="btn btn-primary" onClick={() => setShowVideoUpload(true)}>
                     <Plus size={14} /> Ajouter une vidéo
                   </button>
                 )}
@@ -276,6 +394,7 @@ export default function ResourceLibrary() {
                   key={v._id}
                   video={v}
                   isProf={canUpload}
+                  navigate={navigate}
                   onWatch={(id) => navigate(`/watch/${id}`)}
                 />
               ))}
@@ -289,6 +408,16 @@ export default function ResourceLibrary() {
           courseId={courseId}
           onSuccess={(r) => { handleAdd(r); setShowUpload(false); }}
           onClose={() => setShowUpload(false)}
+        />
+      )}
+
+      {showVideoUpload && (
+        <VideoUploadModal
+          courseId={courseId}
+          courseName={course?.titre}
+          navigate={navigate}
+          onSuccess={(video) => { setVideos(prev => [...prev, video]); }}
+          onClose={() => setShowVideoUpload(false)}
         />
       )}
     </Layout>
