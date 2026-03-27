@@ -22,10 +22,14 @@ export const uploadResource = async (req, res) => {
 
     const type = detectType(req.file.mimetype);
 
+    // 'raw' is correct for non-media files (PDF, DOCX, PPTX, ZIP)
+    const cleanName = req.file.originalname
+      .replace(/\s+/g, '_')
+      .replace(/\.[^.]+$/, ''); // remove extension (Cloudinary adds it)
     const result = await uploadBuffer(req.file.buffer, {
       folder:        `fliplearn/resources/${courseId}`,
-      resource_type: 'auto',
-      public_id:     `${Date.now()}_${req.file.originalname.replace(/\s+/g, '_')}`,
+      resource_type: 'raw',
+      public_id:     `${Date.now()}_${cleanName}`,
     });
 
     const resource = await Resource.create({
@@ -42,7 +46,8 @@ export const uploadResource = async (req, res) => {
     await resource.populate('uploadedBy', 'nom prenom');
     res.status(201).json(resource);
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error('Resource upload error:', err.message, err.http_code || '');
+    res.status(500).json({ message: `Erreur upload : ${err.message}` });
   }
 };
 
