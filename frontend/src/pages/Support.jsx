@@ -48,7 +48,7 @@ export default function Support() {
           <HelpCircle size={28} color="#1B4F72" />
           <h1 style={{ fontSize: '1.5rem', fontWeight: 700, color: '#1B4F72', margin: 0 }}>Aide & Support</h1>
         </div>
-        <p style={{ color: '#64748b', marginBottom: 32 }}>Trouvez des r\u00e9ponses \u00e0 vos questions ou contactez-nous</p>
+        <p style={{ color: '#64748b', marginBottom: 32 }}>{'Trouvez des réponses à vos questions ou contactez-nous'}</p>
 
         {/* FAQ Section */}
         <h2 style={{ fontSize: '1.1rem', fontWeight: 600, color: '#1B4F72', marginBottom: 16 }}>Questions fr\u00e9quentes</h2>
@@ -109,7 +109,7 @@ export default function Support() {
             <div style={{ background: 'white', borderRadius: 12, border: '1px solid #e5e7eb', padding: 20 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
                 <Phone size={18} color="#1B4F72" />
-                <span style={{ fontWeight: 600, color: '#1e293b', fontSize: 14 }}>T\u00e9l\u00e9phone</span>
+                <span style={{ fontWeight: 600, color: '#1e293b', fontSize: 14 }}>{'Téléphone'}</span>
               </div>
               <p style={{ color: '#64748b', fontSize: 13, margin: 0 }}>+213 (0) 23 XX XX XX</p>
             </div>
@@ -118,7 +118,7 @@ export default function Support() {
                 <MapPin size={18} color="#1B4F72" />
                 <span style={{ fontWeight: 600, color: '#1e293b', fontSize: 14 }}>Adresse</span>
               </div>
-              <p style={{ color: '#64748b', fontSize: 13, margin: 0 }}>Universit\u00e9 / \u00c9cole — D\u00e9partement Informatique<br />Alger, Alg\u00e9rie</p>
+              <p style={{ color: '#64748b', fontSize: 13, margin: 0 }}>{'Université / École — Département Informatique'}<br />{'Alger, Algérie'}</p>
             </div>
           </div>
         </div>

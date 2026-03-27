@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout.jsx';
 import Breadcrumb from '../components/Breadcrumb.jsx';
 import api from '../utils/api.js';
-import { ChevronLeft, ChevronRight, RotateCcw, Award, Shuffle, ArrowLeft } from 'lucide-react';
+import { ChevronLeft, ChevronRight, RotateCcw, Award, Shuffle, ArrowLeft, Plus, X } from 'lucide-react';
 
 export default function Study() {
   const { deckId } = useParams();
@@ -14,6 +14,9 @@ export default function Study() {
   const [flipped, setFlipped] = useState(false);
   const [loading, setLoading] = useState(true);
   const [completed, setCompleted] = useState(false);
+  const [showAddCard, setShowAddCard] = useState(false);
+  const [newCard, setNewCard] = useState({ front: '', back: '' });
+  const [addingCard, setAddingCard] = useState(false);
 
   useEffect(() => {
     Promise.all([
@@ -41,6 +44,23 @@ export default function Study() {
     setFlipped(false);
     setCompleted(false);
   }, []);
+
+  const handleAddCard = async (e) => {
+    e.preventDefault();
+    if (!newCard.front.trim() || !newCard.back.trim()) return;
+    setAddingCard(true);
+    try {
+      const { data } = await api.post(`/decks/${deckId}/cards`, newCard);
+      setCards((prev) => [...prev, data]);
+      setNewCard({ front: '', back: '' });
+      setShowAddCard(false);
+      setCompleted(false);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setAddingCard(false);
+    }
+  };
 
   const shuffleCards = useCallback(() => {
     const shuffled = [...cards].sort(() => Math.random() - 0.5);
@@ -86,10 +106,36 @@ export default function Study() {
           <RotateCcw size={32} className="empty-state-icon" />
           <p className="empty-state-title">Deck vide</p>
           <p className="empty-state-desc">Ce deck ne contient aucune carte pour l'instant.</p>
-          <button onClick={() => navigate('/decks')} className="btn btn-secondary btn-sm" style={{ marginTop: 8 }}>
-            <ArrowLeft size={15} /> Retour aux decks
-          </button>
+          <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+            <button onClick={() => setShowAddCard(true)} className="btn btn-primary btn-sm">
+              <Plus size={15} /> Ajouter une carte
+            </button>
+            <button onClick={() => navigate('/decks')} className="btn btn-secondary btn-sm">
+              <ArrowLeft size={15} /> Retour aux decks
+            </button>
+          </div>
         </div>
+        {showAddCard && (
+          <div style={{ maxWidth: 480, margin: '24px auto 0', background: 'white', borderRadius: 12, border: '1px solid #e5e7eb', padding: 24 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+              <span style={{ fontWeight: 700, fontSize: 15 }}>Nouvelle carte</span>
+              <button onClick={() => setShowAddCard(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8' }}><X size={18} /></button>
+            </div>
+            <form onSubmit={handleAddCard} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <div>
+                <label className="form-label">Recto (question)</label>
+                <textarea className="form-input" rows={2} value={newCard.front} onChange={(e) => setNewCard((p) => ({ ...p, front: e.target.value }))} required placeholder="Question ou terme..." style={{ resize: 'vertical' }} />
+              </div>
+              <div>
+                <label className="form-label">Verso (réponse)</label>
+                <textarea className="form-input" rows={2} value={newCard.back} onChange={(e) => setNewCard((p) => ({ ...p, back: e.target.value }))} required placeholder="Réponse ou définition..." style={{ resize: 'vertical' }} />
+              </div>
+              <button type="submit" className="btn btn-primary btn-sm" disabled={addingCard} style={{ alignSelf: 'flex-start' }}>
+                {addingCard ? 'Ajout...' : 'Ajouter'}
+              </button>
+            </form>
+          </div>
+        )}
       </Layout>
     );
   }
@@ -138,11 +184,37 @@ export default function Study() {
           </div>
 
           {/* Toolbar */}
-          <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 16 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
+            <button onClick={() => setShowAddCard((v) => !v)} className="btn btn-primary btn-sm">
+              <Plus size={15} /> Ajouter une carte
+            </button>
             <button onClick={shuffleCards} className="btn btn-ghost btn-sm" title="Mélanger les cartes">
               <Shuffle size={15} /> Mélanger
             </button>
           </div>
+          {showAddCard && (
+            <div style={{ background: 'white', borderRadius: 12, border: '1px solid #e5e7eb', padding: 20, marginBottom: 20 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                <span style={{ fontWeight: 700, fontSize: 14 }}>Nouvelle carte</span>
+                <button onClick={() => setShowAddCard(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8' }}><X size={16} /></button>
+              </div>
+              <form onSubmit={handleAddCard} style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                  <div>
+                    <label className="form-label">Recto (question)</label>
+                    <textarea className="form-input" rows={2} value={newCard.front} onChange={(e) => setNewCard((p) => ({ ...p, front: e.target.value }))} required placeholder="Question..." style={{ resize: 'vertical' }} />
+                  </div>
+                  <div>
+                    <label className="form-label">Verso (réponse)</label>
+                    <textarea className="form-input" rows={2} value={newCard.back} onChange={(e) => setNewCard((p) => ({ ...p, back: e.target.value }))} required placeholder="Réponse..." style={{ resize: 'vertical' }} />
+                  </div>
+                </div>
+                <button type="submit" className="btn btn-primary btn-sm" disabled={addingCard} style={{ alignSelf: 'flex-start' }}>
+                  {addingCard ? 'Ajout...' : 'Ajouter la carte'}
+                </button>
+              </form>
+            </div>
+          )}
 
           {/* Flashcard with 3D flip */}
           <div className="flashcard-container">

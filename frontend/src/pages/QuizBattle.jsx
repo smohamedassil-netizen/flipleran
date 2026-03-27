@@ -41,7 +41,8 @@ export default function QuizBattle() {
     const socket = io(SOCKET_URL, { auth: { token }, transports: ['websocket', 'polling'] });
     socketRef.current = socket;
 
-    socket.on('connect_error', (e) => setError('Erreur de connexion: ' + e.message));
+    socket.on('connect', () => { setError(''); refreshRooms(); });
+    socket.on('connect_error', (e) => setError('Connexion impossible : ' + e.message));
 
     socket.on('battle:players', (p) => setPlayers(p));
 
@@ -113,11 +114,19 @@ export default function QuizBattle() {
   }, [phase, refreshRooms]);
 
   const createRoom = () => {
-    socketRef.current?.emit('battle:create', {
-      name: `${user.prenom} ${user.nom}`,
-      userId: user._id,
-    }, ({ roomId: rid }) => {
-      setRoomId(rid);
+    if (!socketRef.current?.connected) {
+      setError('Connexion au serveur en cours… Réessayez dans quelques secondes.');
+      return;
+    }
+    socketRef.current.emit('battle:create', {
+      name: `${user?.prenom ?? ''} ${user?.nom ?? ''}`.trim(),
+      userId: user?._id,
+    }, (res) => {
+      if (!res || !res.roomId) {
+        setError('Impossible de créer la salle. Veuillez réessayer.');
+        return;
+      }
+      setRoomId(res.roomId);
       setIsHost(true);
       setPhase('waiting');
       setError('');
