@@ -5,7 +5,7 @@ import {
   ToggleLeft, ToggleRight, Trash2, PlusCircle, AlertCircle,
   Search, Check, X, Edit2, BarChart2, UserPlus, ChevronDown,
   Clock, TrendingUp, TrendingDown, Eye, Mail, Filter,
-  MoreHorizontal, RefreshCw, Download,
+  MoreHorizontal, RefreshCw, Download, HelpCircle,
 } from 'lucide-react';
 import Layout from '../components/Layout.jsx';
 import api from '../utils/api.js';
@@ -23,6 +23,7 @@ const SECTIONS = [
   { id: 'courses',   label: 'Cours',          icon: BookOpen },
   { id: 'messages',  label: 'Messages',       icon: MessageSquare },
   { id: 'activity',  label: 'Activité',       icon: Activity },
+  { id: 'support',   label: 'Support',        icon: HelpCircle },
 ];
 
 const ROLE_COLORS = {
@@ -1171,6 +1172,101 @@ function ActivitySection() {
 /* ═══════════════════════════════════════════════════════════════════════════
    MAIN: AdminDashboard
 ═══════════════════════════════════════════════════════════════════════════ */
+/* ─── SupportSection ──────────────────────────────────────────────────── */
+function SupportSection() {
+  const [tickets, setTickets] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    api.get('/support')
+      .then(({ data }) => setTickets(data))
+      .catch(console.error)
+      .finally(() => setLoading(false));
+  }, []);
+
+  const handleAccept = async (id) => {
+    try {
+      const { data } = await api.put(`/support/${id}/accept`);
+      setTickets(prev => prev.map(t => t._id === id ? data : t));
+    } catch (err) {
+      alert(err.response?.data?.message || 'Erreur');
+    }
+  };
+
+  const handleResolve = async (id) => {
+    try {
+      const { data } = await api.put(`/support/${id}/resolve`, { response: 'Résolu' });
+      setTickets(prev => prev.map(t => t._id === id ? data : t));
+    } catch (err) {
+      alert(err.response?.data?.message || 'Erreur');
+    }
+  };
+
+  if (loading) return <Spinner />;
+
+  const STATUS_STYLES = {
+    pending:  { bg: '#FEF3C7', color: '#92400E', label: 'En attente' },
+    accepted: { bg: '#DBEAFE', color: '#1E40AF', label: 'Pris en charge' },
+    resolved: { bg: '#D1FAE5', color: '#065F46', label: 'Résolu' },
+  };
+
+  return (
+    <div>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+        <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: '#1E293B' }}>
+          Tickets Support ({tickets.length})
+        </h2>
+      </div>
+
+      {tickets.length === 0 ? (
+        <div style={{ textAlign: 'center', color: '#64748B', padding: 40 }}>
+          Aucun ticket de support pour le moment.
+        </div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          {tickets.map(ticket => {
+            const st = STATUS_STYLES[ticket.status] || STATUS_STYLES.pending;
+            return (
+              <div key={ticket._id} style={{ ...cardStyle, padding: 20 }}>
+                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, marginBottom: 10 }}>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                      <span style={{ fontWeight: 700, fontSize: 15, color: '#1E293B' }}>{ticket.objet}</span>
+                      <span style={{ background: st.bg, color: st.color, padding: '2px 10px', borderRadius: 20, fontSize: 11, fontWeight: 600 }}>{st.label}</span>
+                    </div>
+                    <div style={{ fontSize: 12, color: '#64748B' }}>
+                      De : {ticket.nom} ({ticket.email}) · {new Date(ticket.createdAt).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                    </div>
+                  </div>
+                </div>
+                <p style={{ fontSize: 13, color: '#475569', lineHeight: 1.6, margin: '0 0 12px', whiteSpace: 'pre-wrap' }}>{ticket.message}</p>
+                {ticket.acceptedBy && (
+                  <div style={{ fontSize: 12, color: '#64748B', marginBottom: 8 }}>
+                    Pris en charge par : <strong>{ticket.acceptedBy.prenom} {ticket.acceptedBy.nom}</strong>
+                    {ticket.acceptedAt && ` le ${new Date(ticket.acceptedAt).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}`}
+                  </div>
+                )}
+                <div style={{ display: 'flex', gap: 8 }}>
+                  {ticket.status === 'pending' && (
+                    <button style={btnPrimary} onClick={() => handleAccept(ticket._id)}>
+                      <Check size={14} /> Prendre en charge
+                    </button>
+                  )}
+                  {ticket.status === 'accepted' && (
+                    <button style={{ ...btnPrimary, background: '#059669' }} onClick={() => handleResolve(ticket._id)}>
+                      <Check size={14} /> Marquer résolu
+                    </button>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function AdminDashboard() {
   const [searchParams, setSearchParams] = useSearchParams();
   const section = searchParams.get('section') || 'overview';
@@ -1225,6 +1321,7 @@ export default function AdminDashboard() {
         {section === 'courses' && <CoursesSection />}
         {section === 'messages' && <MessagesSection />}
         {section === 'activity' && <ActivitySection />}
+        {section === 'support' && <SupportSection />}
       </div>
     </Layout>
   );

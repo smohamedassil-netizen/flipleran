@@ -22,10 +22,11 @@ export default function Support() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      // Envoyer le message à l'admin via la messagerie interne
-      await api.post('/messages', {
-        content: `[Support] ${form.objet}\n\n${form.message}\n\nDe: ${form.nom} (${form.email})`,
-        roomId: 'support_admin',
+      await api.post('/support', {
+        nom: form.nom,
+        email: form.email,
+        objet: form.objet,
+        message: form.message,
       });
       setSent(true);
       setTimeout(() => setSent(false), 5000);

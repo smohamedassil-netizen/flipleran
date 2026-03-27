@@ -79,6 +79,11 @@ function ContactCard({ contact, onClick }) {
             </span>
           )}
         </div>
+        {contact.lastMessage && (
+          <p style={{ fontSize: 11, color: '#94a3b8', margin: '3px 0 0', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            {contact.lastMessage.isMe ? 'Vous : ' : ''}{contact.lastMessage.content}
+          </p>
+        )}
       </div>
 
       <MessageSquare size={16} color="var(--color-primary)" style={{ flexShrink: 0 }} />

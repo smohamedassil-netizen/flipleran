@@ -28,6 +28,7 @@ import leaderboardRoutes from './routes/leaderboardRoutes.js';
 import chatbotRoutes    from './routes/chatbotRoutes.js';
 import resourceRoutes   from './routes/resourceRoutes.js';
 import adminRoutes      from './routes/adminRoutes.js';
+import supportRoutes    from './routes/supportRoutes.js';
 import { seedBadges }   from './services/points.js';
 import { askBot }       from './services/chatbot.js';
 import { BOT_SENDER }   from './controllers/chatbotController.js';
@@ -70,6 +71,7 @@ app.use('/api/leaderboard', leaderboardRoutes);
 app.use('/api/chatbot',    chatbotRoutes);
 app.use('/api/resources',  resourceRoutes);
 app.use('/api/admin',      adminRoutes);
+app.use('/api/support',    supportRoutes);
 
 // ── En production : servir le frontend buildé ──────────────────────────────
 if (process.env.NODE_ENV === 'production') {
@@ -201,11 +203,28 @@ io.on('connection', (socket) => {
       socket.to(roomId).emit('stop_typing', { userId: user.id });
       io.to(roomId).emit('receive_message', msg);
 
+      // Notification for course chat messages (notify all room members except sender)
+      if (roomId.startsWith('course_')) {
+        const courseId = roomId.replace('course_', '');
+        const roomSockets = await io.in(roomId).fetchSockets();
+        for (const s of roomSockets) {
+          if (s.user?.id !== user.id) {
+            s.emit('notification', {
+              type: 'message',
+              message: `${user.prenom} ${user.nom} dans le chat du cours`,
+              link: `/chat/course/${courseId}`,
+              createdAt: new Date().toISOString(),
+            });
+          }
+        }
+      }
+
       // 2b. Notification temps réel pour le destinataire (messages privés)
       if (receiverId && !roomId.startsWith('bot_')) {
         io.to(`user_${receiverId}`).emit('notification', {
           type: 'message',
           message: `Nouveau message de ${user.prenom} ${user.nom}`,
+          link: `/chat/private/${user.id}`,
           from: user.id,
           createdAt: new Date().toISOString(),
         });

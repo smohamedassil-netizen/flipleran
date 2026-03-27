@@ -98,6 +98,7 @@ const NAV = {
         { label: 'Tableau de bord', icon: LayoutDashboard, to: '/admin' },
         { label: 'Utilisateurs',    icon: Users,           to: '/admin?section=users' },
         { label: 'Cours',           icon: BookOpen,        to: '/admin?section=courses' },
+        { label: 'Support',          icon: HelpCircle,      to: '/admin?section=support' },
       ],
     },
     {
