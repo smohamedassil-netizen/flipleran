@@ -16,6 +16,7 @@ export function NotificationProvider({ children }) {
       id: Date.now(),
       message: notif.message,
       type: notif.type || 'info', // info, success, warning
+      link: notif.link || null,   // optional navigation link
       read: false,
       createdAt: new Date().toISOString(),
     };

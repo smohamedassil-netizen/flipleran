@@ -1,4 +1,7 @@
 import Deck from '../models/Deck.js';
+import Video from '../models/Video.js';
+import Card from '../models/Card.js';
+import Groq from 'groq-sdk';
 
 export const getDecks = async (req, res) => {
   try {
@@ -56,6 +59,78 @@ export const deleteDeck = async (req, res) => {
     if (!deck) return res.status(404).json({ message: 'Deck not found' });
     res.json({ message: 'Deck deleted' });
   } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const generateFlashcardsAI = async (req, res) => {
+  try {
+    const { videoId, deckTitle } = req.body;
+    if (!videoId) return res.status(400).json({ message: 'videoId requis' });
+
+    // Fetch video info
+    const video = await Video.findById(videoId).populate('courseId', 'titre');
+    if (!video) return res.status(404).json({ message: 'Vidéo introuvable' });
+
+    // Initialize Groq
+    const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+
+    const prompt = `Tu es un expert pédagogique. Génère 10 flashcards (question/réponse) pour réviser le sujet suivant :
+
+Titre de la vidéo : "${video.titre}"
+Cours : "${video.courseId?.titre || 'Informatique'}"
+Description : "${video.description || 'Cours universitaire'}"
+
+RÈGLES STRICTES :
+- Réponds UNIQUEMENT avec un JSON valide, sans texte avant ou après
+- Format exact : { "flashcards": [{ "question": "...", "reponse": "..." }, ...] }
+- 10 flashcards maximum
+- Questions courtes et précises
+- Réponses concises (1-3 phrases)
+- Tout en français
+- Couvre les concepts clés du sujet`;
+
+    const completion = await groq.chat.completions.create({
+      model: 'llama-3.3-70b-versatile',
+      messages: [{ role: 'user', content: prompt }],
+      temperature: 0.7,
+      max_tokens: 2000,
+    });
+
+    let flashcards = [];
+    try {
+      const text = completion.choices[0].message.content.trim();
+      const json = JSON.parse(text.replace(/^```json?\n?/, '').replace(/\n?```$/, ''));
+      flashcards = json.flashcards || [];
+    } catch {
+      return res.status(500).json({ message: 'Erreur lors de la génération IA' });
+    }
+
+    if (flashcards.length === 0) {
+      return res.status(500).json({ message: 'Aucune flashcard générée' });
+    }
+
+    // Create deck
+    const title = deckTitle || `Révision — ${video.titre}`;
+    const deck = await Deck.create({
+      title,
+      description: `Généré par IA depuis : ${video.titre}`,
+      category: video.courseId?.titre || 'Général',
+      owner: req.user.id,
+    });
+
+    // Create cards
+    const cards = await Card.insertMany(
+      flashcards.map(f => ({
+        deck: deck._id,
+        front: f.question,
+        back: f.reponse,
+      }))
+    );
+
+    res.status(201).json({ deck, cards, count: cards.length });
+  } catch (error) {
+    console.error('generateFlashcardsAI error:', error);
     res.status(500).json({ message: error.message });
   }
 };

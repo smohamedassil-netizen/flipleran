@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { NavLink, useNavigate } from 'react-router-dom';
+import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useNotifications } from '../context/NotificationContext.jsx';
 import Logo from './Logo.jsx';
@@ -145,6 +145,16 @@ function Sidebar({ collapsed, onToggle, role, user, mobileOpen, setMobileOpen })
   const sections = NAV[role] ?? NAV.etudiant;
   const navigate = useNavigate();
   const { logout } = useAuth();
+  const location = useLocation();
+  function isNavItemActive(to) {
+    const qIdx = to.indexOf('?');
+    if (qIdx !== -1) {
+      const toPath   = to.slice(0, qIdx);
+      const toSearch = to.slice(qIdx);
+      return location.pathname === toPath && location.search === toSearch;
+    }
+    return location.pathname === to;
+  }
 
   const handleLogout = () => {
     logout();
@@ -209,7 +219,7 @@ function Sidebar({ collapsed, onToggle, role, user, mobileOpen, setMobileOpen })
                 key={to}
                 to={to}
                 end={to === '/'}
-                className={({ isActive }) => `nav-item${isActive ? ' active' : ''}`}
+                className={() => `nav-item${isNavItemActive(to) ? ' active' : ''}`}
                 title={collapsed ? label : undefined}
                 style={{ justifyContent: collapsed ? 'center' : undefined }}
                 onClick={handleNavClick}
@@ -432,6 +442,11 @@ function Topbar({ onMenuClick, title, user, role, mobileOpen, setMobileOpen }) {
                   notifications.slice(0, 20).map((n) => (
                     <div
                       key={n.id}
+                      title={n.link ? 'Cliquer pour ouvrir' : undefined}
+                      onClick={() => {
+                        if (n.link) { navigate(n.link); setNotifOpen(false); }
+                        if (!n.read) markAllRead();
+                      }}
                       style={{
                         padding: '10px 16px',
                         borderBottom: '1px solid #f1f5f9',
@@ -439,6 +454,7 @@ function Topbar({ onMenuClick, title, user, role, mobileOpen, setMobileOpen }) {
                         display: 'flex',
                         gap: 10,
                         alignItems: 'flex-start',
+                        cursor: n.link ? 'pointer' : 'default',
                       }}
                     >
                       <div
