@@ -16,6 +16,11 @@ export const sendEmail = async (to, subject, html) => {
   }
 
   try {
+    // Resend free tier: can only send to the account owner's email
+    // Route all notifications to the admin email with original recipient in subject
+    const adminEmail = FROM_EMAIL;
+    const finalSubject = to === adminEmail ? subject : `[Pour ${to}] ${subject}`;
+
     const res = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
@@ -24,9 +29,9 @@ export const sendEmail = async (to, subject, html) => {
       },
       body: JSON.stringify({
         from: `FlipLearn <onboarding@resend.dev>`,
-        to: [to],
-        subject,
-        html,
+        to: [adminEmail],
+        subject: finalSubject,
+        html: `<p style="color:#666;font-size:12px;">Destinataire original : <strong>${to}</strong></p>${html}`,
         reply_to: FROM_EMAIL,
       }),
     });
