@@ -7,7 +7,7 @@ import Breadcrumb from '../components/Breadcrumb.jsx';
 import {
   Play, CheckCircle, Clock, Lock, Home,
   BookOpen, AlertCircle, ChevronRight, MessageSquare,
-  ArrowLeft, Upload, FileText, PenTool,
+  ArrowLeft, Upload, FileText, PenTool, Edit3, Trash2,
 } from 'lucide-react';
 
 /* ─── Status helpers ──────────────────────────────────────────────────────── */
@@ -25,7 +25,7 @@ const STATUS_CONFIG = {
 };
 
 /* ─── Video row ───────────────────────────────────────────────────────────── */
-function VideoRow({ video, index, onSelect, isActive, isProfOrAdmin, navigate }) {
+function VideoRow({ video, index, onSelect, isActive, isProfOrAdmin, navigate, onEdit, onDelete }) {
   const progress = video.myProgress;
   const status   = getStatus(progress);
   const cfg      = STATUS_CONFIG[status];
@@ -102,16 +102,33 @@ function VideoRow({ video, index, onSelect, isActive, isProfOrAdmin, navigate })
         </div>
       </div>
 
-      {/* QCM button for professors */}
+      {/* Action buttons for professors */}
       {isProfOrAdmin && (
-        <button
-          className="btn btn-ghost btn-sm"
-          title="Créer / Modifier QCM"
-          onClick={(e) => { e.stopPropagation(); navigate(`/professor/videos/${video._id}/qcm`); }}
-          style={{ flexShrink: 0 }}
-        >
-          <PenTool size={13} /> QCM
-        </button>
+        <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
+          <button
+            className="btn btn-ghost btn-sm"
+            title="Créer / Modifier QCM"
+            onClick={(e) => { e.stopPropagation(); navigate(`/professor/videos/${video._id}/qcm`); }}
+          >
+            <PenTool size={13} /> QCM
+          </button>
+          <button
+            className="btn btn-ghost btn-sm"
+            title="Modifier la vidéo"
+            onClick={(e) => { e.stopPropagation(); onEdit?.(video); }}
+            style={{ color: 'var(--color-accent)' }}
+          >
+            <Edit3 size={13} />
+          </button>
+          <button
+            className="btn btn-ghost btn-sm"
+            title="Supprimer la vidéo"
+            onClick={(e) => { e.stopPropagation(); onDelete?.(video); }}
+            style={{ color: '#e74c3c' }}
+          >
+            <Trash2 size={13} />
+          </button>
+        </div>
       )}
 
       <ChevronRight size={15} color="var(--color-text-disabled)" style={{ flexShrink: 0 }} />
@@ -130,6 +147,34 @@ export default function StudentCourse() {
   const [videos,  setVideos]  = useState([]);
   const [loading, setLoading] = useState(true);
   const [error,   setError]   = useState('');
+  const [editingVideo, setEditingVideo] = useState(null);
+  const [editForm, setEditForm] = useState({ titre: '', description: '', order: 0 });
+  const [deleteConfirm, setDeleteConfirm] = useState(null);
+
+  const handleEditVideo = (video) => {
+    setEditingVideo(video);
+    setEditForm({ titre: video.titre, description: video.description || '', order: video.order || 0 });
+  };
+
+  const handleSaveEdit = async () => {
+    try {
+      await api.put(`/videos/${editingVideo._id}`, editForm);
+      setVideos(videos.map(v => v._id === editingVideo._id ? { ...v, ...editForm } : v));
+      setEditingVideo(null);
+    } catch (err) {
+      alert(err.response?.data?.message || 'Erreur lors de la modification');
+    }
+  };
+
+  const handleDeleteVideo = async (video) => {
+    try {
+      await api.delete(`/videos/${video._id}`);
+      setVideos(videos.filter(v => v._id !== video._id));
+      setDeleteConfirm(null);
+    } catch (err) {
+      alert(err.response?.data?.message || 'Erreur lors de la suppression');
+    }
+  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -231,6 +276,8 @@ export default function StudentCourse() {
                   isProfOrAdmin={isProfOrAdmin}
                   navigate={navigate}
                   onSelect={(v) => navigate(`/watch/${v._id}`)}
+                  onEdit={handleEditVideo}
+                  onDelete={(v) => setDeleteConfirm(v)}
                 />
               ))}
             </div>
@@ -331,6 +378,80 @@ export default function StudentCourse() {
           </button>
         </div>
       </div>
+
+      {/* ── Modal édition vidéo ─────────────────────────────────────────── */}
+      {editingVideo && (
+        <div className="modal-overlay" onClick={() => setEditingVideo(null)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 500 }}>
+            <h3 style={{ marginBottom: 16, fontSize: 'var(--font-size-lg)', fontWeight: 700 }}>
+              <Edit3 size={18} style={{ marginRight: 8 }} />
+              Modifier la vidéo
+            </h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <div>
+                <label style={{ fontSize: 'var(--font-size-sm)', fontWeight: 600, marginBottom: 4, display: 'block' }}>Titre</label>
+                <input
+                  className="input"
+                  value={editForm.titre}
+                  onChange={(e) => setEditForm({ ...editForm, titre: e.target.value })}
+                  style={{ width: '100%' }}
+                />
+              </div>
+              <div>
+                <label style={{ fontSize: 'var(--font-size-sm)', fontWeight: 600, marginBottom: 4, display: 'block' }}>Description</label>
+                <textarea
+                  className="input"
+                  rows={3}
+                  value={editForm.description}
+                  onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
+                  style={{ width: '100%', resize: 'vertical' }}
+                />
+              </div>
+              <div>
+                <label style={{ fontSize: 'var(--font-size-sm)', fontWeight: 600, marginBottom: 4, display: 'block' }}>Ordre dans le cours</label>
+                <input
+                  className="input"
+                  type="number"
+                  min={0}
+                  value={editForm.order}
+                  onChange={(e) => setEditForm({ ...editForm, order: Number(e.target.value) })}
+                  style={{ width: 100 }}
+                />
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 20 }}>
+              <button className="btn btn-ghost" onClick={() => setEditingVideo(null)}>Annuler</button>
+              <button className="btn btn-primary" onClick={handleSaveEdit}>Enregistrer</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Modal confirmation suppression ──────────────────────────────── */}
+      {deleteConfirm && (
+        <div className="modal-overlay" onClick={() => setDeleteConfirm(null)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 420 }}>
+            <h3 style={{ marginBottom: 12, color: '#e74c3c', fontWeight: 700 }}>
+              <Trash2 size={18} style={{ marginRight: 8 }} />
+              Supprimer cette vidéo ?
+            </h3>
+            <p style={{ fontSize: 'var(--font-size-sm)', color: 'var(--color-text-secondary)', marginBottom: 8 }}>
+              Vous allez supprimer <strong>"{deleteConfirm.titre}"</strong>. Cette action est irréversible.
+              La vidéo sera supprimée de Cloudinary et toutes les progressions des étudiants seront perdues.
+            </p>
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 20 }}>
+              <button className="btn btn-ghost" onClick={() => setDeleteConfirm(null)}>Annuler</button>
+              <button
+                className="btn"
+                style={{ backgroundColor: '#e74c3c', color: '#fff' }}
+                onClick={() => handleDeleteVideo(deleteConfirm)}
+              >
+                Supprimer définitivement
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </Layout>
   );
 }

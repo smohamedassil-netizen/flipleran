@@ -5,6 +5,7 @@ import {
   getVideoById,
   saveProgress,
   getVideoStats,
+  updateVideo,
   deleteVideo,
 } from '../controllers/videoController.js';
 import authMiddleware from '../middleware/authMiddleware.js';
@@ -34,6 +35,9 @@ router.post('/:id/progress', saveProgress);
 
 // Stats (professeur / admin)
 router.get('/:id/stats', requireRole('professeur', 'admin'), getVideoStats);
+
+// Modification (professeur / admin)
+router.put('/:id', requireRole('professeur', 'admin'), updateVideo);
 
 // Suppression (professeur / admin)
 router.delete('/:id', requireRole('professeur', 'admin'), deleteVideo);

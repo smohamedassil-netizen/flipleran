@@ -238,6 +238,24 @@ export const getVideoStats = async (req, res) => {
   }
 };
 
+/* ─── PUT /api/videos/:id ───────────────────────────────────────────────── */
+export const updateVideo = async (req, res) => {
+  try {
+    const video = await Video.findById(req.params.id);
+    if (!video) return res.status(404).json({ message: 'Video introuvable.' });
+
+    const { titre, description, order } = req.body;
+    if (titre !== undefined) video.titre = titre;
+    if (description !== undefined) video.description = description;
+    if (order !== undefined) video.order = Number(order);
+
+    await video.save();
+    res.json(video);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
 /* ─── DELETE /api/videos/:id ─────────────────────────────────────────────── */
 export const deleteVideo = async (req, res) => {
   try {
