@@ -233,6 +233,7 @@ io.on('connection', (socket) => {
         try {
           const { sendNotificationEmail } = await import('./services/emailService.js');
           const recipient = await User.findById(receiverId).select('email prenom');
+          console.log('[EMAIL] Private message -> receiverId:', receiverId, '-> email:', recipient?.email);
           if (recipient?.email) {
             sendNotificationEmail(
               recipient.email,
