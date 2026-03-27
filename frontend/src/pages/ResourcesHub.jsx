@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
 import api from '../utils/api.js';
-import { ArrowLeft, FileText, Download, Search, FolderOpen, File, Presentation, FileSpreadsheet, Plus, Upload, X } from 'lucide-react';
+import { ArrowLeft, FileText, Download, Search, FolderOpen, File, Presentation, FileSpreadsheet, Plus, Upload, X, Video, ClipboardList, ExternalLink } from 'lucide-react';
 
 const FILE_ICONS = {
   pdf: FileText,
@@ -29,6 +29,13 @@ export default function ResourcesHub() {
 
   // Upload modal state
   const [showUpload, setShowUpload] = useState(false);
+  const [showVideoUpload, setShowVideoUpload] = useState(false);
+  const [videoForm, setVideoForm] = useState({ titre: '', description: '', courseId: '', ordre: 1 });
+  const [videoFile, setVideoFile] = useState(null);
+  const [videoUploading, setVideoUploading] = useState(false);
+  const [videoProgress, setVideoProgress] = useState(0);
+  const [videoError, setVideoError] = useState('');
+  const [videoUploaded, setVideoUploaded] = useState(null);
   const [uploadForm, setUploadForm] = useState({ titre: '', description: '', courseId: '' });
   const [uploadFile, setUploadFile] = useState(null);
   const [uploading, setUploading] = useState(false);
@@ -70,6 +77,36 @@ export default function ResourcesHub() {
     const matchFilter = filter === 'all' || r.type === filter;
     return matchSearch && matchFilter;
   });
+
+  const handleVideoUpload = async (e) => {
+    e.preventDefault();
+    if (!videoFile || !videoForm.titre || !videoForm.courseId) return;
+    setVideoUploading(true); setVideoProgress(0); setVideoError('');
+    const fd = new FormData();
+    fd.append('video', videoFile);
+    fd.append('titre', videoForm.titre);
+    fd.append('description', videoForm.description);
+    fd.append('courseId', videoForm.courseId);
+    fd.append('ordre', videoForm.ordre);
+    try {
+      const { data } = await api.post('/videos/upload', fd, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+        timeout: 5 * 60 * 1000,
+        onUploadProgress: (e) => e.total && setVideoProgress(Math.round((e.loaded * 100) / e.total)),
+      });
+      setVideoUploaded({ videoId: data._id, titre: data.titre });
+    } catch (err) {
+      setVideoError(err.response?.data?.message || "Erreur lors de l'upload vidéo");
+    } finally { setVideoUploading(false); }
+  };
+
+  function getDownloadUrl(url) {
+    if (!url) return '#';
+    if (url.includes('cloudinary.com') && url.includes('/raw/upload/')) {
+      return url.replace('/raw/upload/', '/raw/upload/fl_attachment/');
+    }
+    return url;
+  }
 
   const formatSize = (bytes) => {
     if (!bytes) return '';
@@ -138,13 +175,22 @@ export default function ResourcesHub() {
             <p style={{ color: '#64748b' }}>Tous les fichiers et documents de vos cours</p>
           </div>
           {isProf && (
-            <button onClick={() => setShowUpload(true)} style={{
-              display: 'inline-flex', alignItems: 'center', gap: 8, padding: '10px 20px',
-              borderRadius: 10, background: '#1B4F72', color: 'white', border: 'none',
-              cursor: 'pointer', fontWeight: 600, fontSize: 14,
-            }}>
-              <Plus size={16} /> Ajouter une ressource
-            </button>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button onClick={() => setShowVideoUpload(true)} style={{
+                display: 'inline-flex', alignItems: 'center', gap: 8, padding: '10px 16px',
+                borderRadius: 10, background: '#059669', color: 'white', border: 'none',
+                cursor: 'pointer', fontWeight: 600, fontSize: 13,
+              }}>
+                <Video size={15} /> Ajouter une vidéo
+              </button>
+              <button onClick={() => setShowUpload(true)} style={{
+                display: 'inline-flex', alignItems: 'center', gap: 8, padding: '10px 16px',
+                borderRadius: 10, background: '#1B4F72', color: 'white', border: 'none',
+                cursor: 'pointer', fontWeight: 600, fontSize: 13,
+              }}>
+                <Plus size={15} /> Ajouter un fichier
+              </button>
+            </div>
           )}
         </div>
 
@@ -206,6 +252,91 @@ export default function ResourcesHub() {
           </div>
         )}
 
+        {/* ── Video Upload Modal ─────────────────────────────────────────────── */}
+        {showVideoUpload && (
+          <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 16 }}
+            onClick={e => e.target === e.currentTarget && !videoUploading && (setShowVideoUpload(false), setVideoUploaded(null))}>
+            <div style={{ background: 'white', borderRadius: 16, padding: 28, width: '100%', maxWidth: 520, position: 'relative' }}>
+              {!videoUploaded ? (
+                <>
+                  <button onClick={() => { setShowVideoUpload(false); setVideoError(''); setVideoFile(null); }}
+                    style={{ position: 'absolute', top: 16, right: 16, background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8' }}>
+                    <X size={20} />
+                  </button>
+                  <h2 style={{ fontSize: '1.2rem', fontWeight: 700, color: '#059669', marginBottom: 20 }}>
+                    <Video size={20} style={{ verticalAlign: 'middle', marginRight: 8 }} />
+                    Ajouter une vidéo
+                  </h2>
+                  <form onSubmit={handleVideoUpload} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                    <div>
+                      <label style={labelStyle}>Cours *</label>
+                      <select required value={videoForm.courseId} onChange={e => setVideoForm({ ...videoForm, courseId: e.target.value })} style={inputStyle}>
+                        <option value="">-- Sélectionner un cours --</option>
+                        {courses.map(c => <option key={c._id} value={c._id}>{c.titre}</option>)}
+                      </select>
+                      <p style={{ fontSize: 11, color: '#94a3b8', marginTop: 4 }}>
+                        Cours non listé ? <button type="button" onClick={() => { setShowVideoUpload(false); navigate('/courses'); }} style={{ background: 'none', border: 'none', color: '#1B4F72', cursor: 'pointer', fontWeight: 600, fontSize: 11, textDecoration: 'underline', padding: 0 }}>Créer un nouveau cours</button>
+                      </p>
+                    </div>
+                    <div>
+                      <label style={labelStyle}>Titre de la vidéo *</label>
+                      <input required value={videoForm.titre} onChange={e => setVideoForm({ ...videoForm, titre: e.target.value })} style={inputStyle} placeholder="ex: Introduction aux algorithmes" />
+                    </div>
+                    <div>
+                      <label style={labelStyle}>Description</label>
+                      <textarea value={videoForm.description} onChange={e => setVideoForm({ ...videoForm, description: e.target.value })} style={{ ...inputStyle, minHeight: 50, resize: 'vertical' }} placeholder="Description optionnelle" />
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 12 }}>
+                      <div>
+                        <label style={labelStyle}>Fichier vidéo * (MP4, WebM — max 100 Mo)</label>
+                        <input type="file" accept="video/mp4,video/webm,.mp4,.webm,.mov" onChange={e => { setVideoFile(e.target.files[0] ?? null); setVideoError(''); }} style={{ fontSize: 13 }} />
+                      </div>
+                      <div>
+                        <label style={labelStyle}>Ordre</label>
+                        <input type="number" min={1} value={videoForm.ordre} onChange={e => setVideoForm({ ...videoForm, ordre: Number(e.target.value) })} style={{ ...inputStyle, width: 70 }} />
+                      </div>
+                    </div>
+                    {videoUploading && (
+                      <div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: '#64748b', marginBottom: 4 }}><span>Upload en cours...</span><span>{videoProgress}%</span></div>
+                        <div style={{ width: '100%', background: '#e5e7eb', borderRadius: 8, overflow: 'hidden', height: 8 }}>
+                          <div style={{ width: `${videoProgress}%`, height: '100%', background: '#059669', borderRadius: 8, transition: 'width 0.3s' }} />
+                        </div>
+                      </div>
+                    )}
+                    {videoError && <p style={{ fontSize: 13, color: '#DC2626', fontWeight: 500, margin: 0 }}>{videoError}</p>}
+                    <button type="submit" disabled={videoUploading || !videoFile} style={{
+                      padding: '12px 0', borderRadius: 10, background: '#059669', color: 'white',
+                      border: 'none', fontWeight: 600, fontSize: 15, cursor: videoUploading || !videoFile ? 'not-allowed' : 'pointer',
+                      opacity: videoUploading || !videoFile ? 0.7 : 1,
+                    }}>
+                      {videoUploading ? 'Upload en cours...' : 'Uploader la vidéo'}
+                    </button>
+                  </form>
+                </>
+              ) : (
+                <div style={{ textAlign: 'center', padding: '10px 0' }}>
+                  <div style={{ width: 56, height: 56, borderRadius: '50%', background: '#f0fdf4', border: '2px solid #22c55e', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+                    <Video size={24} color="#22c55e" />
+                  </div>
+                  <h3 style={{ margin: '0 0 6px', fontSize: 16, fontWeight: 700, color: '#1e293b' }}>Vidéo uploadée !</h3>
+                  <p style={{ fontSize: 13, color: '#64748b', marginBottom: 20 }}>"{videoUploaded.titre}" a été ajoutée au cours.</p>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10, maxWidth: 300, margin: '0 auto' }}>
+                    <button onClick={() => { setShowVideoUpload(false); setVideoUploaded(null); navigate(`/professor/videos/${videoUploaded.videoId}/qcm`); }}
+                      style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '12px 0', borderRadius: 10, background: '#1B4F72', color: 'white', border: 'none', fontWeight: 600, fontSize: 14, cursor: 'pointer' }}>
+                      <ClipboardList size={15} /> Créer un QCM pour cette vidéo
+                    </button>
+                    <button onClick={() => { setShowVideoUpload(false); setVideoUploaded(null); }}
+                      style={{ padding: '10px 0', borderRadius: 10, background: 'transparent', color: '#64748b', border: '1px solid #e5e7eb', fontWeight: 500, fontSize: 14, cursor: 'pointer' }}>
+                      Fermer
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Search + Filter */}
         <div style={{ display: 'flex', gap: 12, marginBottom: 24, flexWrap: 'wrap' }}>
           <div style={{ flex: 1, minWidth: 200, position: 'relative' }}>
@@ -262,7 +393,7 @@ export default function ResourcesHub() {
                     </div>
                   </div>
                   {r.url && (
-                    <a href={r.url} target="_blank" rel="noopener noreferrer"
+                    <a href={getDownloadUrl(r.url)} target="_blank" rel="noopener noreferrer" download
                       style={{
                         display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px',
                         borderRadius: 8, background: '#1B4F72', color: 'white', textDecoration: 'none',

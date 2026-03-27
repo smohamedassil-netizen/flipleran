@@ -30,6 +30,16 @@ function formatDate(d) {
   return new Date(d).toLocaleDateString('fr-DZ', { day: 'numeric', month: 'short', year: 'numeric' });
 }
 
+/* ─── Force download URL for Cloudinary raw assets ───────────────────────── */
+function getDownloadUrl(url) {
+  if (!url) return '#';
+  // For Cloudinary raw URLs, inject fl_attachment to force download
+  if (url.includes('cloudinary.com') && url.includes('/raw/upload/')) {
+    return url.replace('/raw/upload/', '/raw/upload/fl_attachment/');
+  }
+  return url;
+}
+
 /* ─── ResourceCard ───────────────────────────────────────────────────────── */
 function ResourceCard({ resource, canDelete, onDelete }) {
   const meta  = TYPE_META[resource.type] ?? TYPE_META.autre;
@@ -50,7 +60,7 @@ function ResourceCard({ resource, canDelete, onDelete }) {
         {resource.description && <div style={{ fontSize: '12px', color: '#64748b', marginTop: '4px' }}>{resource.description}</div>}
       </div>
       <div style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>
-        <a href={resource.url} target="_blank" rel="noopener noreferrer" className="btn btn-primary btn-sm" style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+        <a href={getDownloadUrl(resource.url)} target="_blank" rel="noopener noreferrer" download className="btn btn-primary btn-sm" style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
           <Download size={13} /> Télécharger
         </a>
         {canDelete && (

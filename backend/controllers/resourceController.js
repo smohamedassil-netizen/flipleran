@@ -24,7 +24,7 @@ export const uploadResource = async (req, res) => {
 
     const result = await uploadBuffer(req.file.buffer, {
       folder:        `fliplearn/resources/${courseId}`,
-      resource_type: 'raw',
+      resource_type: 'auto',
       public_id:     `${Date.now()}_${req.file.originalname.replace(/\s+/g, '_')}`,
     });
 
