@@ -1,19 +1,39 @@
 import nodemailer from 'nodemailer';
 
 import dns from 'dns';
-// Force IPv4 — Render free tier doesn't support IPv6 outbound
+import { promisify } from 'util';
+
+// Force ALL DNS to resolve IPv4 first (Render blocks IPv6 outbound)
 dns.setDefaultResultOrder('ipv4first');
 
-const transporter = nodemailer.createTransport({
-  host: 'smtp.gmail.com',
-  port: 587,
-  secure: false,
-  auth: {
-    user: process.env.GMAIL_USER || 'smohamedassil@gmail.com',
-    pass: process.env.GMAIL_APP_PASSWORD || 'rxde osbj bpun iycl',
-  },
-  tls: { rejectUnauthorized: false },
-});
+// Resolve Gmail SMTP to IPv4 address directly
+const resolve4 = promisify(dns.resolve4);
+let gmailIPv4 = null;
+
+async function getGmailHost() {
+  if (gmailIPv4) return gmailIPv4;
+  try {
+    const addresses = await resolve4('smtp.gmail.com');
+    gmailIPv4 = addresses[0];
+    console.log('[EMAIL] Resolved smtp.gmail.com to IPv4:', gmailIPv4);
+    return gmailIPv4;
+  } catch {
+    return 'smtp.gmail.com';
+  }
+}
+
+function createTransporter(host) {
+  return nodemailer.createTransport({
+    host,
+    port: 587,
+    secure: false,
+    auth: {
+      user: process.env.GMAIL_USER || 'smohamedassil@gmail.com',
+      pass: process.env.GMAIL_APP_PASSWORD || 'rxde osbj bpun iycl',
+    },
+    tls: { rejectUnauthorized: false, servername: 'smtp.gmail.com' },
+  });
+}
 
 /**
  * Send an email notification
@@ -23,15 +43,17 @@ const transporter = nodemailer.createTransport({
  */
 export const sendEmail = async (to, subject, html) => {
   try {
-    await transporter.sendMail({
+    const host = await getGmailHost();
+    const t = createTransporter(host);
+    await t.sendMail({
       from: `"FlipLearn" <${process.env.GMAIL_USER || 'smohamedassil@gmail.com'}>`,
       to,
       subject,
       html,
     });
-    console.log(`Email sent to ${to}: ${subject}`);
+    console.log(`[EMAIL] Sent to ${to}: ${subject}`);
   } catch (err) {
-    console.error('Email error:', err.message);
+    console.error('[EMAIL] Error:', err.message);
     // Don't throw — email failure shouldn't break the app
   }
 };
