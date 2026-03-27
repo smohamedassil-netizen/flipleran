@@ -193,7 +193,7 @@ export default function QuizBattle() {
             <div style={{ textAlign: 'center', marginBottom: 32 }}>
               <Swords size={48} color="#1B4F72" />
               <h1 style={{ fontSize: '1.5rem', fontWeight: 700, color: '#1B4F72', marginTop: 12 }}>Quiz Battle</h1>
-              <p style={{ color: '#64748b' }}>Defiez un autre etudiant en temps reel !</p>
+              <p style={{ color: '#64748b' }}>{'Défiez un autre étudiant en temps réel !'}</p>
             </div>
 
             <button onClick={createRoom} style={{
@@ -202,7 +202,7 @@ export default function QuizBattle() {
               color: 'white', border: 'none', fontSize: 16, fontWeight: 600, cursor: 'pointer',
               marginBottom: 24
             }}>
-              <Plus size={20} /> Creer une salle
+              <Plus size={20} /> {'Créer une salle'}
             </button>
 
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
@@ -215,7 +215,7 @@ export default function QuizBattle() {
             {rooms.length === 0 ? (
               <div style={{ textAlign: 'center', padding: 40, background: 'white', borderRadius: 12, border: '1px solid #e5e7eb', color: '#94a3b8' }}>
                 <Users size={32} />
-                <p style={{ marginTop: 8 }}>Aucune salle disponible. Creez-en une !</p>
+                <p style={{ marginTop: 8 }}>{'Aucune salle disponible. Créez-en une !'}</p>
               </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>

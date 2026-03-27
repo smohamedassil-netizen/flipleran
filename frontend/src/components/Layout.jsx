@@ -648,8 +648,8 @@ export default function Layout({ children, title = 'FlipLearn' }) {
           fontSize: 12,
           lineHeight: 1.6,
         }}>
-          <div>FlipLearn &copy; 2025 &mdash; Plateforme de Classe Invers&eacute;e</div>
-          <div style={{ marginTop: 2 }}>Fait par Mohamed</div>
+          <div>FlipLearn &copy; 2026 &mdash; Plateforme de Classe Invers&eacute;e</div>
+          <div style={{ marginTop: 2 }}>Fait par Mohamed Assil SERAY</div>
         </footer>
       </div>
     </div>

@@ -203,7 +203,7 @@ export default function StudentProfile() {
           {!loading && earnedBadges.length === 0 && (
             <div className="empty-state" style={{ padding: '32px' }}>
               <Award size={32} />
-              <p>Aucun badge pour l'instant -- regardez des videos et faites des QCM !</p>
+              <p>{'Aucun badge pour l\'instant — regardez des vidéos et faites des QCM !'}</p>
             </div>
           )}
 

@@ -52,7 +52,7 @@ export default function Support() {
         <p style={{ color: '#64748b', marginBottom: 32 }}>{'Trouvez des réponses à vos questions ou contactez-nous'}</p>
 
         {/* FAQ Section */}
-        <h2 style={{ fontSize: '1.1rem', fontWeight: 600, color: '#1B4F72', marginBottom: 16 }}>Questions fr\u00e9quentes</h2>
+        <h2 style={{ fontSize: '1.1rem', fontWeight: 600, color: '#1B4F72', marginBottom: 16 }}>{'Questions fréquentes'}</h2>
         <div style={{ marginBottom: 32 }}>
           {FAQ_ITEMS.map((item, i) => (
             <div key={i} style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: i === 0 ? '12px 12px 0 0' : i === FAQ_ITEMS.length - 1 ? '0 0 12px 12px' : 0, borderTop: i > 0 ? 'none' : undefined, overflow: 'hidden' }}>
@@ -73,7 +73,7 @@ export default function Support() {
           <div style={{ background: 'white', borderRadius: 12, border: '1px solid #e5e7eb', padding: 24 }}>
             {sent && (
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '12px 16px', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 8, marginBottom: 16, color: '#166534', fontSize: 14 }}>
-                <CheckCircle size={16} /> Message envoy\u00e9 avec succ\u00e8s !
+                <CheckCircle size={16} /> {'Message envoyé avec succès !'}
               </div>
             )}
             <form onSubmit={handleSubmit}>
