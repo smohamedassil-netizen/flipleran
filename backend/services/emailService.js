@@ -1,46 +1,84 @@
 /**
- * Email Service - Uses Resend HTTP API (SMTP blocked on Render free tier)
- * Fallback: logs to console if no API key configured
+ * Email Service - Uses Brevo (ex-Sendinblue) HTTP API
+ * 300 free emails/day, sends to ANY recipient (no domain verification needed)
+ * Fallback to Resend if BREVO_API_KEY not set
  */
 
+const BREVO_API_KEY = process.env.BREVO_API_KEY;
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
 const FROM_EMAIL = process.env.GMAIL_USER || 'smohamedassil@gmail.com';
+const FROM_NAME = 'FlipLearn';
 
 /**
- * Send an email via Resend HTTP API (works on Render — no SMTP needed)
+ * Send email via Brevo HTTP API (primary)
+ */
+async function sendViaBrevo(to, subject, html) {
+  const res = await fetch('https://api.brevo.com/v3/smtp/email', {
+    method: 'POST',
+    headers: {
+      'api-key': BREVO_API_KEY,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      sender: { name: FROM_NAME, email: FROM_EMAIL },
+      to: [{ email: to }],
+      subject,
+      htmlContent: html,
+    }),
+  });
+
+  const data = await res.json();
+  if (res.ok) {
+    console.log(`[EMAIL] Brevo sent to ${to}: ${subject} (msgId: ${data.messageId})`);
+    return true;
+  } else {
+    console.error(`[EMAIL] Brevo error:`, data);
+    return false;
+  }
+}
+
+/**
+ * Send email via Resend HTTP API (fallback)
+ */
+async function sendViaResend(to, subject, html) {
+  const adminEmail = FROM_EMAIL;
+  const finalSubject = to === adminEmail ? subject : `[Pour ${to}] ${subject}`;
+
+  const res = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${RESEND_API_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      from: `FlipLearn <onboarding@resend.dev>`,
+      to: [adminEmail],
+      subject: finalSubject,
+      html: `<p style="color:#666;font-size:12px;">Destinataire original : <strong>${to}</strong></p>${html}`,
+    }),
+  });
+
+  const data = await res.json();
+  if (res.ok) {
+    console.log(`[EMAIL] Resend sent to ${to}: ${subject} (id: ${data.id})`);
+    return true;
+  } else {
+    console.error(`[EMAIL] Resend error:`, data);
+    return false;
+  }
+}
+
+/**
+ * Send an email — tries Brevo first (sends to real recipient), falls back to Resend
  */
 export const sendEmail = async (to, subject, html) => {
-  if (!RESEND_API_KEY) {
-    console.log(`[EMAIL] No RESEND_API_KEY — skipping email to ${to}: ${subject}`);
-    return;
-  }
-
   try {
-    // Resend free tier: can only send to the account owner's email
-    // Route all notifications to the admin email with original recipient in subject
-    const adminEmail = FROM_EMAIL;
-    const finalSubject = to === adminEmail ? subject : `[Pour ${to}] ${subject}`;
-
-    const res = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${RESEND_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        from: `FlipLearn <onboarding@resend.dev>`,
-        to: [adminEmail],
-        subject: finalSubject,
-        html: `<p style="color:#666;font-size:12px;">Destinataire original : <strong>${to}</strong></p>${html}`,
-        reply_to: FROM_EMAIL,
-      }),
-    });
-
-    const data = await res.json();
-    if (res.ok) {
-      console.log(`[EMAIL] Sent to ${to}: ${subject} (id: ${data.id})`);
+    if (BREVO_API_KEY) {
+      await sendViaBrevo(to, subject, html);
+    } else if (RESEND_API_KEY) {
+      await sendViaResend(to, subject, html);
     } else {
-      console.error(`[EMAIL] Resend error:`, data);
+      console.log(`[EMAIL] No API key — skipping email to ${to}: ${subject}`);
     }
   } catch (err) {
     console.error('[EMAIL] Error:', err.message);
