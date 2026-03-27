@@ -1,51 +1,42 @@
-import nodemailer from 'nodemailer';
-import dns from 'dns';
+/**
+ * Email Service - Uses Resend HTTP API (SMTP blocked on Render free tier)
+ * Fallback: logs to console if no API key configured
+ */
 
-// ── Force ALL DNS lookups to IPv4 (Render free tier blocks IPv6) ──
-const _origLookup = dns.lookup;
-dns.lookup = function (hostname, options, callback) {
-  if (typeof options === 'function') {
-    callback = options;
-    options = {};
-  }
-  if (typeof options === 'number') {
-    options = { family: options };
-  }
-  options = Object.assign({}, options, { family: 4 });
-  return _origLookup.call(this, hostname, options, callback);
-};
-
-const transporter = nodemailer.createTransport({
-  host: 'smtp.gmail.com',
-  port: 587,
-  secure: false,
-  auth: {
-    user: process.env.GMAIL_USER || 'smohamedassil@gmail.com',
-    pass: process.env.GMAIL_APP_PASSWORD || 'rxde osbj bpun iycl',
-  },
-  tls: { rejectUnauthorized: false },
-  connectionTimeout: 10000,
-  greetingTimeout: 10000,
-  socketTimeout: 15000,
-});
-
-// Verify connection on startup
-transporter.verify()
-  .then(() => console.log('[EMAIL] SMTP Gmail connected (IPv4)'))
-  .catch((err) => console.error('[EMAIL] SMTP verify failed:', err.message));
+const RESEND_API_KEY = process.env.RESEND_API_KEY;
+const FROM_EMAIL = process.env.GMAIL_USER || 'smohamedassil@gmail.com';
 
 /**
- * Send an email notification
+ * Send an email via Resend HTTP API (works on Render — no SMTP needed)
  */
 export const sendEmail = async (to, subject, html) => {
+  if (!RESEND_API_KEY) {
+    console.log(`[EMAIL] No RESEND_API_KEY — skipping email to ${to}: ${subject}`);
+    return;
+  }
+
   try {
-    await transporter.sendMail({
-      from: `"FlipLearn" <${process.env.GMAIL_USER || 'smohamedassil@gmail.com'}>`,
-      to,
-      subject,
-      html,
+    const res = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${RESEND_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        from: `FlipLearn <onboarding@resend.dev>`,
+        to: [to],
+        subject,
+        html,
+        reply_to: FROM_EMAIL,
+      }),
     });
-    console.log(`[EMAIL] Sent to ${to}: ${subject}`);
+
+    const data = await res.json();
+    if (res.ok) {
+      console.log(`[EMAIL] Sent to ${to}: ${subject} (id: ${data.id})`);
+    } else {
+      console.error(`[EMAIL] Resend error:`, data);
+    }
   } catch (err) {
     console.error('[EMAIL] Error:', err.message);
   }
