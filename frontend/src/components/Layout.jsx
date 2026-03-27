@@ -149,11 +149,13 @@ function Sidebar({ collapsed, onToggle, role, user, mobileOpen, setMobileOpen })
   function isNavItemActive(to) {
     const qIdx = to.indexOf('?');
     if (qIdx !== -1) {
+      // Route with query params: exact match on both path AND search
       const toPath   = to.slice(0, qIdx);
       const toSearch = to.slice(qIdx);
       return location.pathname === toPath && location.search === toSearch;
     }
-    return location.pathname === to;
+    // Route without query params: active only when path matches AND no search params
+    return location.pathname === to && !location.search;
   }
 
   const handleLogout = () => {
