@@ -465,13 +465,20 @@ function Topbar({ onMenuClick, title, user, role, mobileOpen, setMobileOpen }) {
                           width: 8,
                           height: 8,
                           borderRadius: '50%',
-                          backgroundColor: n.read ? 'transparent' : (n.type === 'success' ? '#22c55e' : n.type === 'warning' ? '#f59e0b' : '#3b82f6'),
+                          backgroundColor: n.read ? 'transparent' : (n.type === 'urgent' || n.priority === 'urgent') ? '#DC2626' : (n.type === 'success' ? '#22c55e' : n.type === 'warning' ? '#f59e0b' : '#3b82f6'),
                           flexShrink: 0,
                           marginTop: 5,
+                          width: (n.type === 'urgent' || n.priority === 'urgent') ? 10 : 8,
+                          height: (n.type === 'urgent' || n.priority === 'urgent') ? 10 : 8,
                         }}
                       />
                       <div style={{ flex: 1 }}>
-                        <div style={{ fontSize: 13, color: '#1e293b', lineHeight: 1.4 }}>{n.message}</div>
+                        <div style={{
+                          fontSize: 13,
+                          color: (n.type === 'urgent' || n.priority === 'urgent') ? '#DC2626' : '#1e293b',
+                          lineHeight: 1.4,
+                          fontWeight: (n.type === 'urgent' || n.priority === 'urgent') ? 700 : 400,
+                        }}>{n.message}</div>
                         <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 2 }}>
                           {new Date(n.createdAt).toLocaleString('fr-FR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
                         </div>

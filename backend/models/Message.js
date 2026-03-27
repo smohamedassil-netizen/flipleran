@@ -7,6 +7,7 @@ const messageSchema = new mongoose.Schema(
     roomId:     { type: String, required: true },
     content:    { type: String, required: true },
     type:       { type: String, enum: ['text', 'bot'], default: 'text' },
+    priority:   { type: String, enum: ['normal', 'urgent'], default: 'normal' },
     senderName: { type: String },  // Nom d'affichage pour les messages non-utilisateurs
   },
   { timestamps: true }

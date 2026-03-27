@@ -176,13 +176,26 @@ function MessageBubble({ msg, isOwn, showSender }) {
           </div>
         )}
 
+        {/* Badge urgent */}
+        {msg.priority === 'urgent' && (
+          <span style={{
+            display: 'inline-block', background: '#DC2626', color: 'white',
+            padding: '1px 8px', borderRadius: '4px', fontSize: '10px',
+            fontWeight: 700, letterSpacing: '0.5px', marginBottom: '2px',
+          }}>
+            URGENT
+          </span>
+        )}
+
         {/* Contenu */}
         <div
           style={{
-            background:   isOwn  ? '#EBF2FA'
+            background:   msg.priority === 'urgent' ? '#FEF2F2'
+                        : isOwn  ? '#EBF2FA'
                         : isBot  ? 'linear-gradient(135deg,#F0F7FF 0%,#E8F0FE 100%)'
                         :          '#fff',
-            border:       `1px solid ${isOwn ? '#C5D9EF' : isBot ? '#BFDBFE' : 'var(--border)'}`,
+            border:       msg.priority === 'urgent' ? '2px solid #DC2626'
+                        : `1px solid ${isOwn ? '#C5D9EF' : isBot ? '#BFDBFE' : 'var(--border)'}`,
             borderRadius: '8px',
             padding:      '9px 13px',
             fontSize:     '13.5px',
@@ -350,8 +363,11 @@ export default function ChatBox({
 
   const isBot = roomType === 'bot';
 
-  const [input,   setInput]   = useState('');
-  const [sending, setSending] = useState(false);
+  const [input,    setInput]    = useState('');
+  const [sending,  setSending]  = useState(false);
+  const [isUrgent, setIsUrgent] = useState(false);
+
+  const canSendUrgent = user?.role === 'professeur' || user?.role === 'admin';
 
   const messagesEndRef = useRef(null);
   const inputRef       = useRef(null);
@@ -366,11 +382,12 @@ export default function ChatBox({
     const trimmed = (text ?? input).trim();
     if (!trimmed || !connected) return;
     setSending(true);
-    sendMessage(trimmed, receiverId ?? null);
+    sendMessage(trimmed, receiverId ?? null, isUrgent ? 'urgent' : 'normal');
     setInput('');
+    setIsUrgent(false);
     inputRef.current?.focus();
     setTimeout(() => setSending(false), 300);
-  }, [input, connected, sendMessage, receiverId]);
+  }, [input, connected, sendMessage, receiverId, isUrgent]);
 
   const handleKeyDown = (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -601,11 +618,38 @@ export default function ChatBox({
           onFocus={(e)  => { e.target.style.borderColor = 'var(--primary)'; }}
           onBlur={(e)   => { e.target.style.borderColor = 'var(--border)'; }}
         />
+        {/* Bouton urgent (professeur/admin seulement) */}
+        {canSendUrgent && !isBot && (
+          <button
+            onClick={() => setIsUrgent(!isUrgent)}
+            title={isUrgent ? 'Message urgent (cliquer pour annuler)' : 'Marquer comme urgent'}
+            style={{
+              width: '40px', height: '40px', padding: 0,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              flexShrink: 0, border: 'none', borderRadius: '8px', cursor: 'pointer',
+              background: isUrgent ? '#FEE2E2' : 'transparent',
+              color: isUrgent ? '#DC2626' : '#9CA3AF',
+              transition: 'all 0.2s',
+              fontSize: '18px',
+            }}
+          >
+            {isUrgent ? '🔴' : '⚠️'}
+          </button>
+        )}
+        {isUrgent && (
+          <span style={{ position: 'absolute', top: '-28px', right: '60px', background: '#DC2626', color: 'white', padding: '2px 10px', borderRadius: '4px', fontSize: '11px', fontWeight: 600 }}>
+            MESSAGE URGENT
+          </span>
+        )}
         <button
           onClick={() => handleSend()}
           disabled={!connected || !input.trim() || sending || (isBot && botThinking)}
           className="btn btn-primary"
-          style={{ width: '40px', height: '40px', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
+          style={{
+            width: '40px', height: '40px', padding: 0,
+            display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+            background: isUrgent ? '#DC2626' : undefined,
+          }}
         >
           <Send size={16} />
         </button>

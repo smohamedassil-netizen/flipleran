@@ -106,7 +106,7 @@ export function useChat(roomId) {
   }, [roomId]);
 
   /* ── Envoyer un message ──────────────────────────────────────────────── */
-  const sendMessage = useCallback((content, receiverId = null) => {
+  const sendMessage = useCallback((content, receiverId = null, priority = 'normal') => {
     const s = socketRef.current;
     if (!s?.connected || !content?.trim()) return;
 
@@ -115,6 +115,7 @@ export function useChat(roomId) {
       content:    content.trim(),
       receiverId: receiverId || undefined,
       type:       'text',
+      priority,
     });
 
     // Annuler le typing

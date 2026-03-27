@@ -111,3 +111,30 @@ export const sendNotificationEmail = async (to, title, message) => {
   `;
   await sendEmail(to, `FlipLearn - ${title}`, html);
 };
+
+/**
+ * Send an URGENT notification email with red FlipLearn template
+ */
+export const sendUrgentEmail = async (to, title, message) => {
+  const html = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+      <div style="background: linear-gradient(135deg, #C0392B, #E74C3C); padding: 24px; border-radius: 12px 12px 0 0; text-align: center;">
+        <h1 style="color: white; margin: 0; font-size: 24px;">FlipLearn - URGENT</h1>
+        <p style="color: rgba(255,255,255,0.9); margin: 4px 0 0; font-size: 14px;">Notification urgente</p>
+      </div>
+      <div style="background: #FEF2F2; padding: 24px; border: 2px solid #E74C3C; border-top: none;">
+        <h2 style="color: #C0392B; margin: 0 0 12px; font-size: 18px;">${title}</h2>
+        <p style="color: #374151; line-height: 1.6; font-size: 15px;">${message}</p>
+        <div style="margin-top: 24px; text-align: center;">
+          <a href="https://fliplearn-5lsz.onrender.com" style="display: inline-block; padding: 14px 32px; background: #C0392B; color: white; text-decoration: none; border-radius: 8px; font-weight: 700; font-size: 16px;">
+            Voir le message urgent
+          </a>
+        </div>
+      </div>
+      <div style="padding: 16px; text-align: center; color: #94a3b8; font-size: 12px;">
+        FlipLearn - Projet de Fin d'Etudes - Licence Informatique ISIL
+      </div>
+    </div>
+  `;
+  await sendEmail(to, `URGENT FlipLearn - ${title}`, html);
+};

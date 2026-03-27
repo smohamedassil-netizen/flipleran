@@ -187,9 +187,12 @@ io.on('connection', (socket) => {
   });
 
   /* ── send_message ──────────────────────────────────────────────────── */
-  socket.on('send_message', async ({ roomId, content, receiverId, type = 'text' }) => {
+  socket.on('send_message', async ({ roomId, content, receiverId, type = 'text', priority = 'normal' }) => {
     if (!content?.trim() || !roomId) return;
     try {
+      // Only professors and admins can send urgent messages
+      const msgPriority = (user.role === 'professeur' || user.role === 'admin') ? priority : 'normal';
+
       // 1. Sauvegarder et diffuser le message de l'utilisateur
       const msg = await Message.create({
         senderId:   user.id,
@@ -197,6 +200,7 @@ io.on('connection', (socket) => {
         roomId,
         content:    content.trim(),
         type,
+        priority:   msgPriority,
       });
       await msg.populate('senderId', 'nom prenom');
 
@@ -206,24 +210,52 @@ io.on('connection', (socket) => {
       // Notification for course chat messages (notify all room members except sender)
       if (roomId.startsWith('course_')) {
         const courseId = roomId.replace('course_', '');
+        const isUrgent = msgPriority === 'urgent';
+        const notifPrefix = isUrgent ? '🔴 URGENT — ' : '';
         const roomSockets = await io.in(roomId).fetchSockets();
         for (const s of roomSockets) {
           if (s.user?.id !== user.id) {
             s.emit('notification', {
-              type: 'message',
-              message: `${user.prenom} ${user.nom} dans le chat du cours`,
+              type: isUrgent ? 'urgent' : 'message',
+              priority: msgPriority,
+              message: `${notifPrefix}${user.prenom} ${user.nom} dans le chat du cours`,
               link: `/chat/course/${courseId}`,
               createdAt: new Date().toISOString(),
             });
+          }
+        }
+
+        // Send email for urgent course messages to ALL enrolled students
+        if (isUrgent) {
+          try {
+            const { sendNotificationEmail, sendUrgentEmail } = await import('./services/emailService.js');
+            const course = await (await import('./models/Course.js')).default.findById(courseId).select('titre');
+            const students = await User.find({ role: 'etudiant', isActive: true }).select('email prenom nom');
+            const courseName = course?.titre || 'un cours';
+            for (const student of students) {
+              if (student.email) {
+                sendUrgentEmail(
+                  student.email,
+                  `Message urgent — ${courseName}`,
+                  `<strong>${user.prenom} ${user.nom}</strong> a envoye un message urgent dans le cours <strong>${courseName}</strong> :<br><br><em>"${content.trim().substring(0, 200)}"</em><br><br>Connectez-vous pour voir le message complet.`
+                );
+              }
+            }
+          } catch (emailErr) {
+            console.error('[EMAIL] Urgent course notification error:', emailErr.message);
           }
         }
       }
 
       // 2b. Notification temps réel pour le destinataire (messages privés)
       if (receiverId && !roomId.startsWith('bot_')) {
+        const isUrgent = msgPriority === 'urgent';
+        const notifPrefix = isUrgent ? '🔴 URGENT — ' : '';
+
         io.to(`user_${receiverId}`).emit('notification', {
-          type: 'message',
-          message: `Nouveau message de ${user.prenom} ${user.nom}`,
+          type: isUrgent ? 'urgent' : 'message',
+          priority: msgPriority,
+          message: `${notifPrefix}Nouveau message de ${user.prenom} ${user.nom}`,
           link: `/chat/private/${user.id}`,
           from: user.id,
           createdAt: new Date().toISOString(),
@@ -231,15 +263,23 @@ io.on('connection', (socket) => {
 
         // Send email notification
         try {
-          const { sendNotificationEmail } = await import('./services/emailService.js');
+          const { sendNotificationEmail, sendUrgentEmail } = await import('./services/emailService.js');
           const recipient = await User.findById(receiverId).select('email prenom');
-          console.log('[EMAIL] Private message -> receiverId:', receiverId, '-> email:', recipient?.email);
+          console.log('[EMAIL] Private message -> receiverId:', receiverId, '-> email:', recipient?.email, '-> priority:', msgPriority);
           if (recipient?.email) {
-            sendNotificationEmail(
-              recipient.email,
-              'Nouveau message',
-              `Vous avez reçu un nouveau message de <strong>${user.prenom} ${user.nom}</strong> sur FlipLearn. Connectez-vous pour le lire !`
-            );
+            if (isUrgent) {
+              sendUrgentEmail(
+                recipient.email,
+                'Message urgent',
+                `<strong>${user.prenom} ${user.nom}</strong> vous a envoye un message urgent sur FlipLearn :<br><br><em>"${content.trim().substring(0, 200)}"</em><br><br>Connectez-vous pour repondre.`
+              );
+            } else {
+              sendNotificationEmail(
+                recipient.email,
+                'Nouveau message',
+                `Vous avez recu un nouveau message de <strong>${user.prenom} ${user.nom}</strong> sur FlipLearn. Connectez-vous pour le lire !`
+              );
+            }
           }
         } catch (emailErr) {
           console.error('Email notification error:', emailErr.message);

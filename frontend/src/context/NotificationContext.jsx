@@ -64,6 +64,8 @@ export function NotificationProvider({ children }) {
       addNotification({
         message: data.message,
         type: data.type || 'info',
+        priority: data.priority || 'normal',
+        link: data.link,
       });
     });
 
