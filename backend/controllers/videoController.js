@@ -244,10 +244,16 @@ export const updateVideo = async (req, res) => {
     const video = await Video.findById(req.params.id);
     if (!video) return res.status(404).json({ message: 'Video introuvable.' });
 
-    const { titre, description, order } = req.body;
+    const { titre, description, order, chapters } = req.body;
     if (titre !== undefined) video.titre = titre;
     if (description !== undefined) video.description = description;
     if (order !== undefined) video.order = Number(order);
+    if (chapters !== undefined) {
+      // Sort chapters by timestamp
+      video.chapters = chapters
+        .filter(c => c.title && c.timestamp >= 0)
+        .sort((a, b) => a.timestamp - b.timestamp);
+    }
 
     await video.save();
     res.json(video);

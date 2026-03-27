@@ -148,12 +148,47 @@ export default function StudentCourse() {
   const [loading, setLoading] = useState(true);
   const [error,   setError]   = useState('');
   const [editingVideo, setEditingVideo] = useState(null);
-  const [editForm, setEditForm] = useState({ titre: '', description: '', order: 0 });
+  const [editForm, setEditForm] = useState({ titre: '', description: '', order: 0, chapters: [] });
   const [deleteConfirm, setDeleteConfirm] = useState(null);
+
+  const formatTime = (s) => {
+    const m = Math.floor(s / 60);
+    const sec = Math.floor(s % 60);
+    return `${m}:${sec.toString().padStart(2, '0')}`;
+  };
+  const parseTime = (str) => {
+    const parts = str.split(':').map(Number);
+    if (parts.length === 2) return parts[0] * 60 + (parts[1] || 0);
+    if (parts.length === 3) return parts[0] * 3600 + parts[1] * 60 + (parts[2] || 0);
+    return Number(str) || 0;
+  };
 
   const handleEditVideo = (video) => {
     setEditingVideo(video);
-    setEditForm({ titre: video.titre, description: video.description || '', order: video.order || 0 });
+    setEditForm({
+      titre: video.titre,
+      description: video.description || '',
+      order: video.order || 0,
+      chapters: video.chapters || [],
+    });
+  };
+
+  const addChapter = () => {
+    setEditForm({
+      ...editForm,
+      chapters: [...editForm.chapters, { title: '', timestamp: 0 }],
+    });
+  };
+  const removeChapter = (i) => {
+    setEditForm({
+      ...editForm,
+      chapters: editForm.chapters.filter((_, idx) => idx !== i),
+    });
+  };
+  const updateChapter = (i, field, value) => {
+    const chs = [...editForm.chapters];
+    chs[i] = { ...chs[i], [field]: value };
+    setEditForm({ ...editForm, chapters: chs });
   };
 
   const handleSaveEdit = async () => {
@@ -417,6 +452,50 @@ export default function StudentCourse() {
                   onChange={(e) => setEditForm({ ...editForm, order: Number(e.target.value) })}
                   style={{ width: 100 }}
                 />
+              </div>
+
+              {/* Chapitres */}
+              <div style={{ borderTop: '1px solid var(--color-border)', paddingTop: 12 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                  <label style={{ fontSize: 'var(--font-size-sm)', fontWeight: 600 }}>
+                    Chapitres ({editForm.chapters.length})
+                  </label>
+                  <button className="btn btn-ghost btn-sm" onClick={addChapter} style={{ fontSize: 'var(--font-size-xs)' }}>
+                    + Ajouter un chapitre
+                  </button>
+                </div>
+                {editForm.chapters.length === 0 && (
+                  <p style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-secondary)', fontStyle: 'italic' }}>
+                    Aucun chapitre. Ajoutez des chapitres pour diviser la vidéo en parties.
+                  </p>
+                )}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 200, overflowY: 'auto' }}>
+                  {editForm.chapters.map((ch, i) => (
+                    <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                      <input
+                        className="input"
+                        placeholder="mm:ss"
+                        value={typeof ch.timestamp === 'number' ? formatTime(ch.timestamp) : ch.timestamp}
+                        onChange={(e) => updateChapter(i, 'timestamp', parseTime(e.target.value))}
+                        style={{ width: 70, textAlign: 'center', fontSize: 'var(--font-size-xs)' }}
+                      />
+                      <input
+                        className="input"
+                        placeholder="Titre du chapitre"
+                        value={ch.title}
+                        onChange={(e) => updateChapter(i, 'title', e.target.value)}
+                        style={{ flex: 1, fontSize: 'var(--font-size-xs)' }}
+                      />
+                      <button
+                        className="btn btn-ghost btn-sm"
+                        onClick={() => removeChapter(i)}
+                        style={{ color: '#e74c3c', padding: '2px 6px' }}
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
             <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 20 }}>

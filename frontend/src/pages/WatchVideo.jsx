@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout.jsx';
 import VideoPlayer from '../components/VideoPlayer.jsx';
 import api from '../utils/api.js';
-import { ArrowLeft, AlertCircle, BookOpen, Home } from 'lucide-react';
+import { ArrowLeft, AlertCircle, BookOpen, Home, ListOrdered } from 'lucide-react';
 import Breadcrumb from '../components/Breadcrumb.jsx';
 import { useGamification } from '../context/GamificationContext.jsx';
 
@@ -20,6 +20,20 @@ export default function WatchVideo() {
   const [videos,  setVideos]  = useState([]);   // liste du cours pour navigation
   const [loading, setLoading] = useState(true);
   const [error,   setError]   = useState('');
+
+  const formatTime = (s) => {
+    const m = Math.floor(s / 60);
+    const sec = Math.floor(s % 60);
+    return `${m}:${sec.toString().padStart(2, '0')}`;
+  };
+
+  const seekToChapter = (timestamp) => {
+    const videoEl = document.querySelector('video');
+    if (videoEl) {
+      videoEl.currentTime = timestamp;
+      videoEl.play();
+    }
+  };
 
   useEffect(() => {
     const fetchVideo = async () => {
@@ -88,6 +102,61 @@ export default function WatchVideo() {
               <p style={{ fontSize: 'var(--font-size-sm)', color: 'var(--color-text)', lineHeight: 1.7 }}>
                 {video.description}
               </p>
+            </div>
+          )}
+
+          {/* Chapitres */}
+          {video.chapters && video.chapters.length > 0 && (
+            <div className="card" style={{ marginTop: 16 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+                <ListOrdered size={16} color="var(--color-primary)" />
+                <h4 style={{ fontSize: 'var(--font-size-sm)', fontWeight: 700, margin: 0 }}>
+                  Chapitres ({video.chapters.length} parties)
+                </h4>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                {video.chapters.map((ch, i) => (
+                  <button
+                    key={i}
+                    onClick={() => seekToChapter(ch.timestamp)}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 10,
+                      padding: '8px 12px',
+                      borderRadius: 'var(--radius-md)',
+                      border: '1px solid var(--color-border)',
+                      backgroundColor: 'var(--color-surface)',
+                      cursor: 'pointer',
+                      textAlign: 'left',
+                      transition: 'all 150ms',
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = 'var(--color-primary-light)';
+                      e.currentTarget.style.borderColor = 'var(--color-primary)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = 'var(--color-surface)';
+                      e.currentTarget.style.borderColor = 'var(--color-border)';
+                    }}
+                  >
+                    <span style={{
+                      backgroundColor: 'var(--color-primary)',
+                      color: '#fff',
+                      fontSize: 'var(--font-size-xs)',
+                      fontWeight: 700,
+                      padding: '2px 8px',
+                      borderRadius: 'var(--radius-sm)',
+                      flexShrink: 0,
+                    }}>
+                      {formatTime(ch.timestamp)}
+                    </span>
+                    <span style={{ fontSize: 'var(--font-size-sm)', color: 'var(--color-text)', fontWeight: 500 }}>
+                      {ch.title}
+                    </span>
+                  </button>
+                ))}
+              </div>
             </div>
           )}
         </div>

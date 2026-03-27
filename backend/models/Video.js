@@ -11,6 +11,14 @@ const watchedEntrySchema = new mongoose.Schema(
   { _id: false }
 );
 
+const chapterSchema = new mongoose.Schema(
+  {
+    title:     { type: String, required: true, trim: true },
+    timestamp: { type: Number, required: true, min: 0 },  // secondes depuis le début
+  },
+  { _id: false }
+);
+
 const videoSchema = new mongoose.Schema(
   {
     titre:        { type: String, required: true, trim: true },
@@ -20,6 +28,7 @@ const videoSchema = new mongoose.Schema(
     thumbnailUrl: { type: String, default: '' },
     duration:     { type: Number, default: 0 },           // secondes
     order:        { type: Number, default: 0 },           // ordre dans le cours
+    chapters:     [chapterSchema],                        // chapitres / parties
     courseId:     { type: mongoose.Schema.Types.ObjectId, ref: 'Course', required: true },
     createdBy:    { type: mongoose.Schema.Types.ObjectId, ref: 'User',   required: true },
     watchedBy:    [watchedEntrySchema],
