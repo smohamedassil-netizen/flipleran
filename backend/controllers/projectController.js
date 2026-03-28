@@ -92,7 +92,10 @@ export const getProject = async (req, res) => {
   try {
     const project = await Project.findById(req.params.id)
       .populate('createdBy', 'nom prenom')
-      .populate('groupes.membres.userId', 'nom prenom email filiere');
+      .populate('groupes.membres.userId', 'nom prenom email filiere')
+      .populate('livrables.uploadedBy', 'nom prenom')
+      .populate('evaluations.evaluateur', 'nom prenom')
+      .populate('evaluations.cible', 'nom prenom');
 
     if (!project) return res.status(404).json({ message: 'Projet introuvable.' });
     res.json(project);

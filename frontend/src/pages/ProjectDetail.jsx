@@ -551,7 +551,7 @@ export default function ProjectDetail() {
                           {liv.titre}
                         </p>
                         <p style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-secondary)', margin: 0 }}>
-                          {liv.uploadePar?.prenom ?? 'Inconnu'} {liv.uploadePar?.nom ?? ''} {'·'} {new Date(liv.date ?? liv.createdAt).toLocaleDateString('fr-FR')}
+                          {liv.uploadedBy?.prenom ?? liv.uploadePar?.prenom ?? 'Moi'} {liv.uploadedBy?.nom ?? liv.uploadePar?.nom ?? ''} {'·'} {liv.uploadedAt ? new Date(liv.uploadedAt).toLocaleDateString('fr-FR') : 'Maintenant'}
                         </p>
                       </div>
                     </div>
