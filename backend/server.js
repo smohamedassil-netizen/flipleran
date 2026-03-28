@@ -369,7 +369,7 @@ io.on('connection', (socket) => {
 
   /* Créer une salle de bataille */
   socket.on('battle:create', async (data, callback) => {
-    const roomId = 'battle_' + Date.now();
+    const roomId = 'BATTLE-' + Math.random().toString(36).substring(2, 8).toUpperCase();
     battleRooms.set(roomId, {
       players: [{ id: socket.id, name: data.name, odgerId: data.userId, score: 0 }],
       questions: [],
@@ -384,6 +384,7 @@ io.on('connection', (socket) => {
     socket.broadcast.emit('notification', {
       type: 'quiz_battle',
       message: `${data.name} a créé une salle de Quiz Battle ! Rejoignez-le !`,
+      link: '/quiz-battle',
       createdAt: new Date().toISOString(),
     });
 
@@ -481,7 +482,7 @@ io.on('connection', (socket) => {
     // Prevent duplicate answers
     if (room.answers[questionIndex][socket.id]) return;
 
-    const correct = room.questions[questionIndex]?.correctAnswer === answer;
+    const correct = answer != null && room.questions[questionIndex]?.correctAnswer === answer;
     if (correct) room.players[playerIdx].score += 10;
 
     room.answers[questionIndex][socket.id] = { answer, correct };
