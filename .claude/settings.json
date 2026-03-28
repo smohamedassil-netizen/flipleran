@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cd \"C:/Users/assil/OneDrive/Documents/projet pfe/fliplearn\" && DATE=$(date +%Y-%m-%d) && git add -A && git diff --cached --quiet || git commit -m \"chore: session du $DATE\" && git push origin main 2>/dev/null || true",
+            "timeout": 30,
+            "statusMessage": "Commit de fin de session..."
+          }
+        ]
+      }
+    ]
+  }
+}

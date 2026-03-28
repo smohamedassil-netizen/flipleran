@@ -69,16 +69,13 @@ Historique des modifications par date de session.
 - Page 404 professionnelle
 - Dashboard étudiant avec skeleton loading et accès rapide
 - Flashcards avec animation flip 3D et navigation clavier
-- Leaderboard avec podium et classement complet
-- QuizBattle wrappé dans Layout
 
 ### Corrections de bugs
-- Mapping rôles `etudiant`/`professeur` dans Layout.jsx
+- Fix mapping rôles etudiant/professeur dans Layout.jsx
 - Création de CoursesPage.jsx (route manquante)
 - Fix profil étudiant (Layout wrapper + formulaire édition)
-- Fix admin sidebar (query params au lieu de paths)
-- Fix variables CSS (`--primary` → `--color-primary`)
-- Fix import Bot dans ChatPage
+- Fix admin sidebar (query params)
+- Fix variables CSS (alias --primary vers --color-primary)
 - Logo FlipLearn cliquable (retour accueil)
 - Accents français dans 9 fichiers
 
@@ -98,6 +95,6 @@ Historique des modifications par date de session.
 - Socket.io pour chat temps réel
 - Upload vidéos via Cloudinary
 - Système de gamification (points, badges, classement)
-- Seed.js avec données de démonstration
+- Script seed.js avec données de démonstration
 - 10 collections MongoDB
 - 24 pages React
