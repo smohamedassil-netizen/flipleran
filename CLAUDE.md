@@ -82,3 +82,34 @@ GitHub repo: `https://github.com/smohamedassil-netizen/flipleran` (note: typo in
 ## Language
 
 All UI text is in French. User-facing strings use proper French accents. In JSX text content (between tags), Unicode escapes like `\u00e9` render literally — use `{'é'}` JS expressions instead.
+
+## Session Protocol — IMPORTANT
+
+**À chaque nouvelle session Claude Code sur ce projet, tu DOIS :**
+
+1. **Au début de session** : lire ce fichier + faire un `git log --oneline -5` pour voir où on en est
+2. **Pendant le travail** : faire des commits réguliers (pas tout d'un coup à la fin)
+3. **À la fin de session** :
+   - Faire un commit avec les modifications du jour (même mineures : typo, commentaire, refactor)
+   - Push sur GitHub : `git push origin main`
+   - Mettre à jour le fichier `CHANGELOG.md` à la racine avec la date et les modifications
+   - Si aucune modification de code : faire un commit de maintenance (mise à jour doc, commentaires, nettoyage)
+
+**Objectif** : que l'historique GitHub montre une activité régulière et progressive, pas un projet fait en 1 jour. Chaque session = au moins 1 commit avec une date différente.
+
+**Format des commits** :
+- `feat: ...` pour les nouvelles fonctionnalités
+- `fix: ...` pour les corrections de bugs
+- `docs: ...` pour la documentation
+- `style: ...` pour le CSS/UI
+- `refactor: ...` pour le refactoring
+- `chore: ...` pour la maintenance
+
+## Recent Changes (Module PBL)
+
+- `backend/models/Project.js` — Modèle projet avec groupes, rôles CESI, phases, livrables, évaluations
+- `backend/controllers/projectController.js` — 12 endpoints (CRUD, groupes aléatoires, upload livrables, évaluations, aide IA Groq)
+- `backend/routes/projectRoutes.js` — Routes protégées par auth + role middleware
+- `frontend/src/pages/ProjectList.jsx` — Liste des projets avec filtres Prosits/Projets
+- `frontend/src/pages/ProjectDetail.jsx` — Détail projet avec timeline, groupes, badges rôles style Loup-Garou, livrables, auto-évaluation, aide IA
+- `frontend/src/pages/ProjectCreate.jsx` — Formulaire création Prosit/Projet avec phases pré-remplies
