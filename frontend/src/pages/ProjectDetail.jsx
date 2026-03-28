@@ -220,9 +220,14 @@ export default function ProjectDetail() {
     if (!uploadForm.titre.trim() || (!uploadForm.file && uploadForm.type !== 'lien')) return;
     setUploading(true);
     try {
+      // Trouver le groupeIndex de l'utilisateur
+      const gIdx = project?.groupes?.findIndex(g =>
+        g.membres?.some(m => (m.userId?._id ?? m.userId) === user?._id)
+      );
       const formData = new FormData();
       formData.append('titre', uploadForm.titre);
       formData.append('type', uploadForm.type);
+      formData.append('groupeIndex', gIdx >= 0 ? gIdx : 0);
       if (uploadForm.file) formData.append('file', uploadForm.file);
       if (uploadForm.lien) formData.append('lien', uploadForm.lien);
 

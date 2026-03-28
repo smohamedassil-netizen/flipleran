@@ -247,17 +247,28 @@ export const addLivrable = async (req, res) => {
     const project = await Project.findById(req.params.id);
     if (!project) return res.status(404).json({ message: 'Projet introuvable.' });
 
-    const { titre, groupeIndex, type } = req.body;
-    if (!titre || groupeIndex === undefined || !type) {
-      return res.status(400).json({ message: 'titre, groupeIndex et type sont requis.' });
+    const { titre, type } = req.body;
+    let { groupeIndex } = req.body;
+    if (!titre || !type) {
+      return res.status(400).json({ message: 'titre et type sont requis.' });
+    }
+    // Auto-detect groupeIndex from user's group if not provided
+    if (groupeIndex === undefined || groupeIndex === null || groupeIndex === '') {
+      const idx = project.groupes.findIndex(g =>
+        g.membres.some(m => m.userId.toString() === req.user.id)
+      );
+      groupeIndex = idx >= 0 ? idx : 0;
     }
 
     const cleanName = req.file.originalname
       .replace(/\s+/g, '_')
       .replace(/\.[^.]+$/, '');
+    const isVideo = req.file.mimetype.startsWith('video/');
+    const isImage = req.file.mimetype.startsWith('image/');
+    const resourceType = isVideo ? 'video' : isImage ? 'image' : 'raw';
     const result = await uploadBuffer(req.file.buffer, {
       folder: `fliplearn/projects/${req.params.id}`,
-      resource_type: 'raw',
+      resource_type: resourceType,
       public_id: `${Date.now()}_${cleanName}`,
     });
 
