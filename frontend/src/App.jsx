@@ -30,6 +30,9 @@ import ResourcesHub         from './pages/ResourcesHub.jsx';
 import ProfessorQCMHub      from './pages/ProfessorQCMHub.jsx';
 import BadgeManagement      from './pages/BadgeManagement.jsx';
 import Support              from './pages/Support.jsx';
+import ProjectList          from './pages/ProjectList.jsx';
+import ProjectDetail        from './pages/ProjectDetail.jsx';
+import ProjectCreate        from './pages/ProjectCreate.jsx';
 
 /* ── Pages d'erreur ────────────────────────────────────────────────────────── */
 function ErrorPage({ code, title, description }) {
@@ -103,6 +106,8 @@ export default function App() {
             <Route path="/settings"                    element={<Settings />} />
             <Route path="/resources"                   element={<ResourcesHub />} />
             <Route path="/support"                    element={<Support />} />
+            <Route path="/projects"                  element={<ProjectList />} />
+            <Route path="/projects/:projectId"       element={<ProjectDetail />} />
           </Route>
 
           {/* Professeur + Admin only */}
@@ -113,6 +118,7 @@ export default function App() {
             <Route path="/professor/videos/:videoId/qcm"        element={<ProfessorCreateQCM />} />
             <Route path="/professor/qcm"                       element={<ProfessorQCMHub />} />
             <Route path="/professor/badges"                    element={<BadgeManagement />} />
+            <Route path="/professor/projects/create"            element={<ProjectCreate />} />
           </Route>
 
           {/* Admin only */}

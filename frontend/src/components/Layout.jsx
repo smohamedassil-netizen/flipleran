@@ -27,6 +27,7 @@ import {
   Library,
   Layers,
   FolderOpen,
+  FolderKanban,
   ClipboardList,
   HelpCircle,
   Award,
@@ -42,6 +43,7 @@ const NAV = {
         { label: 'Mes cours',       icon: BookOpen,        to: '/courses' },
         { label: 'Ressources',      icon: FolderOpen,      to: '/resources' },
         { label: 'Mes decks',       icon: Layers,          to: '/decks' },
+        { label: 'Projets',         icon: FolderKanban,    to: '/projects' },
       ],
     },
     {
@@ -68,6 +70,7 @@ const NAV = {
         { label: 'Mes cours',       icon: BookOpen,        to: '/courses' },
         { label: 'Ressources',      icon: FolderOpen,      to: '/resources' },
         { label: 'Gérer les QCM',   icon: ClipboardList,   to: '/professor/qcm' },
+        { label: 'Projets',         icon: FolderKanban,    to: '/projects' },
       ],
     },
     {
