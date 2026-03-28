@@ -271,7 +271,10 @@ export const addLivrable = async (req, res) => {
     });
 
     await project.save();
-    res.status(201).json(project.livrables[project.livrables.length - 1]);
+    const updated = await Project.findById(req.params.id)
+      .populate('createdBy', 'nom prenom')
+      .populate('groupes.membres.userId', 'nom prenom email filiere promotion');
+    res.status(201).json(updated);
   } catch (err) {
     console.error('addLivrable error:', err.message);
     res.status(500).json({ message: `Erreur upload : ${err.message}` });

@@ -53,39 +53,76 @@ const ROLE_CONFIG = {
   },
 };
 
-/* ─── RoleBadge Component (style Loup-Garou) ───────────────────────────── */
+/* ─── RoleBadge Component (style carte de jeu / Loup-Garou) ────────────── */
 function RoleBadge({ role, size = 'normal', showDescription = false }) {
   const cfg = ROLE_CONFIG[role] ?? { label: role, color: '#64748B', bg: '#F1F5F9', icon: '\u{2753}', border: '#94A3B8', description: '' };
   const isLarge = size === 'large';
+  const [hovered, setHovered] = useState(false);
+
+  if (isLarge) {
+    return (
+      <div
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
+        style={{
+          display: 'flex', alignItems: 'center', gap: 14,
+          padding: '14px 16px',
+          borderRadius: 14,
+          background: hovered
+            ? `linear-gradient(135deg, ${cfg.border}15, ${cfg.bg})`
+            : `linear-gradient(135deg, ${cfg.bg}, white)`,
+          border: `2px solid ${cfg.border}`,
+          boxShadow: hovered
+            ? `0 6px 20px ${cfg.border}30`
+            : '0 2px 8px rgba(0,0,0,0.06)',
+          transform: hovered ? 'translateY(-2px) scale(1.02)' : 'none',
+          transition: 'all 0.25s ease',
+          cursor: 'default',
+        }}
+      >
+        <div style={{
+          width: 48, height: 48, borderRadius: 12,
+          background: `linear-gradient(145deg, ${cfg.border}, ${cfg.color})`,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          fontSize: 24, flexShrink: 0,
+          boxShadow: `0 3px 10px ${cfg.border}40`,
+        }}>
+          {cfg.icon}
+        </div>
+        <div style={{ flex: 1 }}>
+          <p style={{
+            fontWeight: 800, fontSize: 13, color: cfg.color,
+            textTransform: 'uppercase', letterSpacing: '0.8px', margin: 0,
+          }}>
+            {cfg.label}
+          </p>
+          {showDescription && (
+            <p style={{ fontSize: 11, color: '#64748B', margin: '4px 0 0', lineHeight: 1.4 }}>
+              {cfg.description}
+            </p>
+          )}
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div style={{
-      display: 'inline-flex', flexDirection: isLarge ? 'column' : 'row',
-      alignItems: 'center', gap: isLarge ? 8 : 6,
-      padding: isLarge ? '16px 20px' : '4px 12px',
-      borderRadius: isLarge ? 16 : 20,
-      background: `linear-gradient(135deg, ${cfg.bg}, white)`,
-      border: `2px solid ${cfg.border}`,
-      boxShadow: isLarge ? '0 4px 12px rgba(0,0,0,0.08)' : '0 1px 3px rgba(0,0,0,0.06)',
-      transition: 'transform 0.2s, box-shadow 0.2s',
-      cursor: showDescription ? 'default' : 'pointer',
-      minWidth: isLarge ? 130 : 'auto',
-    }}
-    title={cfg.description}
+    <span
+      title={cfg.description}
+      style={{
+        display: 'inline-flex', alignItems: 'center', gap: 5,
+        padding: '3px 10px 3px 6px',
+        borderRadius: 20,
+        background: `linear-gradient(135deg, ${cfg.bg}, white)`,
+        border: `1.5px solid ${cfg.border}`,
+        boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
+        fontSize: 11, fontWeight: 700, color: cfg.color,
+        letterSpacing: '0.3px', whiteSpace: 'nowrap',
+      }}
     >
-      <span style={{ fontSize: isLarge ? 32 : 16, lineHeight: 1 }}>{cfg.icon}</span>
-      <span style={{
-        fontWeight: 700, fontSize: isLarge ? 13 : 11,
-        color: cfg.color, textTransform: 'uppercase', letterSpacing: '0.5px',
-        textAlign: 'center',
-      }}>
-        {cfg.label}
-      </span>
-      {showDescription && (
-        <span style={{ fontSize: 11, color: '#64748B', textAlign: 'center', lineHeight: 1.4, maxWidth: 160 }}>
-          {cfg.description}
-        </span>
-      )}
-    </div>
+      <span style={{ fontSize: 14, lineHeight: 1 }}>{cfg.icon}</span>
+      {cfg.label}
+    </span>
   );
 }
 const EVAL_CRITERIA = [
@@ -224,7 +261,7 @@ export default function ProjectDetail() {
     setAiLoading(true);
     try {
       const { data } = await api.post(`/projects/${projectId}/ai-help`);
-      setAiResponse(data.response ?? data.message ?? 'Aucune r\u00e9ponse.');
+      setAiResponse(data.suggestions ?? data.response ?? data.message ?? 'Aucune réponse.');
     } catch (err) {
       setAiResponse('Erreur : ' + (err.response?.data?.message ?? 'Service IA indisponible.'));
     } finally {

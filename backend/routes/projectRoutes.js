@@ -1,7 +1,7 @@
 import express from 'express';
 import authMiddleware from '../middleware/authMiddleware.js';
 import requireRole from '../middleware/roleMiddleware.js';
-import uploadResource from '../middleware/uploadResource.js';
+import uploadResource, { uploadLivrable } from '../middleware/uploadResource.js';
 import {
   createProject,
   getProjects,
@@ -35,7 +35,7 @@ router.post('/:id/groupes',        requireRole('professeur'), createGroupsManual
 router.put('/:id/phases/:phaseId', updatePhase);
 
 // Livrables (upload fichier)
-router.post('/:id/livrables', uploadResource.single('file'), addLivrable);
+router.post('/:id/livrables', uploadLivrable.single('file'), addLivrable);
 
 // Évaluations
 router.post('/:id/evaluations', addEvaluation);
