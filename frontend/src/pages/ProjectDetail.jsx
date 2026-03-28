@@ -26,12 +26,68 @@ const PHASE_STATUS_COLOR = {
   termine:  { bg: '#E8F5E9', border: '#2E7D32', text: '#2E7D32' },
 };
 const ROLE_CONFIG = {
-  chef_projet: { label: 'Chef de projet', color: '#1B4F72', bg: '#EBF3FA', emoji: '\uD83D\uDFE6' },
-  scribe:      { label: 'Scribe',         color: '#2E7D32', bg: '#E8F5E9', emoji: '\uD83D\uDFE9' },
-  animateur:   { label: 'Animateur',      color: '#E67E22', bg: '#FEF6E7', emoji: '\uD83D\uDFE7' },
-  chrono:      { label: 'Chrono',         color: '#DC2626', bg: '#FEE2E2', emoji: '\uD83D\uDFE5' },
-  analyste:    { label: 'Analyste',       color: '#7C3AED', bg: '#F3E8FF', emoji: '\uD83D\uDFEA' },
+  chef_projet: {
+    label: 'Chef de projet', color: '#1B4F72', bg: '#EBF3FA', emoji: '\u{1F451}',
+    icon: '\u{1F451}', border: '#2980B9',
+    description: "Le capitaine du navire. Il coordonne l'\u00e9quipe, r\u00e9partit les t\u00e2ches et prend les d\u00e9cisions importantes.",
+  },
+  scribe: {
+    label: 'Scribe', color: '#2E7D32', bg: '#E8F5E9', emoji: '\u{1F4DD}',
+    icon: '\u{1F4DD}', border: '#27AE60',
+    description: "La m\u00e9moire du groupe. Il prend des notes, r\u00e9dige les comptes rendus et le livrable final.",
+  },
+  animateur: {
+    label: 'Animateur', color: '#E67E22', bg: '#FEF6E7', emoji: '\u{1F3A4}',
+    icon: '\u{1F3A4}', border: '#F39C12',
+    description: "Le ma\u00eetre de c\u00e9r\u00e9monie. Il g\u00e8re les tours de parole, relance les discussions et garde le groupe motiv\u00e9.",
+  },
+  chrono: {
+    label: 'Chrono', color: '#DC2626', bg: '#FEE2E2', emoji: '\u{23F1}',
+    icon: '\u{23F1}', border: '#E74C3C',
+    description: "Le gardien du temps. Il chronom\u00e8tre les \u00e9tapes et s'assure que le groupe respecte le planning.",
+  },
+  analyste: {
+    label: 'Analyste', color: '#7C3AED', bg: '#F3E8FF', emoji: '\u{1F50D}',
+    icon: '\u{1F50D}', border: '#8E44AD',
+    description: "Le d\u00e9tective. Il analyse le sujet en profondeur, identifie les mots-cl\u00e9s et formule la probl\u00e9matique.",
+  },
 };
+
+/* ─── RoleBadge Component (style Loup-Garou) ───────────────────────────── */
+function RoleBadge({ role, size = 'normal', showDescription = false }) {
+  const cfg = ROLE_CONFIG[role] ?? { label: role, color: '#64748B', bg: '#F1F5F9', icon: '\u{2753}', border: '#94A3B8', description: '' };
+  const isLarge = size === 'large';
+  return (
+    <div style={{
+      display: 'inline-flex', flexDirection: isLarge ? 'column' : 'row',
+      alignItems: 'center', gap: isLarge ? 8 : 6,
+      padding: isLarge ? '16px 20px' : '4px 12px',
+      borderRadius: isLarge ? 16 : 20,
+      background: `linear-gradient(135deg, ${cfg.bg}, white)`,
+      border: `2px solid ${cfg.border}`,
+      boxShadow: isLarge ? '0 4px 12px rgba(0,0,0,0.08)' : '0 1px 3px rgba(0,0,0,0.06)',
+      transition: 'transform 0.2s, box-shadow 0.2s',
+      cursor: showDescription ? 'default' : 'pointer',
+      minWidth: isLarge ? 130 : 'auto',
+    }}
+    title={cfg.description}
+    >
+      <span style={{ fontSize: isLarge ? 32 : 16, lineHeight: 1 }}>{cfg.icon}</span>
+      <span style={{
+        fontWeight: 700, fontSize: isLarge ? 13 : 11,
+        color: cfg.color, textTransform: 'uppercase', letterSpacing: '0.5px',
+        textAlign: 'center',
+      }}>
+        {cfg.label}
+      </span>
+      {showDescription && (
+        <span style={{ fontSize: 11, color: '#64748B', textAlign: 'center', lineHeight: 1.4, maxWidth: 160 }}>
+          {cfg.description}
+        </span>
+      )}
+    </div>
+  );
+}
 const EVAL_CRITERIA = [
   'Participation',
   'Qualit\u00e9 du travail',
@@ -109,15 +165,15 @@ export default function ProjectDetail() {
 
   /* ── Derived data ──────────────────────────────────────────────────────── */
   const myGroup = project?.groupes?.find(g =>
-    g.membres?.some(m => (m.etudiantId?._id ?? m.etudiantId) === user?._id)
+    g.membres?.some(m => (m.userId?._id ?? m.userId) === user?._id)
   );
-  const myMember = myGroup?.membres?.find(m => (m.etudiantId?._id ?? m.etudiantId) === user?._id);
+  const myMember = myGroup?.membres?.find(m => (m.userId?._id ?? m.userId) === user?._id);
   const typeCfg = TYPE_BADGE[project?.type] ?? TYPE_BADGE.projet;
-  const statusCfg = STATUS_BADGE[project?.statut] ?? STATUS_BADGE.brouillon;
+  const statusCfg = STATUS_BADGE[project?.status] ?? STATUS_BADGE.brouillon;
 
   const soutenancePhase = project?.phases?.find(p => p.titre?.toLowerCase().includes('soutenance'));
   const canEvaluate = !isProfOrAdmin && (
-    project?.statut === 'termine' ||
+    project?.status === 'termine' ||
     soutenancePhase?.statut === 'termine'
   );
 
@@ -324,7 +380,7 @@ export default function ProjectDetail() {
                 setEditForm({
                   titre: project.titre,
                   description: project.description,
-                  statut: project.statut,
+                  status: project.status,
                 });
                 setEditing(true);
               }}>
@@ -478,9 +534,9 @@ export default function ProjectDetail() {
               ) : myGroup ? (
                 <>
                   {myGroup.membres
-                    .filter(m => (m.etudiantId?._id ?? m.etudiantId) !== user?._id)
+                    .filter(m => (m.userId?._id ?? m.userId) !== user?._id)
                     .map((membre) => {
-                      const etu = membre.etudiantId;
+                      const etu = membre.userId;
                       const etuId = etu?._id ?? etu;
                       const etuName = etu?.prenom ? `${etu.prenom} ${etu.nom ?? ''}` : 'Membre';
                       return (
@@ -580,7 +636,7 @@ export default function ProjectDetail() {
                   {myGroup.nom ?? `Groupe ${myGroup.numero ?? ''}`}
                 </p>
                 {myGroup.membres?.map((membre, i) => {
-                  const etu = membre.etudiantId;
+                  const etu = membre.userId;
                   const name = etu?.prenom ? `${etu.prenom} ${etu.nom ?? ''}` : 'Membre';
                   const roleCfg = ROLE_CONFIG[membre.role] ?? {};
                   return (
@@ -603,14 +659,7 @@ export default function ProjectDetail() {
                           {name}
                         </p>
                       </div>
-                      {membre.role && roleCfg.label && (
-                        <span title={roleCfg.label} style={{
-                          fontSize: 10, fontWeight: 700, padding: '2px 8px',
-                          borderRadius: 'var(--radius-sm)', backgroundColor: roleCfg.bg, color: roleCfg.color,
-                        }}>
-                          {roleCfg.emoji} {roleCfg.label}
-                        </span>
-                      )}
+                      {membre.role && <RoleBadge role={membre.role} />}
                     </div>
                   );
                 })}
@@ -628,14 +677,15 @@ export default function ProjectDetail() {
                       <p style={{ fontWeight: 600, fontSize: 'var(--font-size-sm)', marginBottom: 6 }}>
                         {g.nom ?? `Groupe ${g.numero ?? gi + 1}`}
                       </p>
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                         {g.membres?.map((m, mi) => {
-                          const etu = m.etudiantId;
-                          const name = etu?.prenom ? `${etu.prenom} ${etu.nom?.[0] ?? ''}` : 'Membre';
+                          const etu = m.userId;
+                          const name = etu?.prenom ? `${etu.prenom} ${etu.nom ?? ''}` : 'Membre';
                           return (
-                            <span key={mi} className="badge badge-primary" style={{ fontSize: 10 }}>
-                              {name}
-                            </span>
+                            <div key={mi} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                              <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--color-text)', minWidth: 100 }}>{name}</span>
+                              <RoleBadge role={m.role} />
+                            </div>
                           );
                         })}
                       </div>
@@ -644,7 +694,7 @@ export default function ProjectDetail() {
                 </div>
               ) : (
                 <p style={{ fontSize: 'var(--font-size-sm)', color: 'var(--color-text-secondary)', fontStyle: 'italic' }}>
-                  Aucun groupe cr{'é\u00e9'} pour le moment.
+                  Aucun groupe créé pour le moment.
                 </p>
               )
             )}
@@ -668,6 +718,23 @@ export default function ProjectDetail() {
               </div>
             ))}
           </div>
+
+          {/* ── Légende des rôles (style Loup-Garou) ──────────────────────── */}
+          {project.groupes?.length > 0 && (
+            <div className="card" style={{ padding: 20 }}>
+              <p style={{
+                fontSize: 'var(--font-size-xs)', fontWeight: 700, textTransform: 'uppercase',
+                letterSpacing: '0.06em', color: 'var(--color-text-secondary)', marginBottom: 12,
+              }}>
+                Les rôles
+              </p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {Object.keys(ROLE_CONFIG).map(roleKey => (
+                  <RoleBadge key={roleKey} role={roleKey} size="large" showDescription />
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
