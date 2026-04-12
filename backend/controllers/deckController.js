@@ -75,11 +75,22 @@ export const generateFlashcardsAI = async (req, res) => {
     // Initialize Groq
     const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
+    // Récupérer le transcript IA si disponible
+    let transcript = '';
+    try {
+      const { getTranscript } = await import('../services/videoAnalyzer.js');
+      transcript = await getTranscript(videoId) || '';
+    } catch { /* pas grave si pas dispo */ }
+
+    const transcriptContext = transcript
+      ? `\n\nTranscription du cours :\n"""${transcript.slice(0, 12000)}"""\n\nBase tes flashcards UNIQUEMENT sur le contenu de cette transcription.`
+      : '';
+
     const prompt = `Tu es un expert pédagogique. Génère 10 flashcards (question/réponse) pour réviser le sujet suivant :
 
 Titre de la vidéo : "${video.titre}"
 Cours : "${video.courseId?.titre || 'Informatique'}"
-Description : "${video.description || 'Cours universitaire'}"
+Description : "${video.description || 'Cours universitaire'}"${transcriptContext}
 
 RÈGLES STRICTES :
 - Réponds UNIQUEMENT avec un JSON valide, sans texte avant ou après

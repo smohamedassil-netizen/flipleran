@@ -81,10 +81,14 @@ export async function askBot(userMessage, history = []) {
  * @param {number} count       — nombre de questions à générer (défaut: 5)
  * @returns {Promise<Array>}   — tableau de questions
  */
-export async function generateQuizQuestions(topic, description = '', count = 5) {
+export async function generateQuizQuestions(topic, description = '', count = 5, transcript = '') {
+  const transcriptContext = transcript
+    ? `\n\nTranscription complète du cours :\n"""${transcript.slice(0, 12000)}"""\n\nBase tes questions UNIQUEMENT sur le contenu de cette transcription.`
+    : '';
+
   const userPrompt = `Génère exactement ${count} questions QCM sur le sujet suivant :
 Sujet : "${topic}"
-${description ? `Description : "${description}"` : ''}
+${description ? `Description : "${description}"` : ''}${transcriptContext}
 
 Retourne UNIQUEMENT un JSON valide avec cette structure :
 {

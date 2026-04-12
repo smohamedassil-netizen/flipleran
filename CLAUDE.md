@@ -62,6 +62,7 @@ Monorepo with two packages. Backend uses ES modules (`"type": "module"`).
 | MongoDB Atlas | Database | `MONGODB_URI` |
 | Cloudinary | Video/file storage (100MB limit) | `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET` |
 | Groq | AI chatbot + QCM generation (model: `llama-3.3-70b-versatile`) | `GROQ_API_KEY` |
+| OpenAI | Video AI Agent: Whisper transcription + GPT-4o analysis | `OPENAI_API_KEY` |
 | Brevo | Transactional emails (300/day free) | `BREVO_API_KEY` |
 | Resend | Email fallback | `RESEND_API_KEY` |
 

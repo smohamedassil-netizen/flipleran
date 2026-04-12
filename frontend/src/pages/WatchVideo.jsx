@@ -5,12 +5,15 @@ import VideoPlayer from '../components/VideoPlayer.jsx';
 import api from '../utils/api.js';
 import { ArrowLeft, AlertCircle, BookOpen, Home, ListOrdered } from 'lucide-react';
 import Breadcrumb from '../components/Breadcrumb.jsx';
+import VideoAnalysis from '../components/VideoAnalysis.jsx';
 import { useGamification } from '../context/GamificationContext.jsx';
+import { useAuth } from '../hooks/useAuth.js';
 
 export default function WatchVideo() {
   const { videoId } = useParams();
   const navigate    = useNavigate();
   const { notify }  = useGamification();
+  const { user }    = useAuth();
 
   const handlePointsEarned = useCallback((points) => {
     notify({ earned: points.earned, newBadges: points.newBadges ?? [] });
@@ -159,6 +162,9 @@ export default function WatchVideo() {
               </div>
             </div>
           )}
+
+          {/* Analyse IA */}
+          <VideoAnalysis videoId={video._id} userRole={user?.role} />
         </div>
 
         {/* ── Playlist ───────────────────────────────────────────────────── */}

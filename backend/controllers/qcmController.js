@@ -272,10 +272,18 @@ export const generateQCMWithAI = async (req, res) => {
       ? `${courseTitle} — ${video.titre}`
       : video.titre;
 
+    // Récupérer le transcript IA si disponible (analyse vidéo)
+    let transcript = '';
+    try {
+      const { getTranscript } = await import('../services/videoAnalyzer.js');
+      transcript = await getTranscript(videoId) || '';
+    } catch { /* pas grave si pas dispo */ }
+
     const questions = await generateQuizQuestions(
       topic,
       video.description || '',
-      Math.min(Number(numberOfQuestions), 15)
+      Math.min(Number(numberOfQuestions), 15),
+      transcript
     );
 
     res.json({

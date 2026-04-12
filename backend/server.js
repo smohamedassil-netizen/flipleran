@@ -30,6 +30,7 @@ import resourceRoutes   from './routes/resourceRoutes.js';
 import adminRoutes      from './routes/adminRoutes.js';
 import supportRoutes    from './routes/supportRoutes.js';
 import projectRoutes    from './routes/projectRoutes.js';
+import videoAnalysisRoutes from './routes/videoAnalysisRoutes.js';
 import { seedBadges }   from './services/points.js';
 import { askBot }       from './services/chatbot.js';
 import { BOT_SENDER }   from './controllers/chatbotController.js';
@@ -74,6 +75,7 @@ app.use('/api/resources',  resourceRoutes);
 app.use('/api/admin',      adminRoutes);
 app.use('/api/support',    supportRoutes);
 app.use('/api/projects',   projectRoutes);
+app.use('/api/videos',     videoAnalysisRoutes);
 
 // ── En production : servir le frontend buildé ──────────────────────────────
 if (process.env.NODE_ENV === 'production') {
