@@ -1,4 +1,4 @@
-import OpenAI from 'openai';
+import OpenAI, { toFile } from 'openai';
 import VideoAnalysis from '../models/VideoAnalysis.js';
 import Video from '../models/Video.js';
 
@@ -16,14 +16,18 @@ const CHUNK_DURATION   = 600;               // 10 min en secondes
 /* ─── 1. Télécharger l'audio depuis Cloudinary ───────────────────────────── */
 /**
  * Convertit une URL vidéo Cloudinary en URL audio MP3 et télécharge.
- * Cloudinary permet de changer le format en modifiant l'extension.
+ * Utilise la transformation Cloudinary f_mp3 pour forcer le format audio.
+ *
+ * URL Cloudinary typique :
+ *   https://res.cloudinary.com/xxx/video/upload/v123/folder/file.mp4
+ * Transformée en :
+ *   https://res.cloudinary.com/xxx/video/upload/f_mp3,q_auto/v123/folder/file.mp4
  */
 async function downloadAudioFromCloudinary(videoUrl) {
-  // Transformer l'URL vidéo en audio MP3 via Cloudinary
-  // Ex: .../video/upload/v123/folder/file.mp4 → .../video/upload/q_auto/v123/folder/file.mp3
-  const audioUrl = videoUrl
-    .replace(/\.(mp4|mov|avi|webm|mkv)$/i, '.mp3')
-    .replace('/upload/', '/upload/q_auto/');
+  // Injecter la transformation f_mp3 après /upload/
+  const audioUrl = videoUrl.replace('/upload/', '/upload/f_mp3,q_auto/');
+
+  console.log(`[VideoAnalyzer] Téléchargement audio: ${audioUrl.slice(0, 80)}...`);
 
   const response = await fetch(audioUrl);
   if (!response.ok) {
@@ -31,6 +35,7 @@ async function downloadAudioFromCloudinary(videoUrl) {
   }
 
   const buffer = Buffer.from(await response.arrayBuffer());
+  console.log(`[VideoAnalyzer] Audio téléchargé: ${(buffer.length / 1024 / 1024).toFixed(1)} MB`);
   return { buffer, url: audioUrl };
 }
 
@@ -39,9 +44,10 @@ async function downloadAudioFromCloudinary(videoUrl) {
  * Utilise les transformations start_offset/end_offset.
  */
 async function downloadAudioChunk(videoUrl, startSec, endSec) {
-  const chunkUrl = videoUrl
-    .replace(/\.(mp4|mov|avi|webm|mkv)$/i, '.mp3')
-    .replace('/upload/', `/upload/so_${startSec},eo_${endSec},q_auto/`);
+  const chunkUrl = videoUrl.replace(
+    '/upload/',
+    `/upload/f_mp3,q_auto,so_${startSec},eo_${endSec}/`
+  );
 
   const response = await fetch(chunkUrl);
   if (!response.ok) {
@@ -54,23 +60,20 @@ async function downloadAudioChunk(videoUrl, startSec, endSec) {
 /* ─── 2. Transcrire avec Whisper ─────────────────────────────────────────── */
 /**
  * Transcrit un buffer audio via OpenAI Whisper.
- * @returns {string} texte transcrit
+ * Utilise toFile() de l'OpenAI SDK pour compatibilité Node.js.
  */
 async function transcribeBuffer(audioBuffer, filename = 'audio.mp3') {
-  const file = new File([audioBuffer], filename, { type: 'audio/mpeg' });
+  const file = await toFile(audioBuffer, filename, { type: 'audio/mpeg' });
 
   const transcription = await getOpenAI().audio.transcriptions.create({
-    model:           'whisper-1',
+    model:    'whisper-1',
     file,
-    language:        'fr',
-    response_format: 'verbose_json',
-    timestamp_granularities: ['segment'],
+    language: 'fr',
   });
 
   return {
     text:     transcription.text,
-    language: transcription.language || 'fr',
-    segments: transcription.segments || [],
+    language: 'fr',
   };
 }
 
@@ -96,6 +99,7 @@ async function transcribe(videoUrl, videoDuration) {
 
   const transcriptions = [];
   for (const chunk of chunks) {
+    console.log(`[VideoAnalyzer] Chunk ${chunk.start}s-${chunk.end}s...`);
     const chunkBuffer = await downloadAudioChunk(videoUrl, chunk.start, chunk.end);
     const result = await transcribeBuffer(chunkBuffer, `chunk_${chunk.start}.mp3`);
     transcriptions.push(result.text);
@@ -104,7 +108,6 @@ async function transcribe(videoUrl, videoDuration) {
   return {
     text:     transcriptions.join(' '),
     language: 'fr',
-    segments: [],
   };
 }
 
@@ -196,6 +199,13 @@ export async function analyzeVideo(videoId, userId) {
     return analysis; // Déjà analysée
   }
 
+  // Si erreur précédente, reset pour relancer
+  if (analysis && analysis.status === 'error') {
+    analysis.status = 'pending';
+    analysis.error  = '';
+    await analysis.save();
+  }
+
   if (!analysis) {
     analysis = await VideoAnalysis.create({
       videoId,
@@ -216,7 +226,7 @@ export async function analyzeVideo(videoId, userId) {
     console.log(`[VideoAnalyzer] Transcription de "${video.titre}"...`);
     const { text, language } = await transcribe(video.url, video.duration);
 
-    if (!text || text.trim().length < 50) {
+    if (!text || text.trim().length < 10) {
       throw new Error('Transcription trop courte ou vide — la vidéo contient-elle de l\'audio ?');
     }
 

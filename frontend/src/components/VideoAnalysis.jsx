@@ -116,6 +116,9 @@ export default function VideoAnalysis({ videoId, userRole }) {
       const { data } = await api.get(`/videos/${videoId}/analysis`);
       setAnalysis(data);
       setStatus(data.status);
+      if (data.status === 'error') {
+        setError(data.error || 'Une erreur est survenue lors de l\'analyse.');
+      }
     } catch (err) {
       if (err.response?.status === 404) {
         setStatus('none');
@@ -291,9 +294,21 @@ export default function VideoAnalysis({ videoId, userRole }) {
 
       {/* Erreur */}
       {error && (
-        <div className="alert alert-error" style={{ marginTop: 8 }}>
-          <AlertCircle size={14} />
-          <span>{error}</span>
+        <div style={{ marginTop: 8 }}>
+          <div className="alert alert-error" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <AlertCircle size={14} />
+            <span style={{ flex: 1 }}>{error}</span>
+          </div>
+          {canAnalyze && (
+            <button
+              onClick={handleReanalyze}
+              className="btn btn-primary"
+              style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 6, fontSize: 'var(--font-size-sm)' }}
+            >
+              <RefreshCw size={14} />
+              Relancer l'analyse
+            </button>
+          )}
         </div>
       )}
 
