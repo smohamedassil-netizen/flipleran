@@ -108,7 +108,8 @@ export default function VideoAnalysis({ videoId, userRole }) {
   const [loading, setLoading]   = useState(false);
   const [activeTab, setActiveTab] = useState('summary');
 
-  const canAnalyze = userRole === 'professeur' || userRole === 'admin';
+  const canAnalyze = true; // tous les utilisateurs peuvent lancer l'analyse
+  const canDelete = userRole === 'professeur' || userRole === 'admin';
 
   // Charger l'analyse existante
   const fetchAnalysis = useCallback(async () => {
@@ -214,7 +215,7 @@ export default function VideoAnalysis({ videoId, userRole }) {
             </button>
           )}
 
-          {canAnalyze && status === 'completed' && (
+          {canDelete && status === 'completed' && (
             <button
               onClick={handleReanalyze}
               className="btn btn-ghost"
