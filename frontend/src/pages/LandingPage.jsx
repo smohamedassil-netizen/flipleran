@@ -1,15 +1,19 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import Logo from '../components/Logo.jsx';
 import {
   BookOpen, Video, Users, Brain, ArrowRight, CheckCircle,
   GraduationCap, PlayCircle, BarChart3, MessageSquare,
   Lightbulb, ChevronDown, Monitor, Layers, Menu, X,
-  Clock, Home, Sparkles, Target
+  Clock, Sparkles, Target, Send, Globe,
+  Linkedin, Github, Star, Award, Zap, TrendingUp,
+  Headphones, Shield
 } from 'lucide-react';
 import './LandingPage.css';
 
-/* ── Scroll Reveal Hooks ──────────────────────────────────────────────── */
+/* ══════════════════════════════════════════════════════════════════════════
+   Hooks
+   ══════════════════════════════════════════════════════════════════════════ */
 
 function useScrollReveal() {
   const ref = useRef(null);
@@ -17,8 +21,8 @@ function useScrollReveal() {
     const el = ref.current;
     if (!el) return;
     const obs = new IntersectionObserver(
-      ([entry]) => { if (entry.isIntersecting) { el.classList.add('revealed'); obs.unobserve(el); } },
-      { threshold: 0.15 }
+      ([e]) => { if (e.isIntersecting) { el.classList.add('revealed'); obs.unobserve(el); } },
+      { threshold: 0.12 }
     );
     obs.observe(el);
     return () => obs.disconnect();
@@ -29,42 +33,114 @@ function useScrollReveal() {
 function useScrollRevealAll() {
   const ref = useRef(null);
   useEffect(() => {
-    const container = ref.current;
-    if (!container) return;
+    const c = ref.current;
+    if (!c) return;
     const obs = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          container.querySelectorAll('.reveal-child').forEach((child, i) => {
-            child.style.transitionDelay = `${i * 120}ms`;
-            child.classList.add('revealed');
+      ([e]) => {
+        if (e.isIntersecting) {
+          c.querySelectorAll('.lp-reveal-child').forEach((ch, i) => {
+            ch.style.transitionDelay = `${i * 100}ms`;
+            ch.classList.add('revealed');
           });
-          obs.unobserve(container);
+          obs.unobserve(c);
         }
       },
-      { threshold: 0.1 }
+      { threshold: 0.08 }
     );
-    obs.observe(container);
+    obs.observe(c);
     return () => obs.disconnect();
   }, []);
   return ref;
 }
 
-/* ── Data ──────────────────────────────────────────────────────────────── */
+function useCountUp(target, duration = 2000) {
+  const ref = useRef(null);
+  const [value, setValue] = useState(0);
+  const hasRun = useRef(false);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(
+      ([e]) => {
+        if (e.isIntersecting && !hasRun.current) {
+          hasRun.current = true;
+          obs.unobserve(el);
+          const start = performance.now();
+          const step = (now) => {
+            const t = Math.min((now - start) / duration, 1);
+            const eased = 1 - Math.pow(1 - t, 3);
+            setValue(Math.round(eased * target));
+            if (t < 1) requestAnimationFrame(step);
+          };
+          requestAnimationFrame(step);
+        }
+      },
+      { threshold: 0.3 }
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, [target, duration]);
+
+  return [ref, value];
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   Data
+   ══════════════════════════════════════════════════════════════════════════ */
 
 const FEATURES = [
-  { icon: Video,          title: 'Vidéos pédagogiques',      desc: 'Regardez des cours structurés à votre rythme, avec transcription automatique et analyse IA.' },
-  { icon: Brain,          title: 'QCM intelligents',          desc: 'Des quiz générés par intelligence artificielle pour tester votre compréhension en temps réel.' },
-  { icon: Users,          title: 'Apprentissage collaboratif', desc: 'Chat en temps réel, forums de discussion et projets de groupe entre étudiants.' },
-  { icon: BarChart3,      title: 'Suivi de progression',      desc: 'Tableaux de bord, classements et badges pour visualiser vos progrès.' },
-  { icon: GraduationCap,  title: 'Projets PBL',              desc: 'Apprentissage par problèmes avec des projets concrets et des rôles collaboratifs.' },
-  { icon: MessageSquare,  title: 'Assistant IA',              desc: 'Un chatbot intelligent disponible 24h/24 pour répondre à vos questions.' },
+  { icon: Video, title: 'Vidéos pédagogiques', desc: 'Cours structurés avec transcription automatique et analyse IA. Apprenez à votre rythme, où que vous soyez.', gradient: 'linear-gradient(135deg, #f0f7ff, #fff)', glow: 'rgba(27,79,114,0.12)', iconBg: 'linear-gradient(135deg, #1B4F72, #2874A6)', wide: true },
+  { icon: Brain, title: 'QCM intelligents', desc: 'Quiz générés par IA pour tester votre compréhension en temps réel après chaque leçon.', gradient: 'linear-gradient(135deg, #fff9ef, #fff)', glow: 'rgba(232,168,56,0.12)', iconBg: 'linear-gradient(135deg, #E8A838, #D4952A)', wide: false },
+  { icon: Users, title: 'Apprentissage collaboratif', desc: 'Chat temps réel, forums et projets de groupe pour apprendre ensemble.', gradient: 'linear-gradient(135deg, #f0fff4, #fff)', glow: 'rgba(39,103,73,0.1)', iconBg: 'linear-gradient(135deg, #276749, #38a169)', wide: false },
+  { icon: BarChart3, title: 'Suivi de progression', desc: 'Dashboards, classements et badges pour visualiser vos progrès et rester motivé.', gradient: 'linear-gradient(135deg, #fef6e7, #fff)', glow: 'rgba(232,168,56,0.1)', iconBg: 'linear-gradient(135deg, #E8A838, #D4952A)', wide: true },
+  { icon: GraduationCap, title: 'Projets PBL', desc: 'Apprentissage par problèmes avec des projets concrets et des rôles collaboratifs.', gradient: 'linear-gradient(135deg, #f5f0ff, #fff)', glow: 'rgba(107,70,193,0.1)', iconBg: 'linear-gradient(135deg, #6b46c1, #805ad5)', wide: false },
+  { icon: MessageSquare, title: 'Assistant IA', desc: 'Chatbot intelligent disponible 24h/24 pour répondre à toutes vos questions.', gradient: 'linear-gradient(135deg, #fff0f0, #fff)', glow: 'rgba(155,35,53,0.08)', iconBg: 'linear-gradient(135deg, #1B4F72, #2874A6)', wide: false },
 ];
 
 const STEPS = [
-  { icon: PlayCircle, num: '1', title: 'Regardez les cours',        desc: 'Visionnez les vidéos et ressources mises en ligne par votre professeur, chez vous, à votre rythme.' },
-  { icon: Target,     num: '2', title: 'Testez vos connaissances',  desc: 'Répondez aux QCM et exercices interactifs pour vérifier votre compréhension avant le cours.' },
-  { icon: Users,      num: '3', title: 'Participez en classe',      desc: 'En présentiel, échangez, débattez et travaillez sur des activités pratiques avec votre professeur.' },
-  { icon: Sparkles,   num: '4', title: 'Progressez ensemble',       desc: 'Gagnez des points, débloquez des badges et montez dans le classement avec vos camarades.' },
+  { icon: PlayCircle, title: 'Regardez les cours', desc: 'Visionnez les vidéos et ressources à votre rythme, chez vous, avant la séance.' },
+  { icon: Target, title: 'Testez vos connaissances', desc: 'Répondez aux QCM interactifs pour vérifier votre compréhension.' },
+  { icon: Users, title: 'Participez en classe', desc: 'Échangez, débattez et travaillez sur des activités pratiques avec votre professeur.' },
+  { icon: Sparkles, title: 'Progressez ensemble', desc: 'Gagnez des points, débloquez des badges et montez dans le classement.' },
+];
+
+const MARQUEE_1 = [
+  'Informatique', 'Mathématiques', 'Physique', 'Biologie', 'Chimie',
+  'Génie Civil', 'Génie Électrique', 'Sciences de l\'éducation',
+  'Licence ISIL', 'Master IA', 'Classe Inversée', 'E-Learning',
+];
+const MARQUEE_2 = [
+  'Pédagogie active', 'QCM automatisés', 'Vidéos interactives', 'Projets collaboratifs',
+  'Gamification', 'Chat en temps réel', 'Intelligence Artificielle', 'Apprentissage adaptatif',
+  'Évaluation continue', 'Support 24/7', 'Badges & Récompenses', 'Tableau de bord',
+];
+
+const STATS = [
+  { value: 2500, suffix: '+', label: 'Étudiants actifs' },
+  { value: 50, suffix: '+', label: 'Cours disponibles' },
+  { value: 95, suffix: '%', label: 'Taux de satisfaction' },
+  { value: 24, suffix: '/7', label: 'Support disponible' },
+];
+
+const BEFORE = [
+  { icon: Clock, text: 'Cours magistraux passifs et monotones' },
+  { icon: BookOpen, text: 'Exercices seul à la maison, sans aide' },
+  { icon: TrendingUp, text: 'Progression difficile à mesurer' },
+];
+const AFTER = [
+  { icon: Video, text: 'Vidéos interactives à votre rythme' },
+  { icon: Users, text: 'Collaboration active en classe' },
+  { icon: BarChart3, text: 'Suivi en temps réel de vos progrès' },
+];
+
+const PARTICLES = [
+  { top: '10%', left: '15%', dx: '80px', dy: '-120px', dur: '12s', delay: '0s' },
+  { top: '20%', left: '80%', dx: '-60px', dy: '-100px', dur: '10s', delay: '2s' },
+  { top: '70%', left: '10%', dx: '100px', dy: '-80px', dur: '14s', delay: '4s' },
+  { top: '60%', left: '75%', dx: '-90px', dy: '-110px', dur: '11s', delay: '1s' },
+  { top: '40%', left: '50%', dx: '70px', dy: '-90px', dur: '13s', delay: '3s' },
+  { top: '80%', left: '40%', dx: '-50px', dy: '-130px', dur: '9s', delay: '5s' },
 ];
 
 /* ══════════════════════════════════════════════════════════════════════════
@@ -76,442 +152,262 @@ export default function LandingPage() {
   const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 50);
-    window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
+    const fn = () => setScrolled(window.scrollY > 50);
+    window.addEventListener('scroll', fn, { passive: true });
+    return () => window.removeEventListener('scroll', fn);
   }, []);
 
-  const scrollToSection = (id) => {
+  const scrollTo = useCallback((id) => {
     document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
     setMenuOpen(false);
-  };
+  }, []);
 
-  /* refs for reveal */
-  const videoRef     = useScrollReveal();
-  const methodeRef   = useScrollReveal();
-  const featuresRef  = useScrollRevealAll();
-  const stepsRef     = useScrollRevealAll();
-  const ctaRef       = useScrollReveal();
+  const videoRef      = useScrollReveal();
+  const compRef       = useScrollRevealAll();
+  const dividerRef    = useScrollReveal();
+  const bentoRef      = useScrollRevealAll();
+  const timelineRef   = useScrollRevealAll();
+  const tlLineRef     = useScrollReveal();
+  const statsRef      = useScrollRevealAll();
+  const ctaRef        = useScrollReveal();
+
+  const [s1Ref, s1Val] = useCountUp(STATS[0].value);
+  const [s2Ref, s2Val] = useCountUp(STATS[1].value);
+  const [s3Ref, s3Val] = useCountUp(STATS[2].value);
+  const [s4Ref, s4Val] = useCountUp(STATS[3].value, 1500);
+  const statVals = [s1Val, s2Val, s3Val, s4Val];
+  const statRefs = [s1Ref, s2Ref, s3Ref, s4Ref];
 
   return (
-    <div style={{ fontFamily: "'Plus Jakarta Sans', 'Inter', system-ui, sans-serif" }}>
+    <div className="lp-root" style={{ fontFamily: "'Plus Jakarta Sans', 'Inter', system-ui, sans-serif" }}>
 
-      {/* ═══ A. NAVBAR ═══════════════════════════════════════════════════════ */}
-      <nav
-        className={`landing-nav fixed top-0 left-0 right-0 z-50 ${scrolled ? 'scrolled' : ''}`}
-        style={{ padding: '0 24px' }}
-      >
-        <div className="flex items-center justify-between" style={{ maxWidth: 1200, margin: '0 auto', height: 72 }}>
+      {/* ═══ 1. NAVBAR ═════════════════════════════════════════════════════ */}
+      <nav className={`lp-nav ${scrolled ? 'scrolled' : ''}`}>
+        <div className="lp-nav-inner">
           <Link to="/welcome" style={{ textDecoration: 'none' }}>
             <Logo variant="full" size={32} />
           </Link>
 
-          {/* Desktop links */}
-          <div className="hidden md:flex items-center" style={{ gap: 12 }}>
-            <button
-              onClick={() => scrollToSection('methode')}
-              className="btn-landing"
-              style={{
-                background: 'none', border: 'none', cursor: 'pointer',
-                color: scrolled ? '#1B4F72' : '#fff', fontWeight: 600, fontSize: 14,
-                padding: '8px 16px', borderRadius: 8,
-              }}
-            >
+          <div className="lp-nav-links">
+            <button onClick={() => scrollTo('methode')} className="lp-nav-link"
+              style={{ color: scrolled ? '#1B4F72' : 'rgba(255,255,255,0.9)' }}>
               La méthode
             </button>
-            <button
-              onClick={() => scrollToSection('fonctionnalites')}
-              className="btn-landing"
-              style={{
-                background: 'none', border: 'none', cursor: 'pointer',
-                color: scrolled ? '#1B4F72' : '#fff', fontWeight: 600, fontSize: 14,
-                padding: '8px 16px', borderRadius: 8,
-              }}
-            >
+            <button onClick={() => scrollTo('features')} className="lp-nav-link"
+              style={{ color: scrolled ? '#1B4F72' : 'rgba(255,255,255,0.9)' }}>
               Fonctionnalités
             </button>
-            <Link
-              to="/login"
-              className="btn-landing"
+            <button onClick={() => scrollTo('timeline')} className="lp-nav-link"
+              style={{ color: scrolled ? '#1B4F72' : 'rgba(255,255,255,0.9)' }}>
+              Comment ça marche
+            </button>
+            <Link to="/login" className="lp-btn-login"
               style={{
-                textDecoration: 'none', fontWeight: 600, fontSize: 14,
-                padding: '10px 20px', borderRadius: 8,
                 color: scrolled ? '#1B4F72' : '#fff',
-                border: `2px solid ${scrolled ? '#1B4F72' : 'rgba(255,255,255,0.5)'}`,
+                border: `2px solid ${scrolled ? '#1B4F72' : 'rgba(255,255,255,0.35)'}`,
                 background: 'transparent',
-              }}
-            >
+              }}>
               Se connecter
             </Link>
-            <Link
-              to="/register"
-              className="btn-landing"
-              style={{
-                textDecoration: 'none', fontWeight: 700, fontSize: 14,
-                padding: '10px 20px', borderRadius: 8,
-                color: '#fff', backgroundColor: '#E8A838',
-                boxShadow: '0 2px 8px rgba(232,168,56,0.3)',
-              }}
-            >
-              S'inscrire
-            </Link>
+            <Link to="/register" className="lp-btn-signup">S'inscrire</Link>
           </div>
 
-          {/* Mobile hamburger */}
-          <button
-            className="md:hidden"
-            onClick={() => setMenuOpen(!menuOpen)}
-            style={{
-              background: 'none', border: 'none', cursor: 'pointer',
-              color: scrolled ? '#1B4F72' : '#fff', padding: 8,
-            }}
-          >
+          <button className="lp-hamburger" onClick={() => setMenuOpen(!menuOpen)}
+            style={{ color: scrolled ? '#1B4F72' : '#fff' }}>
             {menuOpen ? <X size={24} /> : <Menu size={24} />}
           </button>
         </div>
 
-        {/* Mobile menu */}
         {menuOpen && (
-          <div
-            className="md:hidden"
-            style={{
-              background: '#fff', padding: '16px 24px', borderTop: '1px solid #e5e7eb',
-              display: 'flex', flexDirection: 'column', gap: 12,
-            }}
-          >
-            <button onClick={() => scrollToSection('methode')} style={{ background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', padding: '8px 0', color: '#1B4F72', fontWeight: 600, fontSize: 15 }}>
-              La méthode
-            </button>
-            <button onClick={() => scrollToSection('fonctionnalites')} style={{ background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', padding: '8px 0', color: '#1B4F72', fontWeight: 600, fontSize: 15 }}>
-              Fonctionnalités
-            </button>
-            <Link to="/login" style={{ padding: '10px 0', color: '#1B4F72', fontWeight: 600, fontSize: 15, textDecoration: 'none' }}>
-              Se connecter
-            </Link>
-            <Link to="/register" style={{ display: 'inline-block', padding: '12px 24px', borderRadius: 8, backgroundColor: '#E8A838', color: '#fff', fontWeight: 700, fontSize: 15, textDecoration: 'none', textAlign: 'center' }}>
-              S'inscrire
-            </Link>
+          <div className="lp-mobile-menu">
+            <button onClick={() => scrollTo('methode')} className="lp-nav-link" style={{ color: '#1B4F72', textAlign: 'left', padding: '8px 0' }}>La méthode</button>
+            <button onClick={() => scrollTo('features')} className="lp-nav-link" style={{ color: '#1B4F72', textAlign: 'left', padding: '8px 0' }}>Fonctionnalités</button>
+            <Link to="/login" style={{ color: '#1B4F72', fontWeight: 600, fontSize: 15, textDecoration: 'none', padding: '8px 0' }}>Se connecter</Link>
+            <Link to="/register" className="lp-btn-signup" style={{ textAlign: 'center', marginTop: 4 }}>S'inscrire</Link>
           </div>
         )}
       </nav>
 
-      {/* ═══ B. HERO ═════════════════════════════════════════════════════════ */}
-      <section className="hero-gradient" style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '120px 24px 80px' }}>
-        {/* Floating shapes */}
-        <div className="float-shape float-shape-1" />
-        <div className="float-shape float-shape-2" />
-        <div className="float-shape float-shape-3" />
-        <div className="float-shape float-shape-4" />
+      {/* ═══ 2. HERO ═══════════════════════════════════════════════════════ */}
+      <section className="lp-hero">
+        <div className="lp-hero-blob lp-hero-blob-1" />
+        <div className="lp-hero-blob lp-hero-blob-2" />
+        <div className="lp-hero-blob lp-hero-blob-3" />
 
-        <div style={{ maxWidth: 800, textAlign: 'center', position: 'relative', zIndex: 1 }}>
-          {/* Badge */}
-          <div style={{
-            display: 'inline-flex', alignItems: 'center', gap: 8,
-            padding: '8px 20px', borderRadius: 100,
-            backgroundColor: 'rgba(232, 168, 56, 0.15)',
-            color: '#E8A838', fontWeight: 600, fontSize: 13,
-            marginBottom: 28, letterSpacing: '0.02em',
-          }}>
-            <Lightbulb size={16} />
-            Plateforme de Classe Inversée
+        {PARTICLES.map((p, i) => (
+          <div key={i} className="lp-particle" style={{
+            top: p.top, left: p.left,
+            '--dx': p.dx, '--dy': p.dy, '--dur': p.dur, '--delay': p.delay,
+            animationDuration: p.dur, animationDelay: p.delay,
+          }} />
+        ))}
+
+        <div className="lp-hero-content">
+          <div className="lp-hero-text">
+            <div className="lp-hero-badge">
+              <Lightbulb size={16} />
+              Plateforme de Classe Inversée
+            </div>
+
+            <h1 className="lp-hero-title">
+              Apprenez autrement{' '}
+              <br />
+              avec <span className="accent">la classe inversée</span>
+            </h1>
+
+            <p className="lp-hero-subtitle">
+              FlipLearn transforme l'apprentissage : regardez les cours chez vous,
+              puis participez activement en classe. Une méthode prouvée pour mieux
+              comprendre et retenir.
+            </p>
+
+            <div className="lp-hero-ctas">
+              <Link to="/register" className="lp-btn-primary">
+                Commencer gratuitement <ArrowRight size={18} />
+              </Link>
+              <button onClick={() => scrollTo('methode')} className="lp-btn-ghost">
+                Découvrir la méthode
+              </button>
+            </div>
           </div>
 
-          <h1 style={{
-            color: '#fff', fontWeight: 800, lineHeight: 1.15,
-            fontSize: 'clamp(32px, 6vw, 56px)',
-            marginBottom: 20, letterSpacing: '-0.02em',
-          }}>
-            Apprenez autrement avec{' '}
-            <span style={{ color: '#E8A838' }}>la classe inversée</span>
-          </h1>
+          {/* Illustration */}
+          <div className="lp-hero-illustration">
+            <div className="lp-hero-orb" />
+            <div className="lp-orbit-card lp-orbit-1"><BookOpen size={24} /></div>
+            <div className="lp-orbit-card lp-orbit-2"><Video size={24} /></div>
+            <div className="lp-orbit-card lp-orbit-3"><Brain size={24} /></div>
+            <div className="lp-orbit-card lp-orbit-4"><Users size={24} /></div>
 
-          <p style={{
-            color: 'rgba(255,255,255,0.8)', fontSize: 'clamp(16px, 2.5vw, 20px)',
-            lineHeight: 1.6, maxWidth: 600, margin: '0 auto 36px',
-          }}>
-            FlipLearn transforme l'apprentissage : regardez les cours chez vous,
-            puis participez activement en classe. Une méthode prouvée pour mieux
-            comprendre et retenir.
-          </p>
-
-          {/* CTAs */}
-          <div style={{ display: 'flex', gap: 16, justifyContent: 'center', flexWrap: 'wrap' }}>
-            <Link
-              to="/register"
-              className="btn-landing"
-              style={{
-                display: 'inline-flex', alignItems: 'center', gap: 8,
-                padding: '14px 32px', borderRadius: 10,
-                backgroundColor: '#E8A838', color: '#fff',
-                fontWeight: 700, fontSize: 16, textDecoration: 'none',
-                boxShadow: '0 4px 15px rgba(232,168,56,0.35)',
-              }}
-            >
-              Commencer maintenant <ArrowRight size={18} />
-            </Link>
-            <button
-              onClick={() => scrollToSection('methode')}
-              className="btn-landing"
-              style={{
-                display: 'inline-flex', alignItems: 'center', gap: 8,
-                padding: '14px 32px', borderRadius: 10,
-                backgroundColor: 'transparent', color: '#fff',
-                fontWeight: 600, fontSize: 16, cursor: 'pointer',
-                border: '2px solid rgba(255,255,255,0.4)',
-              }}
-            >
-              Découvrir la méthode
-            </button>
+            <div className="lp-glass-stat lp-stat-pos-1">
+              <div className="lp-glass-stat-value">2 500+</div>
+              <div className="lp-glass-stat-label">Étudiants actifs</div>
+            </div>
+            <div className="lp-glass-stat lp-stat-pos-2">
+              <div className="lp-glass-stat-value">95%</div>
+              <div className="lp-glass-stat-label">Satisfaction</div>
+            </div>
+            <div className="lp-glass-stat lp-stat-pos-3">
+              <div className="lp-glass-stat-value">50+</div>
+              <div className="lp-glass-stat-label">Cours</div>
+            </div>
           </div>
         </div>
 
-        {/* Scroll indicator */}
-        <div
-          className="scroll-indicator"
-          style={{ position: 'absolute', bottom: 32, left: '50%', transform: 'translateX(-50%)', color: 'rgba(255,255,255,0.5)', cursor: 'pointer' }}
-          onClick={() => scrollToSection('video')}
-        >
+        <div className="lp-scroll-indicator" onClick={() => scrollTo('marquee')}>
           <ChevronDown size={28} />
         </div>
       </section>
 
-      {/* ═══ C. VIDEO ════════════════════════════════════════════════════════ */}
-      <section id="video" ref={videoRef} className="reveal-on-scroll" style={{ padding: '80px 24px', backgroundColor: '#fff' }}>
-        <div style={{ maxWidth: 900, margin: '0 auto', textAlign: 'center' }}>
-          <span style={{ color: '#E8A838', fontWeight: 700, fontSize: 13, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-            Vidéo explicative
-          </span>
-          <h2 style={{ color: '#1B4F72', fontWeight: 800, fontSize: 'clamp(24px, 4vw, 36px)', marginTop: 8, marginBottom: 12 }}>
-            Découvrez la classe inversée en vidéo
-          </h2>
-          <p style={{ color: '#64748b', fontSize: 16, maxWidth: 550, margin: '0 auto 40px', lineHeight: 1.6 }}>
-            Comprenez en quelques minutes le principe de la pédagogie inversée
-            et pourquoi elle révolutionne l'apprentissage.
-          </p>
-
-          <div className="video-container">
-            <iframe
-              src="https://www.youtube.com/embed/qdKzSq_t8k8"
-              title="La classe inversée - Vidéo explicative"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              allowFullScreen
-            />
+      {/* ═══ 3. MARQUEE ════════════════════════════════════════════════════ */}
+      <section id="marquee" className="lp-marquee-section">
+        <div className="lp-marquee-row">
+          <div className="lp-marquee-track">
+            {[...MARQUEE_1, ...MARQUEE_1].map((t, i) => (
+              <span key={i} className="lp-marquee-item"><Star size={14} color="#E8A838" />{t}</span>
+            ))}
           </div>
         </div>
-      </section>
-
-      {/* ═══ D. QU'EST-CE QUE LA CLASSE INVERSÉE ? ═════════════════════════ */}
-      <section id="methode" ref={methodeRef} className="reveal-on-scroll section-alt" style={{ padding: '80px 24px' }}>
-        <div style={{ maxWidth: 1100, margin: '0 auto' }}>
-          <div style={{ textAlign: 'center', marginBottom: 48 }}>
-            <span style={{ color: '#E8A838', fontWeight: 700, fontSize: 13, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-              La méthode
-            </span>
-            <h2 style={{ color: '#1B4F72', fontWeight: 800, fontSize: 'clamp(24px, 4vw, 36px)', marginTop: 8, marginBottom: 12 }}>
-              Qu'est-ce que la classe inversée ?
-            </h2>
-            <p style={{ color: '#64748b', fontSize: 16, maxWidth: 650, margin: '0 auto', lineHeight: 1.6 }}>
-              La classe inversée renverse l'ordre traditionnel : les étudiants découvrent le cours
-              avant la séance, puis utilisent le temps en classe pour pratiquer et approfondir.
-            </p>
-          </div>
-
-          {/* Comparison Cards */}
-          <div className="flex flex-col md:flex-row" style={{ gap: 24, justifyContent: 'center' }}>
-            {/* Traditional */}
-            <div
-              className="comparison-card"
-              style={{
-                flex: 1, maxWidth: 480, padding: 32, borderRadius: 16,
-                backgroundColor: '#fff', border: '2px solid #e5e7eb',
-                textAlign: 'center',
-              }}
-            >
-              <div style={{
-                width: 56, height: 56, borderRadius: '50%',
-                backgroundColor: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                margin: '0 auto 16px',
-              }}>
-                <BookOpen size={28} color="#94a3b8" />
-              </div>
-              <h3 style={{ fontWeight: 700, fontSize: 20, color: '#64748b', marginBottom: 16 }}>
-                Méthode traditionnelle
-              </h3>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 12, textAlign: 'left' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 16px', borderRadius: 10, backgroundColor: '#f8fafc' }}>
-                  <Home size={18} color="#94a3b8" />
-                  <div>
-                    <p style={{ fontWeight: 600, fontSize: 14, color: '#64748b' }}>En classe</p>
-                    <p style={{ fontSize: 13, color: '#94a3b8' }}>Écouter le cours magistral</p>
-                  </div>
-                </div>
-                <div style={{ textAlign: 'center', color: '#d1d5db', fontSize: 20 }}>{'↓'}</div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 16px', borderRadius: 10, backgroundColor: '#f8fafc' }}>
-                  <Clock size={18} color="#94a3b8" />
-                  <div>
-                    <p style={{ fontWeight: 600, fontSize: 14, color: '#64748b' }}>À la maison</p>
-                    <p style={{ fontSize: 13, color: '#94a3b8' }}>Faire les exercices seul</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Flipped */}
-            <div
-              className="comparison-card"
-              style={{
-                flex: 1, maxWidth: 480, padding: 32, borderRadius: 16,
-                backgroundColor: '#fff', border: '2px solid #E8A838',
-                textAlign: 'center', boxShadow: '0 4px 20px rgba(232,168,56,0.1)',
-              }}
-            >
-              <div style={{
-                width: 56, height: 56, borderRadius: '50%',
-                background: 'linear-gradient(135deg, #1B4F72, #2874A6)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                margin: '0 auto 16px',
-              }}>
-                <Layers size={28} color="#fff" />
-              </div>
-              <h3 style={{ fontWeight: 700, fontSize: 20, color: '#1B4F72', marginBottom: 16 }}>
-                Classe inversée
-              </h3>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 12, textAlign: 'left' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 16px', borderRadius: 10, backgroundColor: '#EBF3FA' }}>
-                  <Monitor size={18} color="#1B4F72" />
-                  <div>
-                    <p style={{ fontWeight: 600, fontSize: 14, color: '#1B4F72' }}>À la maison</p>
-                    <p style={{ fontSize: 13, color: '#2874A6' }}>Regarder les vidéos du cours</p>
-                  </div>
-                </div>
-                <div style={{ textAlign: 'center', color: '#E8A838', fontSize: 20 }}>{'↓'}</div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 16px', borderRadius: 10, backgroundColor: '#EBF3FA' }}>
-                  <Users size={18} color="#1B4F72" />
-                  <div>
-                    <p style={{ fontWeight: 600, fontSize: 14, color: '#1B4F72' }}>En classe</p>
-                    <p style={{ fontSize: 13, color: '#2874A6' }}>Pratiquer et collaborer activement</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Key benefits */}
-          <div style={{ marginTop: 48, display: 'flex', flexWrap: 'wrap', gap: 16, justifyContent: 'center' }}>
-            {[
-              'Apprentissage à votre rythme',
-              'Plus de temps pour la pratique',
-              'Meilleure rétention des connaissances',
-              'Interaction renforcée avec le professeur',
-            ].map((text, i) => (
-              <div
-                key={i}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: 8,
-                  padding: '10px 20px', borderRadius: 100,
-                  backgroundColor: '#EBF3FA', color: '#1B4F72',
-                  fontWeight: 600, fontSize: 14,
-                }}
-              >
-                <CheckCircle size={16} color="#E8A838" />
-                {text}
-              </div>
+        <div className="lp-marquee-row">
+          <div className="lp-marquee-track lp-marquee-reverse">
+            {[...MARQUEE_2, ...MARQUEE_2].map((t, i) => (
+              <span key={i} className="lp-marquee-item"><Award size={14} color="#1B4F72" />{t}</span>
             ))}
           </div>
         </div>
       </section>
 
-      {/* ═══ E. FONCTIONNALITÉS ══════════════════════════════════════════════ */}
-      <section id="fonctionnalites" ref={featuresRef} style={{ padding: '80px 24px', backgroundColor: '#fff' }}>
-        <div style={{ maxWidth: 1100, margin: '0 auto' }}>
-          <div style={{ textAlign: 'center', marginBottom: 48 }}>
-            <span style={{ color: '#E8A838', fontWeight: 700, fontSize: 13, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-              Fonctionnalités
-            </span>
-            <h2 style={{ color: '#1B4F72', fontWeight: 800, fontSize: 'clamp(24px, 4vw, 36px)', marginTop: 8, marginBottom: 12 }}>
-              Pourquoi FlipLearn ?
-            </h2>
-            <p style={{ color: '#64748b', fontSize: 16, maxWidth: 550, margin: '0 auto', lineHeight: 1.6 }}>
-              Tous les outils dont vous avez besoin pour réussir votre apprentissage,
-              réunis dans une seule plateforme.
+      {/* ═══ 4. VIDEO ══════════════════════════════════════════════════════ */}
+      <section className="lp-section" style={{ background: 'var(--lp-surface)' }}>
+        <div className="lp-section-inner" ref={videoRef}>
+          <div className="lp-section-header-center lp-reveal">
+            <div className="lp-section-label">Vidéo explicative</div>
+            <h2 className="lp-section-title">Découvrez la classe inversée en vidéo</h2>
+            <p className="lp-section-subtitle">
+              Comprenez en quelques minutes le principe de la pédagogie inversée
+              et pourquoi elle révolutionne l'apprentissage.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3" style={{ gap: 20 }}>
-            {FEATURES.map(({ icon: Icon, title, desc }, i) => (
-              <div
-                key={i}
-                className="feature-card reveal-child"
-                style={{
-                  padding: 28, borderRadius: 16,
-                  backgroundColor: '#fff', border: '1px solid #e5e7eb',
-                }}
-              >
-                <div style={{
-                  width: 48, height: 48, borderRadius: 12,
-                  background: i % 2 === 0
-                    ? 'linear-gradient(135deg, #1B4F72, #2874A6)'
-                    : 'linear-gradient(135deg, #E8A838, #D4952A)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  marginBottom: 16,
-                }}>
-                  <Icon size={22} color="#fff" />
-                </div>
-                <h3 style={{ fontWeight: 700, fontSize: 17, color: '#1B4F72', marginBottom: 8 }}>
-                  {title}
-                </h3>
-                <p style={{ color: '#64748b', fontSize: 14, lineHeight: 1.6 }}>
-                  {desc}
-                </p>
+          <div className="lp-video-wrapper lp-reveal">
+            <div className="lp-video-blob" />
+
+            <div className="lp-video-float lp-vf-1">
+              <PlayCircle size={18} color="#E8A838" />
+              <span style={{ fontSize: 12, fontWeight: 600, color: '#1B4F72' }}>Lecture interactive</span>
+            </div>
+            <div className="lp-video-float lp-vf-2">
+              <MessageSquare size={18} color="#1B4F72" />
+              <span style={{ fontSize: 12, fontWeight: 600, color: '#1B4F72' }}>Chat intégré</span>
+            </div>
+            <div className="lp-video-float lp-vf-3">
+              <Brain size={18} color="#E8A838" />
+              <span style={{ fontSize: 12, fontWeight: 600, color: '#1B4F72' }}>QCM auto</span>
+            </div>
+
+            <div className="lp-device-frame">
+              <div className="lp-device-dots">
+                <div className="lp-device-dot" style={{ background: '#ff5f57' }} />
+                <div className="lp-device-dot" style={{ background: '#febc2e' }} />
+                <div className="lp-device-dot" style={{ background: '#28c840' }} />
               </div>
-            ))}
+              <div className="lp-video-container">
+                <iframe
+                  src="https://www.youtube.com/embed/qdKzSq_t8k8"
+                  title="La classe inversée"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                  loading="lazy"
+                />
+              </div>
+            </div>
+            <div className="lp-device-base" />
           </div>
         </div>
       </section>
 
-      {/* ═══ F. COMMENT ÇA MARCHE ════════════════════════════════════════════ */}
-      <section ref={stepsRef} className="section-alt" style={{ padding: '80px 24px' }}>
-        <div style={{ maxWidth: 1100, margin: '0 auto' }}>
-          <div style={{ textAlign: 'center', marginBottom: 48 }}>
-            <span style={{ color: '#E8A838', fontWeight: 700, fontSize: 13, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-              Comment ça marche
-            </span>
-            <h2 style={{ color: '#1B4F72', fontWeight: 800, fontSize: 'clamp(24px, 4vw, 36px)', marginTop: 8, marginBottom: 12 }}>
-              4 étapes pour transformer votre apprentissage
-            </h2>
+      {/* ═══ 5. COMPARAISON ════════════════════════════════════════════════ */}
+      <section id="methode" className="lp-section" style={{ background: 'var(--lp-bg-alt)' }}>
+        <div className="lp-section-inner">
+          <div className="lp-section-header-center">
+            <div className="lp-section-label">La méthode</div>
+            <h2 className="lp-section-title">Avant / Avec FlipLearn</h2>
+            <p className="lp-section-subtitle">
+              La classe inversée renverse l'ordre traditionnel pour un apprentissage
+              plus actif, plus engageant et plus efficace.
+            </p>
           </div>
 
-          <div className="steps-container">
-            <div className="step-connector" />
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4" style={{ gap: 24, position: 'relative', zIndex: 1 }}>
-              {STEPS.map(({ icon: Icon, num, title, desc }, i) => (
-                <div
-                  key={i}
-                  className="reveal-child"
-                  style={{ textAlign: 'center', padding: '0 8px' }}
-                >
-                  <div style={{
-                    width: 64, height: 64, borderRadius: '50%',
-                    background: 'linear-gradient(135deg, #E8A838, #D4952A)',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    margin: '0 auto 16px', boxShadow: '0 4px 15px rgba(232,168,56,0.25)',
-                    position: 'relative',
-                  }}>
-                    <span style={{ color: '#fff', fontWeight: 800, fontSize: 22 }}>{num}</span>
-                  </div>
-                  <div style={{
-                    width: 40, height: 40, borderRadius: '50%',
-                    backgroundColor: '#EBF3FA', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    margin: '-8px auto 12px',
-                  }}>
-                    <Icon size={20} color="#1B4F72" />
-                  </div>
-                  <h3 style={{ fontWeight: 700, fontSize: 16, color: '#1B4F72', marginBottom: 8 }}>
-                    {title}
-                  </h3>
-                  <p style={{ color: '#64748b', fontSize: 14, lineHeight: 1.5 }}>
-                    {desc}
-                  </p>
+          <div className="lp-comparison-grid" ref={compRef}>
+            {/* Before */}
+            <div className="lp-comparison-side">
+              <div className="lp-comparison-label" style={{ color: 'var(--lp-text-light)' }}>
+                <Clock size={20} /> Avant
+              </div>
+              {BEFORE.map(({ icon: Icon, text }, i) => (
+                <div key={i} className="lp-comparison-item lp-before-item lp-reveal-child">
+                  <div className="lp-ci-icon"><Icon size={20} color="#94a3b8" /></div>
+                  <span style={{ fontSize: 15, fontWeight: 500 }}>{text}</span>
+                </div>
+              ))}
+            </div>
+
+            {/* Divider */}
+            <div className="lp-comparison-divider">
+              <div ref={dividerRef} className="lp-divider-line lp-reveal" />
+              <div className="lp-divider-dot"><Zap size={20} /></div>
+              <div ref={dividerRef} className="lp-divider-line lp-reveal" />
+            </div>
+
+            {/* After */}
+            <div className="lp-comparison-side">
+              <div className="lp-comparison-label" style={{ color: 'var(--lp-primary)' }}>
+                <Sparkles size={20} color="#E8A838" /> Avec FlipLearn
+              </div>
+              {AFTER.map(({ icon: Icon, text }, i) => (
+                <div key={i} className="lp-comparison-item lp-after-item lp-reveal-child">
+                  <div className="lp-ci-icon"><Icon size={20} /></div>
+                  <span style={{ fontSize: 15, fontWeight: 600 }}>{text}</span>
                 </div>
               ))}
             </div>
@@ -519,81 +415,160 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ═══ G. CTA BANNER ═══════════════════════════════════════════════════ */}
-      <section ref={ctaRef} className="reveal-on-scroll cta-gradient" style={{ padding: '72px 24px', textAlign: 'center' }}>
-        <div style={{ maxWidth: 650, margin: '0 auto', position: 'relative', zIndex: 1 }}>
-          <h2 style={{ color: '#fff', fontWeight: 800, fontSize: 'clamp(24px, 4vw, 36px)', marginBottom: 16 }}>
-            Prêt à transformer votre apprentissage ?
-          </h2>
-          <p style={{ color: 'rgba(255,255,255,0.8)', fontSize: 17, lineHeight: 1.6, marginBottom: 32 }}>
-            Rejoignez FlipLearn gratuitement et découvrez une nouvelle façon d'apprendre,
-            plus efficace et plus engageante.
-          </p>
-          <Link
-            to="/register"
-            className="btn-landing"
-            style={{
-              display: 'inline-flex', alignItems: 'center', gap: 8,
-              padding: '16px 36px', borderRadius: 10,
-              backgroundColor: '#E8A838', color: '#fff',
-              fontWeight: 700, fontSize: 17, textDecoration: 'none',
-              boxShadow: '0 4px 20px rgba(232,168,56,0.35)',
-            }}
-          >
-            Créer un compte gratuitement <ArrowRight size={20} />
-          </Link>
+      {/* ═══ 6. BENTO FEATURES ═════════════════════════════════════════════ */}
+      <section id="features" className="lp-section" style={{ background: 'var(--lp-surface)' }}>
+        <div className="lp-section-inner">
+          <div className="lp-section-header-center">
+            <div className="lp-section-label">Fonctionnalités</div>
+            <h2 className="lp-section-title">Pourquoi choisir FlipLearn ?</h2>
+            <p className="lp-section-subtitle">
+              Tous les outils dont vous avez besoin pour réussir,
+              réunis dans une seule plateforme intelligente.
+            </p>
+          </div>
+
+          <div className="lp-bento-grid" ref={bentoRef}>
+            {FEATURES.map(({ icon: Icon, title, desc, gradient, glow, iconBg, wide }, i) => (
+              <div
+                key={i}
+                className={`lp-bento-card lp-reveal-child ${wide ? 'lp-bento-wide' : ''}`}
+                style={{ '--card-bg': gradient, '--card-glow': glow }}
+              >
+                <div className="lp-bento-icon" style={{ background: iconBg }}>
+                  <Icon size={26} color="#fff" />
+                </div>
+                <h3>{title}</h3>
+                <p>{desc}</p>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 
-      {/* ═══ H. FOOTER ═══════════════════════════════════════════════════════ */}
-      <footer className="landing-footer" style={{ borderTop: '1px solid #e5e7eb', padding: '48px 24px 32px', backgroundColor: '#f8fafc' }}>
-        <div style={{ maxWidth: 1100, margin: '0 auto' }}>
-          <div className="grid grid-cols-1 md:grid-cols-3" style={{ gap: 40 }}>
-            {/* Col 1 */}
-            <div>
-              <Logo variant="full" size={28} />
-              <p style={{ color: '#64748b', fontSize: 14, lineHeight: 1.6, marginTop: 12 }}>
-                FlipLearn est une plateforme éducative basée sur la pédagogie inversée,
-                conçue pour améliorer l'expérience d'apprentissage des étudiants universitaires.
-              </p>
-            </div>
+      {/* ═══ 7. TIMELINE ═══════════════════════════════════════════════════ */}
+      <section id="timeline" className="lp-section" style={{ background: 'var(--lp-bg-alt)' }}>
+        <div className="lp-section-inner">
+          <div className="lp-section-header-center">
+            <div className="lp-section-label">Comment ça marche</div>
+            <h2 className="lp-section-title">4 étapes pour transformer votre apprentissage</h2>
+          </div>
 
-            {/* Col 2 */}
-            <div>
-              <h4 style={{ fontWeight: 700, fontSize: 15, color: '#1B4F72', marginBottom: 12 }}>
-                Liens utiles
-              </h4>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                <Link to="/login" style={{ color: '#64748b', fontSize: 14, textDecoration: 'none' }}>Se connecter</Link>
-                <Link to="/register" style={{ color: '#64748b', fontSize: 14, textDecoration: 'none' }}>Créer un compte</Link>
-                <button onClick={() => scrollToSection('methode')} style={{ background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', color: '#64748b', fontSize: 14, padding: 0 }}>
-                  La classe inversée
-                </button>
-                <button onClick={() => scrollToSection('fonctionnalites')} style={{ background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', color: '#64748b', fontSize: 14, padding: 0 }}>
-                  Fonctionnalités
-                </button>
+          <div className="lp-timeline" ref={timelineRef}>
+            <div className="lp-timeline-line lp-reveal" ref={tlLineRef} />
+
+            {STEPS.map(({ icon: Icon, title, desc }, i) => (
+              <div key={i} className="lp-timeline-step lp-reveal-child">
+                <div className="lp-tl-node">{i + 1}</div>
+                <div className="lp-tl-content">
+                  <div className="lp-tl-icon"><Icon size={20} /></div>
+                  <h3>{title}</h3>
+                  <p>{desc}</p>
+                </div>
+                <div className="lp-tl-empty" />
               </div>
-            </div>
+            ))}
+          </div>
+        </div>
+      </section>
 
-            {/* Col 3 */}
-            <div>
-              <h4 style={{ fontWeight: 700, fontSize: 15, color: '#1B4F72', marginBottom: 12 }}>
-                À propos
-              </h4>
-              <p style={{ color: '#64748b', fontSize: 14, lineHeight: 1.6 }}>
-                Projet de Fin d'Études réalisé dans le cadre de la Licence en Informatique,
-                spécialité Ingénierie des Systèmes d'Information et du Logiciel (ISIL).
-              </p>
+      {/* ═══ 8. STATS ══════════════════════════════════════════════════════ */}
+      <section className="lp-stats" ref={statsRef}>
+        <div className="lp-stats-grid">
+          {STATS.map((stat, i) => (
+            <div key={i} className="lp-reveal-child" ref={statRefs[i]}>
+              <div className="lp-stat-number">
+                {statVals[i].toLocaleString('fr-FR')}{stat.suffix}
+              </div>
+              <div className="lp-stat-label">{stat.label}</div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ═══ 9. CTA ════════════════════════════════════════════════════════ */}
+      <section className="lp-cta" ref={ctaRef}>
+        {[
+          { Icon: BookOpen, top: '15%', left: '8%', size: 32 },
+          { Icon: Video, top: '20%', right: '12%', size: 28 },
+          { Icon: Brain, bottom: '25%', left: '5%', size: 24 },
+          { Icon: GraduationCap, bottom: '15%', right: '8%', size: 30 },
+          { Icon: Sparkles, top: '50%', left: '3%', size: 20 },
+          { Icon: Target, top: '40%', right: '5%', size: 22 },
+        ].map(({ Icon, size, ...pos }, i) => (
+          <div key={i} className="lp-cta-float" style={{ ...pos, animationDelay: `${i * 0.5}s` }}>
+            <Icon size={size} />
+          </div>
+        ))}
+
+        <h2 className="lp-cta-title lp-reveal">
+          Prêt à transformer votre apprentissage ?
+        </h2>
+        <p className="lp-cta-subtitle lp-reveal">
+          Rejoignez FlipLearn gratuitement et découvrez une nouvelle façon d'apprendre,
+          plus efficace et plus engageante.
+        </p>
+        <div className="lp-cta-buttons lp-reveal">
+          <Link to="/register" className="lp-btn-primary">
+            Créer un compte gratuitement <ArrowRight size={20} />
+          </Link>
+          <button onClick={() => scrollTo('methode')} className="lp-btn-ghost">
+            En savoir plus
+          </button>
+        </div>
+      </section>
+
+      {/* ═══ 10. FOOTER ════════════════════════════════════════════════════ */}
+      <footer className="lp-footer">
+        <div className="lp-footer-grid">
+          {/* Col 1 */}
+          <div>
+            <Logo variant="full" size={28} />
+            <p className="lp-footer-desc">
+              FlipLearn est une plateforme éducative basée sur la pédagogie inversée,
+              conçue pour améliorer l'expérience d'apprentissage des étudiants universitaires.
+            </p>
+            <div className="lp-footer-social">
+              <button className="lp-social-icon" aria-label="GitHub"><Github size={18} /></button>
+              <button className="lp-social-icon" aria-label="LinkedIn"><Linkedin size={18} /></button>
+              <button className="lp-social-icon" aria-label="Globe"><Globe size={18} /></button>
             </div>
           </div>
 
-          <div style={{ borderTop: '1px solid #e5e7eb', marginTop: 32, paddingTop: 20, textAlign: 'center' }}>
-            <p style={{ color: '#94a3b8', fontSize: 13 }}>
-              {'© '}
-              {new Date().getFullYear()}
-              {' FlipLearn — Projet de Fin d\'Études — Licence Informatique ISIL'}
+          {/* Col 2 */}
+          <div>
+            <h4>Liens utiles</h4>
+            <div className="lp-footer-links">
+              <Link to="/login">Se connecter</Link>
+              <Link to="/register">Créer un compte</Link>
+              <button onClick={() => scrollTo('methode')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.55)', fontSize: 14, textAlign: 'left', padding: 0 }}>La classe inversée</button>
+              <button onClick={() => scrollTo('features')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.55)', fontSize: 14, textAlign: 'left', padding: 0 }}>Fonctionnalités</button>
+            </div>
+          </div>
+
+          {/* Col 3 */}
+          <div>
+            <h4>À propos</h4>
+            <p style={{ fontSize: 14, lineHeight: 1.7 }}>
+              Projet de Fin d'Études réalisé dans le cadre de la Licence en Informatique,
+              spécialité ISIL.
             </p>
           </div>
+
+          {/* Col 4 */}
+          <div>
+            <h4>Newsletter</h4>
+            <p style={{ fontSize: 13, lineHeight: 1.6, marginBottom: 12 }}>
+              Restez informé des nouvelles fonctionnalités.
+            </p>
+            <form className="lp-newsletter" onSubmit={e => e.preventDefault()}>
+              <input type="email" placeholder="votre@email.com" />
+              <button type="submit"><Send size={16} /></button>
+            </form>
+          </div>
+        </div>
+
+        <div className="lp-footer-bottom">
+          {'© '}{new Date().getFullYear()}{' FlipLearn — Projet de Fin d\'Études — Licence Informatique ISIL'}
         </div>
       </footer>
     </div>
