@@ -183,7 +183,7 @@ function Sidebar({ collapsed, onToggle, role, user, mobileOpen, setMobileOpen })
         display: 'flex',
         flexDirection: 'column',
         transition: 'width 200ms ease, min-width 200ms ease',
-        overflow: 'hidden',
+        overflow: 'visible',
         position: 'relative',
         zIndex: 20,
       }}
@@ -279,26 +279,25 @@ function Sidebar({ collapsed, onToggle, role, user, mobileOpen, setMobileOpen })
         style={{
           position: 'absolute',
           top: '50%',
-          right: '-14px',
+          right: '-16px',
           transform: 'translateY(-50%)',
-          width: 28,
-          height: 28,
+          width: 32,
+          height: 32,
           borderRadius: '50%',
-          backgroundColor: collapsed ? 'var(--color-primary)' : 'var(--color-surface)',
-          border: collapsed ? '2px solid var(--color-primary)' : '1px solid var(--color-border)',
+          backgroundColor: 'var(--color-primary)',
+          border: '2px solid var(--color-primary)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           cursor: 'pointer',
           zIndex: 30,
-          boxShadow: collapsed ? '0 2px 8px rgba(27,79,114,0.3)' : 'var(--shadow-sm)',
-          transition: 'background-color 200ms, border-color 200ms, box-shadow 200ms',
+          boxShadow: '0 2px 8px rgba(27,79,114,0.35)',
         }}
         title={collapsed ? 'Agrandir la barre' : 'Réduire la barre'}
       >
         {collapsed
-          ? <ChevronRight size={14} color="#fff" />
-          : <ChevronLeft  size={14} color="var(--color-text-secondary)" />
+          ? <ChevronRight size={16} color="#fff" />
+          : <ChevronLeft  size={16} color="#fff" />
         }
       </button>
     </aside>
