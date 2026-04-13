@@ -26,7 +26,8 @@ api.interceptors.response.use(
       sessionStorage.removeItem(STORAGE_KEY);
       // Ne pas rediriger si déjà sur /login ou /register
       if (!window.location.pathname.startsWith('/login') &&
-          !window.location.pathname.startsWith('/register')) {
+          !window.location.pathname.startsWith('/register') &&
+          !window.location.pathname.startsWith('/welcome')) {
         window.location.href = '/login';
       }
     }
