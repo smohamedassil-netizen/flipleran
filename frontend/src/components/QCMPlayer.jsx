@@ -148,8 +148,6 @@ export default function QCMPlayer({ qcm, onFinish }) {
       ? { questionId: currentQuestion._id, answer: null, answers: timedOut ? [] : multiSelected, timedOut }
       : { questionId: currentQuestion._id, answer: timedOut ? null : selected, answers: [], timedOut };
 
-    setAnswers((prev) => [...prev, entry]);
-
     if (isLast) {
       setAnswers((prev) => {
         const final = [...prev, entry];
@@ -157,6 +155,7 @@ export default function QCMPlayer({ qcm, onFinish }) {
         return final;
       });
     } else {
+      setAnswers((prev) => [...prev, entry]);
       setSelected(null);
       setMultiSelected([]);
       setTimeLeft(TIMER_TOTAL);

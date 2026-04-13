@@ -9,6 +9,7 @@ import ProtectedRoute from './components/ProtectedRoute.jsx';
 import Login                from './pages/Login.jsx';
 import Register             from './pages/Register.jsx';
 import Dashboard            from './pages/Dashboard.jsx';
+import DashboardRouter      from './components/DashboardRouter.jsx';
 import Decks                from './pages/Decks.jsx';
 import Study                from './pages/Study.jsx';
 import CoursesPage          from './pages/CoursesPage.jsx';
@@ -87,7 +88,7 @@ export default function App() {
 
           {/* All authenticated users */}
           <Route element={<ProtectedRoute />}>
-            <Route path="/"                        element={<Dashboard />} />
+            <Route path="/"                        element={<DashboardRouter />} />
             <Route path="/courses"                 element={<CoursesPage />} />
             <Route path="/decks"                   element={<Decks />} />
             <Route path="/study/:deckId"           element={<Study />} />
