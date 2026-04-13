@@ -279,25 +279,26 @@ function Sidebar({ collapsed, onToggle, role, user, mobileOpen, setMobileOpen })
         style={{
           position: 'absolute',
           top: '50%',
-          right: '-12px',
+          right: '-14px',
           transform: 'translateY(-50%)',
-          width: 24,
-          height: 24,
+          width: 28,
+          height: 28,
           borderRadius: '50%',
-          backgroundColor: 'var(--color-surface)',
-          border: '1px solid var(--color-border)',
+          backgroundColor: collapsed ? 'var(--color-primary)' : 'var(--color-surface)',
+          border: collapsed ? '2px solid var(--color-primary)' : '1px solid var(--color-border)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           cursor: 'pointer',
           zIndex: 30,
-          boxShadow: 'var(--shadow-sm)',
+          boxShadow: collapsed ? '0 2px 8px rgba(27,79,114,0.3)' : 'var(--shadow-sm)',
+          transition: 'background-color 200ms, border-color 200ms, box-shadow 200ms',
         }}
-        title={collapsed ? 'Agrandir' : 'Reduire'}
+        title={collapsed ? 'Agrandir la barre' : 'Réduire la barre'}
       >
         {collapsed
-          ? <ChevronRight size={13} color="var(--color-text-secondary)" />
-          : <ChevronLeft  size={13} color="var(--color-text-secondary)" />
+          ? <ChevronRight size={14} color="#fff" />
+          : <ChevronLeft  size={14} color="var(--color-text-secondary)" />
         }
       </button>
     </aside>
