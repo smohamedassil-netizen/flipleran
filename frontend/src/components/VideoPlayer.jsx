@@ -22,7 +22,8 @@ const fmt = (s) => {
  * @param {string}  src            URL Cloudinary
  * @param {string}  titre
  * @param {number}  initialPercent progression déjà enregistrée (0-100)
- * @param {string}  nextPath       route vers le QCM ou la vidéo suivante
+ * @param {string}  nextVideoPath  route vers la vidéo suivante (null si dernière)
+ * @param {string}  qcmPath        route vers le QCM de cette vidéo
  * @param {string}  courseId       utilisé pour le bouton "Retour au cours"
  */
 export default function VideoPlayer({
@@ -30,7 +31,8 @@ export default function VideoPlayer({
   src,
   titre,
   initialPercent = 0,
-  nextPath,
+  nextVideoPath,
+  qcmPath,
   courseId,
   onPointsEarned,
 }) {
@@ -259,19 +261,30 @@ export default function VideoPlayer({
           </p>
         </div>
 
-        {/* Bouton Suivant — débloqué après 80% */}
-        {nextPath && (
-          <button
-            disabled={!completed}
-            onClick={() => navigate(nextPath)}
-            className={completed ? 'btn btn-primary' : 'btn btn-secondary'}
-            style={{ flexShrink: 0, opacity: completed ? 1 : 0.45 }}
-            title={completed ? undefined : `Regardez au moins ${THRESHOLD}% pour continuer`}
-          >
-            {completed ? <CheckCircle size={15} /> : <ChevronRight size={15} />}
-            {completed ? 'Faire le QCM' : `Continuer (${watchedPercent}%)`}
-          </button>
-        )}
+        {/* Boutons — débloqués après 80% */}
+        <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+          {qcmPath && (
+            <button
+              disabled={!completed}
+              onClick={() => navigate(qcmPath)}
+              className={completed ? 'btn btn-primary' : 'btn btn-secondary'}
+              style={{ opacity: completed ? 1 : 0.45 }}
+              title={completed ? 'Passer le QCM de cette vidéo' : `Regardez au moins ${THRESHOLD}% pour débloquer le QCM`}
+            >
+              {completed ? <CheckCircle size={15} /> : <ChevronRight size={15} />}
+              {completed ? 'Faire le QCM' : `QCM (${watchedPercent}%)`}
+            </button>
+          )}
+          {nextVideoPath && completed && (
+            <button
+              onClick={() => navigate(nextVideoPath)}
+              className="btn btn-secondary"
+            >
+              <ChevronRight size={15} />
+              Vidéo suivante
+            </button>
+          )}
+        </div>
       </div>
 
       {/* ── Barre de progression visible ─────────────────────────────────── */}

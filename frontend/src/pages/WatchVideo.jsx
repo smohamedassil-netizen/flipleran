@@ -72,7 +72,8 @@ export default function WatchVideo() {
   // Trouver la vidéo suivante dans le cours
   const currentIndex = videos.findIndex((v) => v._id === video._id);
   const nextVideo    = videos[currentIndex + 1];
-  const nextPath     = nextVideo ? `/watch/${nextVideo._id}` : `/qcm/${videoId}`;
+  const nextVideoPath = nextVideo ? `/watch/${nextVideo._id}` : null;
+  const qcmPath       = `/qcm/${videoId}`;
 
   const courseId = video.courseId._id ?? video.courseId;
 
@@ -94,7 +95,8 @@ export default function WatchVideo() {
             src={video.url}
             titre={video.titre}
             initialPercent={video.myProgress?.watchedPercent ?? 0}
-            nextPath={nextPath}
+            nextVideoPath={nextVideoPath}
+            qcmPath={qcmPath}
             courseId={courseId}
             onPointsEarned={handlePointsEarned}
           />
