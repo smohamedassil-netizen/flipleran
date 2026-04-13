@@ -31,6 +31,7 @@ import ResourcesHub         from './pages/ResourcesHub.jsx';
 import ProfessorQCMHub      from './pages/ProfessorQCMHub.jsx';
 import BadgeManagement      from './pages/BadgeManagement.jsx';
 import Support              from './pages/Support.jsx';
+import LandingPage          from './pages/LandingPage.jsx';
 import ProjectList          from './pages/ProjectList.jsx';
 import ProjectDetail        from './pages/ProjectDetail.jsx';
 import ProjectCreate        from './pages/ProjectCreate.jsx';
@@ -82,6 +83,7 @@ export default function App() {
       <BrowserRouter>
         <Routes>
           {/* Public */}
+          <Route path="/welcome"      element={<LandingPage />} />
           <Route path="/login"        element={<Login />} />
           <Route path="/register"     element={<Register />} />
           <Route path="/unauthorized" element={<Unauthorized />} />
