@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout.jsx';
 import { io } from 'socket.io-client';
 import { ArrowLeft, Swords, Users, Clock, Trophy, Plus, RefreshCw, Zap, CheckCircle, XCircle } from 'lucide-react';
+import { useAuth } from '../context/AuthContext.jsx';
 
 const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || (import.meta.env.PROD ? '' : 'http://localhost:5000');
 const STORAGE_KEY = 'fliplearn_user';
@@ -11,6 +12,7 @@ const TIMER_SECONDS = 15;
 
 export default function QuizBattle() {
   const navigate = useNavigate();
+  const { refreshMe } = useAuth();
   const socketRef = useRef(null);
   const timerRef = useRef(null);
 
@@ -76,6 +78,8 @@ export default function QuizBattle() {
       setTimeout(() => {
         setScores(data.players);
         setPhase('result');
+        // Sync points from server so dashboard is up to date
+        refreshMe();
       }, 2000);
     });
 

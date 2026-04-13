@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useCallback, useRef } from 'react';
+import { useAuth } from './AuthContext.jsx';
 
 const GamificationContext = createContext(null);
 
@@ -10,6 +11,7 @@ const GamificationContext = createContext(null);
 export function GamificationProvider({ children }) {
   const [notifications, setNotifications] = useState([]);
   const idRef = useRef(0);
+  const { refreshMe } = useAuth();
 
   /**
    * @param {{ earned: number, newBadges: Array }} payload
@@ -20,11 +22,14 @@ export function GamificationProvider({ children }) {
     const id = ++idRef.current;
     setNotifications((prev) => [...prev, { id, earned, newBadges }]);
 
+    // Sync user points/badges from server so dashboard stays up to date
+    refreshMe();
+
     // Auto-remove after animation
     setTimeout(() => {
       setNotifications((prev) => prev.filter((n) => n.id !== id));
     }, 3500);
-  }, []);
+  }, [refreshMe]);
 
   const dismiss = useCallback((id) => {
     setNotifications((prev) => prev.filter((n) => n.id !== id));

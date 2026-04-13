@@ -38,9 +38,12 @@ function QuickAction({ icon: Icon, label, description, to, color }) {
 }
 
 export default function Dashboard() {
-  const { user }      = useAuth();
+  const { user, refreshMe } = useAuth();
   const navigate       = useNavigate();
   const { decks, loading: decksLoading } = useDecks();
+
+  // Sync user points/badges from server on mount
+  useEffect(() => { refreshMe(); }, [refreshMe]);
 
   const [courses,    setCourses]    = useState([]);
   const [progresses, setProgresses] = useState([]);
