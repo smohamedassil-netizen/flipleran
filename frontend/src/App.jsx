@@ -37,8 +37,8 @@ import ProjectDetail        from './pages/ProjectDetail.jsx';
 import ProjectCreate        from './pages/ProjectCreate.jsx';
 import NotificationsPage    from './pages/NotificationsPage.jsx';
 import ProfessorTracking    from './pages/ProfessorTracking.jsx';
-import MyTickets            from './pages/MyTickets.jsx';
 import ModuleAssistant      from './pages/ModuleAssistant.jsx';
+import Rewards              from './pages/Rewards.jsx';
 
 /* ── Pages d'erreur ────────────────────────────────────────────────────────── */
 function ErrorPage({ code, title, description }) {
@@ -81,10 +81,10 @@ export default function App() {
   return (
     <ThemeProvider>
     <AuthProvider>
+      <BrowserRouter>
+      <ToastProvider>
       <NotificationProvider>
       <GamificationProvider>
-      <ToastProvider>
-      <BrowserRouter>
         <Routes>
           {/* Public */}
           <Route path="/welcome"      element={<LandingPage />} />
@@ -116,8 +116,9 @@ export default function App() {
             <Route path="/projects"                  element={<ProjectList />} />
             <Route path="/projects/:projectId"       element={<ProjectDetail />} />
             <Route path="/notifications"             element={<NotificationsPage />} />
-            <Route path="/my-tickets"                element={<MyTickets />} />
+            <Route path="/my-tickets"                element={<Navigate to="/support" replace />} />
             <Route path="/courses/:courseId/assistant" element={<ModuleAssistant />} />
+            <Route path="/rewards"                   element={<Rewards />} />
           </Route>
 
           {/* Professeur + Admin only */}
@@ -143,10 +144,10 @@ export default function App() {
 
           <Route path="*" element={<NotFound />} />
         </Routes>
-      </BrowserRouter>
-      </ToastProvider>
       </GamificationProvider>
       </NotificationProvider>
+      </ToastProvider>
+      </BrowserRouter>
     </AuthProvider>
     </ThemeProvider>
   );

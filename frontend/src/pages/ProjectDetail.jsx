@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout.jsx';
 import Breadcrumb from '../components/Breadcrumb.jsx';
 import ProjectActivityFeed from '../components/ProjectActivityFeed.jsx';
+import { ProjectProgressWidget, PhaseChecklist, IdeasPanel } from '../components/ProjectProgressPanel.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
 import api from '../utils/api.js';
 import {
@@ -187,6 +188,12 @@ export default function ProjectDetail() {
   /* Prof: edit project */
   const [editing, setEditing] = useState(false);
   const [editForm, setEditForm] = useState({});
+
+  const refreshProject = () => {
+    api.get(`/projects/${projectId}`)
+      .then(({ data }) => setProject(data))
+      .catch(() => { /* ignore */ });
+  };
 
   useEffect(() => {
     api.get(`/projects/${projectId}`)
@@ -467,6 +474,48 @@ export default function ProjectDetail() {
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: 24, alignItems: 'start' }}>
         {/* ── Left column ────────────────────────────────────────────────── */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+
+          {/* ── Progression globale ──────────────────────────────────────── */}
+          <ProjectProgressWidget project={project} />
+
+          {/* ── Idées & suggestions ──────────────────────────────────────── */}
+          <IdeasPanel
+            projectId={project._id}
+            ideas={project.ideas || []}
+            canManage={isProfOrAdmin}
+            onUpdate={refreshProject}
+          />
+
+          {/* ── Checklist détaillée par phase ────────────────────────────── */}
+          {project.phases?.length > 0 && (
+            <div className="card" style={{ padding: 20 }}>
+              <h3 style={{ fontSize: 'var(--font-size-md)', fontWeight: 700, marginBottom: 14, color: 'var(--color-text)', display: 'flex', alignItems: 'center', gap: 8 }}>
+                ✅ Checklist par phase
+              </h3>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                {project.phases.map(phase => {
+                  const pcfg = PHASE_STATUS_COLOR[phase.statut] ?? PHASE_STATUS_COLOR.a_faire;
+                  return (
+                    <div key={phase._id}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                        <div style={{ width: 8, height: 8, borderRadius: '50%', background: pcfg.border }} />
+                        <strong style={{ fontSize: 13, color: '#1E293B' }}>{phase.titre}</strong>
+                        <span style={{ fontSize: 11, color: pcfg.text, fontWeight: 600 }}>
+                          {phase.statut === 'termine' ? '✓ terminée' : phase.statut === 'en_cours' ? 'en cours' : 'à faire'}
+                        </span>
+                      </div>
+                      <PhaseChecklist
+                        projectId={project._id}
+                        phase={phase}
+                        canManage={isProfOrAdmin}
+                        onUpdate={refreshProject}
+                      />
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           {/* ── Timeline ─────────────────────────────────────────────────── */}
           {project.phases?.length > 0 && (

@@ -4,6 +4,57 @@ Historique des modifications par date de session.
 
 ---
 
+## 18 Avril 2026 (session 2 — UX & engagement)
+
+### Toast notifications pop animées
+- Refonte `ToastContext.jsx` : toasts "pop" avec animation scale + slide depuis top-right
+- Icônes typées par catégorie (reminder_qcm, ticket_update, reward, achievement, etc.)
+- Urgent : animation shake + shadow rouge + durée prolongée (8s)
+- Progress bar animée avant disparition + clic ouvre le lien
+- `NotificationContext` connecté → chaque notif socket.io déclenche un toast
+
+### Navigation allégée
+- Retrait des entrées "Notifications" de la sidebar (accessible via cloche Topbar)
+- Fusion "Aide & Support" + "Mes tickets" : la page `/support` intègre désormais FAQ + gestion tickets (création avec priorité/catégorie, conversation multi-turn)
+- `/my-tickets` redirige vers `/support` (compat)
+- Suppression de `MyTickets.jsx` (obsolète)
+
+### Admin tickets restylé
+- Refonte `SupportSection` (AdminDashboard) : stats en carte (libres, mes tickets, urgents, résolus)
+- Onglets Libres / Mes tickets / Tous ouverts / Résolus
+- Filtres priorité + catégorie + recherche
+- Tri automatique par priorité (urgent en haut)
+- Modal conversation multi-turn avec édition priorité/catégorie à la volée
+
+### Quiz Battle enrichi (game feel)
+- **Streak / combos** : +5 points de bonus à partir de 3 bonnes d'affilée, +10 à partir de 5
+- **Power-ups (1 par match)** : 50/50 (cache 2 options), Freeze (+8s timer), x2 Points
+- Notification à l'adversaire quand un power-up est utilisé
+- Animations : pulse vert sur bonne réponse, shake rouge sur mauvaise, timer qui pulse en rouge si ≤5s
+- Post-match : stats détaillées (précision %, best streak, bonnes réponses)
+- Badge "Invincible" automatique si 4 combos ou plus
+- UI redesign lobby avec cartes features (Combos, Power-ups, Invincible)
+
+### Projets — checklist et suivi détaillé
+- Nouveau `checklist[]` sur chaque phase : tâches cochables par les membres
+- Nouveau `ideas[]` : le prof peut pousser des suggestions (exercice/workshop/recherche/livrable) avec difficulté + estimation
+- Widget "Progression globale" : % calculé à partir des phases (40%), tâches (40%), livrables (20%)
+- Composant `ProjectProgressPanel.jsx` réutilisable (ProgressWidget, PhaseChecklist, IdeasPanel)
+- Endpoints : POST/PUT/DELETE checklist item, POST/DELETE ideas
+
+### Récompenses réelles (nouveau)
+- Nouveaux modèles `Reward` (catalogue) et `RewardClaim` (réclamations)
+- Controller + routes complet : catalogue, claim, my-claims, admin validation/livraison
+- Catalogue seedé avec **15 récompenses concrètes** : certificats cybersécurité, Full-Stack, Data Analyst ; réductions TryHackMe/Udemy/DataCamp ; FlipLearn Premium 1/3 mois ; workshop cybersécu ; bootcamp IA ; t-shirt, mug, stickers, carnet ; badge Top 10
+- Page `/rewards` : catalogue filtrable, carte produit avec highlight, barre de progression vers prochain objectif, modal confirmation (débit immédiat), onglet "Mes réclamations" avec statut temps réel
+- Section admin `Récompenses` : traitement des claims (approver/livrer avec code/note/refuser avec remboursement auto)
+
+### Documentation
+- Appel `doc_updater.py` — entrée #009 ajoutée
+- `CHANGELOG.md` mis à jour
+
+---
+
 ## 18 Avril 2026
 
 ### Notifications persistantes & rappels automatiques (node-cron)

@@ -636,6 +636,165 @@ body {
   to   { opacity: 0; transform: translateX(40px); }
 }
 
+/* ─── Toast pop (pour notifications) ──────────────────────────────────── */
+.toast-stack {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 10000;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  pointer-events: none;
+  max-width: 400px;
+}
+
+.toast-pop {
+  position: relative;
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 14px 16px;
+  border-radius: 14px;
+  color: white;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.18), 0 4px 12px rgba(0,0,0,0.1);
+  pointer-events: auto;
+  transform-origin: top right;
+  overflow: hidden;
+  min-width: 300px;
+  animation: toast-pop-in 420ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+.toast-pop-exit {
+  animation: toast-pop-out 220ms ease-in both;
+}
+
+.toast-pop-urgent {
+  animation: toast-pop-in 420ms cubic-bezier(0.34, 1.56, 0.64, 1) both,
+             toast-pop-shake 600ms ease-out 420ms 2;
+  box-shadow: 0 12px 40px rgba(220, 38, 38, 0.35), 0 0 0 2px rgba(220, 38, 38, 0.6) inset;
+}
+
+.toast-pop-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.toast-pop-body { flex: 1; min-width: 0; }
+
+.toast-pop-title {
+  font-size: 13px;
+  font-weight: 700;
+  margin-bottom: 2px;
+  letter-spacing: -0.01em;
+}
+
+.toast-pop-message {
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.4;
+  opacity: 0.95;
+  word-break: break-word;
+}
+
+.toast-pop-cta {
+  margin-top: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  opacity: 0.85;
+}
+
+.toast-pop-close {
+  background: rgba(255,255,255,0.15);
+  border: none;
+  color: white;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s;
+  flex-shrink: 0;
+}
+
+.toast-pop-close:hover {
+  background: rgba(255,255,255,0.3);
+}
+
+.toast-pop-progress {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 3px;
+  background: rgba(255,255,255,0.6);
+  animation: toast-pop-progress linear forwards;
+}
+
+@keyframes toast-pop-in {
+  0%   { opacity: 0; transform: translateX(120%) scale(0.6); }
+  60%  { transform: translateX(-8px) scale(1.04); }
+  100% { opacity: 1; transform: translateX(0) scale(1); }
+}
+
+@keyframes toast-pop-out {
+  from { opacity: 1; transform: translateX(0) scale(1); }
+  to   { opacity: 0; transform: translateX(120%) scale(0.9); }
+}
+
+@keyframes toast-pop-shake {
+  0%, 100% { transform: translateX(0); }
+  25%      { transform: translateX(-4px); }
+  75%      { transform: translateX(4px); }
+}
+
+@keyframes toast-pop-progress {
+  from { width: 100%; }
+  to   { width: 0%; }
+}
+
+/* ─── Quiz Battle animations ────────────────────────────────────────── */
+@keyframes pulse-timer {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.08); }
+}
+
+@keyframes flame-flicker {
+  0%, 100% { transform: scale(1) rotate(0deg); }
+  25%      { transform: scale(1.05) rotate(-2deg); }
+  75%      { transform: scale(1.05) rotate(2deg); }
+}
+
+@keyframes correct-pulse {
+  0%   { transform: scale(1); box-shadow: 0 0 0 0 rgba(22,163,74,0.4); }
+  50%  { transform: scale(1.04); box-shadow: 0 0 0 12px rgba(22,163,74,0); }
+  100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(22,163,74,0); }
+}
+
+@keyframes wrong-shake {
+  0%, 100% { transform: translateX(0); }
+  20%      { transform: translateX(-6px); }
+  40%      { transform: translateX(6px); }
+  60%      { transform: translateX(-4px); }
+  80%      { transform: translateX(4px); }
+}
+
+@keyframes result-pop {
+  0%   { opacity: 0; transform: scale(0.6); }
+  60%  { transform: scale(1.08); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+@media (max-width: 640px) {
+  .toast-stack { top: 12px; right: 12px; left: 12px; max-width: none; }
+  .toast-pop { min-width: 0; }
+}
+
 /* ─── Modal ───────────────────────────────────────────────────────────── */
 .modal-overlay {
   position: fixed;

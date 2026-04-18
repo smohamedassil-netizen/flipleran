@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
 import { io } from 'socket.io-client';
 import api from '../utils/api.js';
+import { useToast } from './ToastContext.jsx';
 
 const NotificationContext = createContext();
 
@@ -10,6 +11,7 @@ export function NotificationProvider({ children }) {
   const [hasNew, setHasNew] = useState(false);
   const [loading, setLoading] = useState(false);
   const socketRef = useRef(null);
+  const toast = useToast();
 
   /* ── Charger depuis la DB ─────────────────────────────────────────────── */
   const fetchNotifications = useCallback(async () => {
@@ -102,6 +104,14 @@ export function NotificationProvider({ children }) {
 
     socket.on('notification', (data) => {
       addNotification(data);
+      // Pop animé
+      toast.toast({
+        title: data.title || '',
+        message: data.message,
+        type: data.type || 'info',
+        priority: data.priority || 'normal',
+        link: data.link || null,
+      });
     });
 
     return () => {

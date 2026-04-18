@@ -428,6 +428,156 @@ export const getEvaluations = async (req, res) => {
   }
 };
 
+/* ─── Checklist : CRUD items dans une phase ──────────────────────────── */
+// POST /api/projects/:id/phases/:phaseId/checklist
+export const addChecklistItem = async (req, res) => {
+  try {
+    const { texte, assignedGroupe } = req.body;
+    if (!texte?.trim()) return res.status(400).json({ message: 'Texte requis.' });
+
+    const project = await Project.findById(req.params.id);
+    if (!project) return res.status(404).json({ message: 'Projet introuvable.' });
+
+    // Seul le créateur (prof) ou admin peut ajouter des items
+    if (req.user.role !== 'admin' && project.createdBy.toString() !== req.user.id) {
+      return res.status(403).json({ message: 'Seul le créateur peut ajouter des tâches.' });
+    }
+
+    const phase = project.phases.id(req.params.phaseId);
+    if (!phase) return res.status(404).json({ message: 'Phase introuvable.' });
+
+    phase.checklist.push({
+      texte: texte.trim(),
+      assignedGroupe: assignedGroupe != null ? Number(assignedGroupe) : null,
+    });
+
+    await logActivity(req, project, 'checklist_added',
+      `Nouvelle tâche "${texte.trim()}" ajoutée à la phase "${phase.titre}"`,
+      { phaseId: phase._id, texte });
+
+    await project.save();
+    res.status(201).json(phase.checklist[phase.checklist.length - 1]);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+// PUT /api/projects/:id/phases/:phaseId/checklist/:itemId — toggle done
+export const toggleChecklistItem = async (req, res) => {
+  try {
+    const { done } = req.body;
+    const project = await Project.findById(req.params.id);
+    if (!project) return res.status(404).json({ message: 'Projet introuvable.' });
+
+    const phase = project.phases.id(req.params.phaseId);
+    if (!phase) return res.status(404).json({ message: 'Phase introuvable.' });
+
+    const item = phase.checklist.id(req.params.itemId);
+    if (!item) return res.status(404).json({ message: 'Tâche introuvable.' });
+
+    // Vérifier que l'utilisateur est membre du projet (ou prof/admin)
+    const isMember = project.groupes.some(g =>
+      g.membres.some(m => m.userId.toString() === req.user.id)
+    );
+    const canEdit = isMember || req.user.role === 'admin' || project.createdBy.toString() === req.user.id;
+    if (!canEdit) return res.status(403).json({ message: 'Non autorisé.' });
+
+    const oldDone = item.done;
+    item.done = done != null ? !!done : !item.done;
+    item.doneBy = item.done ? req.user.id : null;
+    item.doneAt = item.done ? new Date() : null;
+
+    if (item.done !== oldDone) {
+      await logActivity(req, project,
+        item.done ? 'checklist_done' : 'checklist_undone',
+        item.done
+          ? `Tâche complétée : "${item.texte}"`
+          : `Tâche rouverte : "${item.texte}"`,
+        { phaseId: phase._id, itemId: item._id });
+    }
+
+    await project.save();
+    res.json(item);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+// DELETE /api/projects/:id/phases/:phaseId/checklist/:itemId
+export const deleteChecklistItem = async (req, res) => {
+  try {
+    const project = await Project.findById(req.params.id);
+    if (!project) return res.status(404).json({ message: 'Projet introuvable.' });
+
+    if (req.user.role !== 'admin' && project.createdBy.toString() !== req.user.id) {
+      return res.status(403).json({ message: 'Seul le créateur peut supprimer.' });
+    }
+
+    const phase = project.phases.id(req.params.phaseId);
+    if (!phase) return res.status(404).json({ message: 'Phase introuvable.' });
+
+    const item = phase.checklist.id(req.params.itemId);
+    if (!item) return res.status(404).json({ message: 'Tâche introuvable.' });
+
+    item.deleteOne();
+    await project.save();
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+/* ─── Idées / templates : CRUD ───────────────────────────────────────── */
+// POST /api/projects/:id/ideas
+export const addIdea = async (req, res) => {
+  try {
+    const { titre, description, type, difficulte, estime } = req.body;
+    if (!titre?.trim()) return res.status(400).json({ message: 'Titre requis.' });
+
+    const project = await Project.findById(req.params.id);
+    if (!project) return res.status(404).json({ message: 'Projet introuvable.' });
+
+    if (req.user.role !== 'admin' && project.createdBy.toString() !== req.user.id) {
+      return res.status(403).json({ message: 'Seul le créateur peut ajouter des idées.' });
+    }
+
+    project.ideas.push({
+      titre: titre.trim(),
+      description: description || '',
+      type: type || 'autre',
+      difficulte: difficulte || 'moyen',
+      estime: estime || '',
+      addedBy: req.user.id,
+    });
+
+    await project.save();
+    res.status(201).json(project.ideas[project.ideas.length - 1]);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+// DELETE /api/projects/:id/ideas/:ideaId
+export const deleteIdea = async (req, res) => {
+  try {
+    const project = await Project.findById(req.params.id);
+    if (!project) return res.status(404).json({ message: 'Projet introuvable.' });
+
+    if (req.user.role !== 'admin' && project.createdBy.toString() !== req.user.id) {
+      return res.status(403).json({ message: 'Non autorisé.' });
+    }
+
+    const idea = project.ideas.id(req.params.ideaId);
+    if (!idea) return res.status(404).json({ message: 'Idée introuvable.' });
+
+    idea.deleteOne();
+    await project.save();
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
 /* ─── POST /api/projects/:id/ai-help ──────────────────────────────────────── */
 export const getAiHelp = async (req, res) => {
   try {

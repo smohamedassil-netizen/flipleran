@@ -33,7 +33,9 @@ import projectRoutes    from './routes/projectRoutes.js';
 import videoAnalysisRoutes from './routes/videoAnalysisRoutes.js';
 import notificationRoutes  from './routes/notificationRoutes.js';
 import trackingRoutes      from './routes/trackingRoutes.js';
+import rewardRoutes        from './routes/rewardRoutes.js';
 import { seedBadges }   from './services/points.js';
+import { seedRewards }  from './services/rewardsSeed.js';
 import { askBot }       from './services/chatbot.js';
 import { BOT_SENDER }   from './controllers/chatbotController.js';
 import { startNotificationScheduler } from './services/notificationScheduler.js';
@@ -56,6 +58,7 @@ app.set('io', io);
 
 connectDB().then(() => {
   seedBadges().catch(console.error);
+  seedRewards().catch(console.error);
   startNotificationScheduler(io);
 });
 
@@ -84,6 +87,7 @@ app.use('/api/projects',   projectRoutes);
 app.use('/api/videos',     videoAnalysisRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/tracking',   trackingRoutes);
+app.use('/api/rewards',    rewardRoutes);
 
 // ── En production : servir le frontend buildé ──────────────────────────────
 if (process.env.NODE_ENV === 'production') {
@@ -482,7 +486,7 @@ io.on('connection', (socket) => {
   });
 
   /* Soumettre une réponse */
-  socket.on('battle:answer', ({ roomId, questionIndex, answer }) => {
+  socket.on('battle:answer', ({ roomId, questionIndex, answer, powerup }) => {
     const room = battleRooms.get(roomId);
     if (!room) return;
 
@@ -494,32 +498,69 @@ io.on('connection', (socket) => {
     // Prevent duplicate answers
     if (room.answers[questionIndex][socket.id]) return;
 
-    const correct = answer != null && room.questions[questionIndex]?.correctAnswer === answer;
-    if (correct) room.players[playerIdx].score += 10;
+    const player = room.players[playerIdx];
+    player.streak = player.streak || 0;
+    player.bestStreak = player.bestStreak || 0;
+    player.correctCount = player.correctCount || 0;
 
-    room.answers[questionIndex][socket.id] = { answer, correct };
+    const correct = answer != null && room.questions[questionIndex]?.correctAnswer === answer;
+
+    let gained = 0;
+    if (correct) {
+      gained = 10;
+      if (powerup === 'double') gained += 10;      // Double points power-up
+      player.streak += 1;
+      // Streak bonus: +5 à partir de 3 combos, +10 à partir de 5
+      if (player.streak >= 5) gained += 10;
+      else if (player.streak >= 3) gained += 5;
+      if (player.streak > player.bestStreak) player.bestStreak = player.streak;
+      player.correctCount += 1;
+    } else {
+      player.streak = 0;
+    }
+    player.score += gained;
+
+    room.answers[questionIndex][socket.id] = { answer, correct, gained };
+
+    // Notifier l'adversaire qu'un power-up a été utilisé (effet visuel)
+    if (powerup) {
+      socket.to(roomId).emit('battle:opponent_powerup', { powerup });
+    }
 
     // Check if both players answered
     if (Object.keys(room.answers[questionIndex]).length === 2) {
       const nextQ = questionIndex + 1;
 
       if (nextQ >= room.questions.length) {
-        // Game over
         io.to(roomId).emit('battle:finished', {
-          players: room.players.map(p => ({ name: p.name, score: p.score })),
+          players: room.players.map(p => ({
+            name: p.name,
+            score: p.score,
+            bestStreak: p.bestStreak || 0,
+            correctCount: p.correctCount || 0,
+          })),
+          totalQuestions: room.questions.length,
           correctAnswer: room.questions[questionIndex].correctAnswer,
         });
         setTimeout(() => battleRooms.delete(roomId), 5000);
       } else {
-        // Next question
         io.to(roomId).emit('battle:next', {
           questionIndex: nextQ,
           question: {
             texte: room.questions[nextQ].texte,
             options: room.questions[nextQ].options,
           },
-          scores: room.players.map(p => ({ name: p.name, score: p.score })),
+          scores: room.players.map(p => ({
+            name: p.name, score: p.score,
+            streak: p.streak || 0, bestStreak: p.bestStreak || 0,
+          })),
           previousCorrect: room.questions[questionIndex].correctAnswer,
+          gained: Object.fromEntries(
+            Object.entries(room.answers[questionIndex]).map(([sid, a]) => {
+              const pIdx = room.players.findIndex(p => p.id === sid);
+              return [room.players[pIdx]?.name || 'Player', a.gained];
+            })
+          ),
         });
       }
     }

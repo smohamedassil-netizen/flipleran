@@ -31,6 +31,7 @@ import {
   ClipboardList,
   HelpCircle,
   Award,
+  Gift,
 } from 'lucide-react';
 
 /* ─── Nav config per role ───────────────────────────────────────────────────── */
@@ -51,6 +52,7 @@ const NAV = {
       items: [
         { label: 'Classement',      icon: Trophy,          to: '/leaderboard' },
         { label: 'Quiz Battle',     icon: Swords,          to: '/quiz-battle' },
+        { label: 'Récompenses',     icon: Gift,            to: '/rewards' },
         { label: 'Messages',        icon: MessageSquare,   to: '/chat' },
       ],
     },
@@ -58,8 +60,6 @@ const NAV = {
       section: 'Mon espace',
       items: [
         { label: 'Mon profil',      icon: User,            to: '/profile' },
-        { label: 'Notifications',   icon: Bell,            to: '/notifications' },
-        { label: 'Mes tickets',     icon: ClipboardList,   to: '/my-tickets' },
         { label: 'Aide & Support',  icon: HelpCircle,      to: '/support' },
       ],
     },
@@ -92,7 +92,6 @@ const NAV = {
       section: 'Mon espace',
       items: [
         { label: 'Mon profil',      icon: User,            to: '/profile' },
-        { label: 'Notifications',   icon: Bell,            to: '/notifications' },
         { label: 'Aide & Support',  icon: HelpCircle,      to: '/support' },
       ],
     },

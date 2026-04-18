@@ -6,6 +6,8 @@ import {
   Search, Check, X, Edit2, BarChart2, UserPlus, ChevronDown,
   Clock, TrendingUp, TrendingDown, Eye, Mail, Filter,
   MoreHorizontal, RefreshCw, Download, HelpCircle,
+  Ticket, Send, ShieldCheck, User as UserIcon, Inbox, Flag,
+  Gift, Award, Package,
 } from 'lucide-react';
 import Layout from '../components/Layout.jsx';
 import api from '../utils/api.js';
@@ -24,6 +26,7 @@ const SECTIONS = [
   { id: 'messages',  label: 'Messages',       icon: MessageSquare },
   { id: 'activity',  label: 'Activité',       icon: Activity },
   { id: 'support',   label: 'Support',        icon: HelpCircle },
+  { id: 'rewards',   label: 'Récompenses',    icon: Gift },
 ];
 
 const ROLE_COLORS = {
@@ -1173,95 +1176,447 @@ function ActivitySection() {
    MAIN: AdminDashboard
 ═══════════════════════════════════════════════════════════════════════════ */
 /* ─── SupportSection ──────────────────────────────────────────────────── */
+const TICKET_STATUS = {
+  pending:  { bg: '#FEF3C7', color: '#92400E', label: 'En attente', dot: '#F59E0B' },
+  accepted: { bg: '#DBEAFE', color: '#1E40AF', label: 'En cours',   dot: '#2563EB' },
+  resolved: { bg: '#D1FAE5', color: '#065F46', label: 'Résolu',    dot: '#10B981' },
+  closed:   { bg: '#F1F5F9', color: '#475569', label: 'Fermé',     dot: '#64748B' },
+};
+
+const TICKET_PRIORITY = {
+  urgent: { label: 'Urgent',    color: '#DC2626', bg: '#FEE2E2', emoji: '🔴' },
+  high:   { label: 'Important', color: '#D97706', bg: '#FEF3C7', emoji: '⚡' },
+  normal: { label: 'Normale',   color: '#64748B', bg: '#F1F5F9', emoji: '•'  },
+  low:    { label: 'Faible',    color: '#94A3B8', bg: '#F8FAFC', emoji: '🔽' },
+};
+
+const TICKET_CATEGORY = {
+  technique:   { label: 'Technique',   emoji: '🛠️', color: '#0EA5E9' },
+  pedagogique: { label: 'Pédagogique', emoji: '📚', color: '#8B5CF6' },
+  compte:      { label: 'Compte',      emoji: '👤', color: '#EC4899' },
+  autre:       { label: 'Autre',       emoji: '📌', color: '#64748B' },
+};
+
+function PriorityPill({ priority }) {
+  const p = TICKET_PRIORITY[priority] || TICKET_PRIORITY.normal;
+  return (
+    <span style={{
+      display: 'inline-flex', alignItems: 'center', gap: 4,
+      padding: '2px 8px', background: p.bg, color: p.color,
+      fontSize: 11, fontWeight: 700, borderRadius: 6,
+    }}>
+      <span>{p.emoji}</span> {p.label}
+    </span>
+  );
+}
+
+function StatusPill({ status }) {
+  const s = TICKET_STATUS[status] || TICKET_STATUS.pending;
+  return (
+    <span style={{
+      display: 'inline-flex', alignItems: 'center', gap: 5,
+      padding: '3px 10px', background: s.bg, color: s.color,
+      fontSize: 11, fontWeight: 700, borderRadius: 999,
+    }}>
+      <span style={{ width: 6, height: 6, borderRadius: '50%', background: s.dot }} />
+      {s.label}
+    </span>
+  );
+}
+
+function TicketConversationModal({ ticket, currentUserId, onClose, onRefresh }) {
+  const [reply, setReply] = useState('');
+  const [sending, setSending] = useState(false);
+  const [priority, setPriority] = useState(ticket.priority || 'normal');
+  const [category, setCategory] = useState(ticket.category || 'autre');
+
+  const assignedToMe = ticket.acceptedBy?._id === currentUserId || ticket.acceptedBy === currentUserId;
+  const canAct = ticket.status !== 'closed';
+
+  const accept = async () => {
+    setSending(true);
+    try {
+      await api.put(`/support/${ticket._id}/accept`);
+      onRefresh();
+    } catch (err) { alert(err.response?.data?.message || 'Erreur'); }
+    finally { setSending(false); }
+  };
+
+  const sendReply = async (markResolved = false) => {
+    if (!reply.trim() && !markResolved) return;
+    setSending(true);
+    try {
+      if (reply.trim()) {
+        await api.post(`/support/${ticket._id}/message`, { message: reply });
+      }
+      if (markResolved) {
+        await api.put(`/support/${ticket._id}/resolve`, { response: reply || 'Résolu' });
+      }
+      setReply('');
+      onRefresh();
+    } catch (err) { alert(err.response?.data?.message || 'Erreur'); }
+    finally { setSending(false); }
+  };
+
+  const updateMeta = async (newPriority, newCategory) => {
+    try {
+      await api.put(`/support/${ticket._id}/priority`, {
+        priority: newPriority, category: newCategory,
+      });
+      setPriority(newPriority);
+      setCategory(newCategory);
+      onRefresh();
+    } catch (err) { alert(err.response?.data?.message || 'Erreur'); }
+  };
+
+  return (
+    <div onClick={onClose} style={{ ...modalOverlay }}>
+      <div onClick={(e) => e.stopPropagation()} style={{ background: '#fff', borderRadius: 14, width: '100%', maxWidth: 720, maxHeight: '90vh', display: 'flex', flexDirection: 'column', boxShadow: SHADOW_MD }}>
+        {/* Header */}
+        <div style={{ padding: 20, borderBottom: '1px solid #E2E8F0' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+            <h3 style={{ margin: 0, fontSize: 17, fontWeight: 700, color: '#1E293B' }}>{ticket.objet}</h3>
+            <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4 }}>
+              <X size={18} color="#64748B" />
+            </button>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+            <StatusPill status={ticket.status} />
+            <PriorityPill priority={priority} />
+            <span style={{ fontSize: 12, color: '#64748B' }}>
+              {TICKET_CATEGORY[category]?.emoji} {TICKET_CATEGORY[category]?.label}
+            </span>
+            <span style={{ fontSize: 12, color: '#94A3B8' }}>•</span>
+            <span style={{ fontSize: 12, color: '#64748B' }}>
+              <UserIcon size={11} style={{ display: 'inline', marginRight: 4 }} />
+              {ticket.userId?.prenom} {ticket.userId?.nom} ({ticket.userId?.role})
+            </span>
+            <span style={{ fontSize: 12, color: '#94A3B8' }}>•</span>
+            <span style={{ fontSize: 12, color: '#64748B' }}>
+              {new Date(ticket.createdAt).toLocaleString('fr-FR')}
+            </span>
+          </div>
+          {ticket.acceptedBy && (
+            <div style={{ marginTop: 8, fontSize: 12, color: '#64748B', display: 'flex', alignItems: 'center', gap: 4 }}>
+              <ShieldCheck size={12} color="#0EA5E9" />
+              Pris en charge par <strong>{ticket.acceptedBy.prenom} {ticket.acceptedBy.nom}</strong>
+              {assignedToMe && <span style={{ color: '#0EA5E9', fontWeight: 700 }}>(vous)</span>}
+            </div>
+          )}
+
+          {/* Meta editors (admin only) */}
+          <div style={{ display: 'flex', gap: 8, marginTop: 10, flexWrap: 'wrap' }}>
+            <select value={priority} onChange={(e) => updateMeta(e.target.value, category)} style={{ padding: '5px 10px', fontSize: 12, border: '1px solid #E2E8F0', borderRadius: 6, background: 'white', cursor: 'pointer' }}>
+              <option value="low">🔽 Faible</option>
+              <option value="normal">• Normale</option>
+              <option value="high">⚡ Important</option>
+              <option value="urgent">🔴 Urgent</option>
+            </select>
+            <select value={category} onChange={(e) => updateMeta(priority, e.target.value)} style={{ padding: '5px 10px', fontSize: 12, border: '1px solid #E2E8F0', borderRadius: 6, background: 'white', cursor: 'pointer' }}>
+              <option value="technique">🛠️ Technique</option>
+              <option value="pedagogique">📚 Pédagogique</option>
+              <option value="compte">👤 Compte</option>
+              <option value="autre">📌 Autre</option>
+            </select>
+          </div>
+        </div>
+
+        {/* Messages */}
+        <div style={{ flex: 1, overflowY: 'auto', padding: 20, background: '#F8FAFC' }}>
+          <div style={{ marginBottom: 14, padding: 14, background: '#fff', borderRadius: 10, borderLeft: '3px solid #1B4F72', boxShadow: SHADOW }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#64748B', marginBottom: 6 }}>
+              <UserIcon size={12} /> <strong>{ticket.nom}</strong>
+              <span style={{ marginLeft: 'auto' }}>{new Date(ticket.createdAt).toLocaleString('fr-FR')}</span>
+            </div>
+            <div style={{ fontSize: 13, color: '#1E293B', lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>{ticket.message}</div>
+          </div>
+
+          {ticket.conversation?.map((msg, i) => {
+            const isAdmin = msg.from === 'admin';
+            return (
+              <div key={msg._id || i} style={{
+                marginBottom: 12, padding: 12, borderRadius: 10,
+                background: isAdmin ? '#EFF6FF' : '#fff',
+                borderLeft: `3px solid ${isAdmin ? '#0EA5E9' : '#64748B'}`,
+                boxShadow: SHADOW,
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#64748B', marginBottom: 6 }}>
+                  {isAdmin ? <ShieldCheck size={12} color="#0EA5E9" /> : <UserIcon size={12} />}
+                  <strong>
+                    {msg.authorId ? `${msg.authorId.prenom || ''} ${msg.authorId.nom || ''}`.trim() : (isAdmin ? 'Admin' : ticket.nom)}
+                  </strong>
+                  <span style={{ marginLeft: 'auto' }}>{new Date(msg.createdAt).toLocaleString('fr-FR')}</span>
+                </div>
+                <div style={{ fontSize: 13, color: '#1E293B', lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>{msg.message}</div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Actions */}
+        {canAct && (
+          <div style={{ padding: 16, borderTop: '1px solid #E2E8F0', background: '#fff' }}>
+            {ticket.status === 'pending' && !ticket.acceptedBy && (
+              <button onClick={accept} disabled={sending} style={{ ...btnPrimary, width: '100%', justifyContent: 'center', marginBottom: 10 }}>
+                <Check size={14} /> Prendre en charge
+              </button>
+            )}
+            <textarea
+              value={reply}
+              onChange={(e) => setReply(e.target.value)}
+              placeholder={ticket.status === 'resolved' ? "Ajouter un message (réouvre le ticket)…" : "Votre réponse…"}
+              rows={3}
+              style={{ width: '100%', padding: 10, border: '1px solid #E2E8F0', borderRadius: 8, fontSize: 13, fontFamily: 'inherit', resize: 'vertical', marginBottom: 8 }}
+            />
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+              <button onClick={() => sendReply(false)} disabled={sending || !reply.trim()} style={{ ...btnGhost, opacity: sending || !reply.trim() ? 0.5 : 1 }}>
+                <Send size={13} /> Répondre
+              </button>
+              {ticket.status !== 'resolved' && (
+                <button onClick={() => sendReply(true)} disabled={sending} style={{ ...btnPrimary, background: '#059669' }}>
+                  <Check size={13} /> Résoudre
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function SupportSection() {
   const [tickets, setTickets] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [tab, setTab] = useState('free'); // free | mine | all | resolved
+  const [priorityFilter, setPriorityFilter] = useState('all');
+  const [categoryFilter, setCategoryFilter] = useState('all');
+  const [search, setSearch] = useState('');
+  const [selected, setSelected] = useState(null);
+  const [currentUserId, setCurrentUserId] = useState(null);
 
   useEffect(() => {
-    api.get('/support')
-      .then(({ data }) => setTickets(data))
-      .catch(console.error)
-      .finally(() => setLoading(false));
+    try {
+      const u = JSON.parse(sessionStorage.getItem('fliplearn_user') || 'null');
+      setCurrentUserId(u?._id);
+    } catch { /* ignore */ }
   }, []);
 
-  const handleAccept = async (id) => {
+  const load = useCallback(async () => {
+    setLoading(true);
     try {
-      const { data } = await api.put(`/support/${id}/accept`);
-      setTickets(prev => prev.map(t => t._id === id ? data : t));
-    } catch (err) {
-      alert(err.response?.data?.message || 'Erreur');
-    }
-  };
+      const { data } = await api.get('/support');
+      setTickets(data);
+      if (selected) {
+        const fresh = data.find(t => t._id === selected._id);
+        if (fresh) setSelected(fresh);
+      }
+    } catch { setTickets([]); }
+    finally { setLoading(false); }
+  }, [selected]);
 
-  const handleResolve = async (id) => {
-    try {
-      const { data } = await api.put(`/support/${id}/resolve`, { response: 'Résolu' });
-      setTickets(prev => prev.map(t => t._id === id ? data : t));
-    } catch (err) {
-      alert(err.response?.data?.message || 'Erreur');
+  useEffect(() => { load(); /* eslint-disable-line */ }, []);
+
+  const counts = useMemo(() => ({
+    free:     tickets.filter(t => t.status === 'pending' && !t.acceptedBy).length,
+    mine:     tickets.filter(t => (t.acceptedBy?._id === currentUserId || t.acceptedBy === currentUserId) && t.status !== 'resolved').length,
+    all:      tickets.filter(t => t.status !== 'resolved').length,
+    resolved: tickets.filter(t => t.status === 'resolved').length,
+    urgent:   tickets.filter(t => t.priority === 'urgent' && t.status !== 'resolved').length,
+  }), [tickets, currentUserId]);
+
+  const filtered = useMemo(() => {
+    let list = tickets;
+    if (tab === 'free') {
+      list = list.filter(t => t.status === 'pending' && !t.acceptedBy);
+    } else if (tab === 'mine') {
+      list = list.filter(t => (t.acceptedBy?._id === currentUserId || t.acceptedBy === currentUserId) && t.status !== 'resolved');
+    } else if (tab === 'all') {
+      list = list.filter(t => t.status !== 'resolved');
+    } else if (tab === 'resolved') {
+      list = list.filter(t => t.status === 'resolved');
     }
+    if (priorityFilter !== 'all') list = list.filter(t => t.priority === priorityFilter);
+    if (categoryFilter !== 'all') list = list.filter(t => t.category === categoryFilter);
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      list = list.filter(t =>
+        t.objet?.toLowerCase().includes(q) ||
+        t.message?.toLowerCase().includes(q) ||
+        t.nom?.toLowerCase().includes(q) ||
+        t.email?.toLowerCase().includes(q)
+      );
+    }
+    // Trier : urgent d'abord, puis high, puis par date
+    const priorityOrder = { urgent: 0, high: 1, normal: 2, low: 3 };
+    return [...list].sort((a, b) => {
+      const pa = priorityOrder[a.priority ?? 'normal'] ?? 2;
+      const pb = priorityOrder[b.priority ?? 'normal'] ?? 2;
+      if (pa !== pb) return pa - pb;
+      return new Date(b.createdAt) - new Date(a.createdAt);
+    });
+  }, [tickets, tab, priorityFilter, categoryFilter, search, currentUserId]);
+
+  const TabBtn = ({ id, label, count, icon: Icon, badge }) => {
+    const active = tab === id;
+    return (
+      <button onClick={() => setTab(id)} style={{
+        display: 'inline-flex', alignItems: 'center', gap: 6,
+        padding: '8px 14px', borderRadius: 8,
+        border: `1px solid ${active ? PRIMARY : '#E2E8F0'}`,
+        background: active ? PRIMARY : 'white',
+        color: active ? 'white' : '#475569',
+        fontSize: 13, fontWeight: 600, cursor: 'pointer',
+        transition: 'all .15s',
+      }}>
+        <Icon size={14} /> {label}
+        <span style={{ padding: '1px 8px', borderRadius: 999, fontSize: 11, background: active ? 'rgba(255,255,255,.22)' : '#F1F5F9', color: active ? 'white' : '#64748B' }}>
+          {count}
+        </span>
+        {badge > 0 && (
+          <span style={{ padding: '1px 6px', borderRadius: 999, fontSize: 10, background: '#DC2626', color: 'white', fontWeight: 700 }}>
+            {badge} 🔴
+          </span>
+        )}
+      </button>
+    );
   };
 
   if (loading) return <Spinner />;
 
-  const STATUS_STYLES = {
-    pending:  { bg: '#FEF3C7', color: '#92400E', label: 'En attente' },
-    accepted: { bg: '#DBEAFE', color: '#1E40AF', label: 'Pris en charge' },
-    resolved: { bg: '#D1FAE5', color: '#065F46', label: 'Résolu' },
-  };
-
   return (
     <div>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
-        <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: '#1E293B' }}>
-          Tickets Support ({tickets.length})
-        </h2>
+      {/* Header + stats */}
+      <div style={{ marginBottom: 20 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+          <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: '#1E293B', display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+            <Ticket size={20} color={PRIMARY} /> Tickets support
+          </h2>
+          <button onClick={load} style={btnGhost}>
+            <RefreshCw size={13} /> Rafraîchir
+          </button>
+        </div>
+
+        {/* Stats cards */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 12, marginBottom: 16 }}>
+          <div style={{ ...cardStyle, padding: 14 }}>
+            <div style={{ fontSize: 11, color: '#94A3B8', fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5 }}>Libres</div>
+            <div style={{ fontSize: 24, fontWeight: 700, color: '#1E293B', marginTop: 2 }}>{counts.free}</div>
+          </div>
+          <div style={{ ...cardStyle, padding: 14 }}>
+            <div style={{ fontSize: 11, color: '#94A3B8', fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5 }}>Mes tickets</div>
+            <div style={{ fontSize: 24, fontWeight: 700, color: PRIMARY, marginTop: 2 }}>{counts.mine}</div>
+          </div>
+          <div style={{ ...cardStyle, padding: 14 }}>
+            <div style={{ fontSize: 11, color: '#94A3B8', fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5 }}>Urgents ouverts</div>
+            <div style={{ fontSize: 24, fontWeight: 700, color: '#DC2626', marginTop: 2 }}>{counts.urgent}</div>
+          </div>
+          <div style={{ ...cardStyle, padding: 14 }}>
+            <div style={{ fontSize: 11, color: '#94A3B8', fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5 }}>Résolus</div>
+            <div style={{ fontSize: 24, fontWeight: 700, color: '#059669', marginTop: 2 }}>{counts.resolved}</div>
+          </div>
+        </div>
+
+        {/* Tabs */}
+        <div style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
+          <TabBtn id="free"     label="Libres"     count={counts.free}     icon={Inbox} badge={counts.urgent} />
+          <TabBtn id="mine"     label="Mes tickets" count={counts.mine}    icon={ShieldCheck} />
+          <TabBtn id="all"      label="Tous ouverts" count={counts.all}    icon={Ticket} />
+          <TabBtn id="resolved" label="Résolus"    count={counts.resolved} icon={Check} />
+        </div>
+
+        {/* Filters */}
+        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+          <div style={{ position: 'relative', flex: 1, minWidth: 200 }}>
+            <Search size={14} color="#94A3B8" style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)' }} />
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Rechercher un ticket…"
+              style={{ width: '100%', padding: '8px 10px 8px 30px', border: '1px solid #E2E8F0', borderRadius: 8, fontSize: 13 }}
+            />
+          </div>
+          <select value={priorityFilter} onChange={(e) => setPriorityFilter(e.target.value)} style={{ padding: '8px 12px', border: '1px solid #E2E8F0', borderRadius: 8, fontSize: 13, background: 'white', cursor: 'pointer' }}>
+            <option value="all">Toutes priorités</option>
+            <option value="urgent">🔴 Urgent</option>
+            <option value="high">⚡ Important</option>
+            <option value="normal">• Normale</option>
+            <option value="low">🔽 Faible</option>
+          </select>
+          <select value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)} style={{ padding: '8px 12px', border: '1px solid #E2E8F0', borderRadius: 8, fontSize: 13, background: 'white', cursor: 'pointer' }}>
+            <option value="all">Toutes catégories</option>
+            <option value="technique">🛠️ Technique</option>
+            <option value="pedagogique">📚 Pédagogique</option>
+            <option value="compte">👤 Compte</option>
+            <option value="autre">📌 Autre</option>
+          </select>
+        </div>
       </div>
 
-      {tickets.length === 0 ? (
-        <div style={{ textAlign: 'center', color: '#64748B', padding: 40 }}>
-          Aucun ticket de support pour le moment.
+      {/* List */}
+      {filtered.length === 0 ? (
+        <div style={{ ...cardStyle, padding: 40, textAlign: 'center', color: '#94A3B8' }}>
+          <Inbox size={32} style={{ marginBottom: 8, opacity: 0.4 }} />
+          <div>Aucun ticket dans cette vue.</div>
         </div>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          {tickets.map(ticket => {
-            const st = STATUS_STYLES[ticket.status] || STATUS_STYLES.pending;
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {filtered.map(ticket => {
+            const isUrgent = ticket.priority === 'urgent';
+            const catMeta = TICKET_CATEGORY[ticket.category] || TICKET_CATEGORY.autre;
             return (
-              <div key={ticket._id} style={{ ...cardStyle, padding: 20 }}>
-                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, marginBottom: 10 }}>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                      <span style={{ fontWeight: 700, fontSize: 15, color: '#1E293B' }}>{ticket.objet}</span>
-                      <span style={{ background: st.bg, color: st.color, padding: '2px 10px', borderRadius: 20, fontSize: 11, fontWeight: 600 }}>{st.label}</span>
-                    </div>
-                    <div style={{ fontSize: 12, color: '#64748B' }}>
-                      De : {ticket.nom} ({ticket.email}) · {new Date(ticket.createdAt).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                    </div>
-                  </div>
+              <div
+                key={ticket._id}
+                onClick={() => setSelected(ticket)}
+                style={{
+                  ...cardStyle,
+                  padding: 16,
+                  cursor: 'pointer',
+                  borderLeft: `4px solid ${isUrgent ? '#DC2626' : catMeta.color}`,
+                  transition: 'transform .15s, box-shadow .15s',
+                }}
+                onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = SHADOW_MD; }}
+                onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = SHADOW; }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6, flexWrap: 'wrap' }}>
+                  <StatusPill status={ticket.status} />
+                  <PriorityPill priority={ticket.priority || 'normal'} />
+                  <span style={{ fontSize: 11, color: catMeta.color, fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 3 }}>
+                    {catMeta.emoji} {catMeta.label}
+                  </span>
                 </div>
-                <p style={{ fontSize: 13, color: '#475569', lineHeight: 1.6, margin: '0 0 12px', whiteSpace: 'pre-wrap' }}>{ticket.message}</p>
-                {ticket.acceptedBy && (
-                  <div style={{ fontSize: 12, color: '#64748B', marginBottom: 8 }}>
-                    Pris en charge par : <strong>{ticket.acceptedBy.prenom} {ticket.acceptedBy.nom}</strong>
-                    {ticket.acceptedAt && ` le ${new Date(ticket.acceptedAt).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}`}
-                  </div>
-                )}
-                <div style={{ display: 'flex', gap: 8 }}>
-                  {ticket.status === 'pending' && (
-                    <button style={btnPrimary} onClick={() => handleAccept(ticket._id)}>
-                      <Check size={14} /> Prendre en charge
-                    </button>
+                <div style={{ fontSize: 15, fontWeight: 700, color: '#1E293B', marginBottom: 4 }}>{ticket.objet}</div>
+                <div style={{ fontSize: 13, color: '#64748B', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginBottom: 6 }}>{ticket.message}</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 11, color: '#94A3B8', flexWrap: 'wrap' }}>
+                  <span><UserIcon size={10} style={{ display: 'inline', marginRight: 3 }} />{ticket.nom} ({ticket.userId?.role || '—'})</span>
+                  <span>•</span>
+                  <span><Clock size={10} style={{ display: 'inline', marginRight: 3 }} />{new Date(ticket.createdAt).toLocaleString('fr-FR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>
+                  {ticket.acceptedBy && (
+                    <>
+                      <span>•</span>
+                      <span><ShieldCheck size={10} color="#0EA5E9" style={{ display: 'inline', marginRight: 3 }} />{ticket.acceptedBy.prenom} {ticket.acceptedBy.nom}</span>
+                    </>
                   )}
-                  {ticket.status === 'accepted' && (
-                    <button style={{ ...btnPrimary, background: '#059669' }} onClick={() => handleResolve(ticket._id)}>
-                      <Check size={14} /> Marquer résolu
-                    </button>
+                  {ticket.conversation?.length > 0 && (
+                    <>
+                      <span>•</span>
+                      <span><MessageSquare size={10} style={{ display: 'inline', marginRight: 3 }} />{ticket.conversation.length} message{ticket.conversation.length > 1 ? 's' : ''}</span>
+                    </>
                   )}
                 </div>
               </div>
             );
           })}
         </div>
+      )}
+
+      {selected && (
+        <TicketConversationModal
+          ticket={selected}
+          currentUserId={currentUserId}
+          onClose={() => setSelected(null)}
+          onRefresh={load}
+        />
       )}
     </div>
   );
@@ -1322,7 +1677,203 @@ export default function AdminDashboard() {
         {section === 'messages' && <MessagesSection />}
         {section === 'activity' && <ActivitySection />}
         {section === 'support' && <SupportSection />}
+        {section === 'rewards' && <RewardsAdminSection />}
       </div>
     </Layout>
+  );
+}
+
+/* ─── RewardsAdminSection ──────────────────────────────────────────── */
+const REWARD_CLAIM_STATUS = {
+  pending:   { label: 'En attente', color: '#D97706', bg: '#FEF3C7' },
+  approved:  { label: 'Approuvé',   color: '#0EA5E9', bg: '#E0F2FE' },
+  delivered: { label: 'Livré',      color: '#059669', bg: '#D1FAE5' },
+  rejected:  { label: 'Refusé',     color: '#DC2626', bg: '#FEE2E2' },
+};
+
+function RewardsAdminSection() {
+  const [claims, setClaims] = useState([]);
+  const [rewards, setRewards] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState('pending');
+  const [processing, setProcessing] = useState(null);
+  const [code, setCode] = useState('');
+  const [note, setNote] = useState('');
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const [{ data: cs }, { data: rs }] = await Promise.all([
+        api.get('/rewards/claims'),
+        api.get('/rewards'),
+      ]);
+      setClaims(cs); setRewards(rs);
+    } catch { /* ignore */ }
+    finally { setLoading(false); }
+  }, []);
+
+  useEffect(() => { load(); }, [load]);
+
+  const processClaim = async (claimId, status) => {
+    try {
+      await api.put(`/rewards/claims/${claimId}`, { status, adminNote: note, code });
+      setProcessing(null);
+      setCode(''); setNote('');
+      await load();
+    } catch (err) { alert(err.response?.data?.message || 'Erreur'); }
+  };
+
+  const filtered = filter === 'all' ? claims : claims.filter(c => c.status === filter);
+
+  if (loading) return <Spinner />;
+
+  return (
+    <div>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+        <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: '#1E293B', display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+          <Gift size={20} color={PRIMARY} /> Récompenses & réclamations
+        </h2>
+        <button onClick={load} style={btnGhost}>
+          <RefreshCw size={13} /> Rafraîchir
+        </button>
+      </div>
+
+      {/* Stats */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 12, marginBottom: 16 }}>
+        <div style={{ ...cardStyle, padding: 14 }}>
+          <div style={{ fontSize: 11, color: '#94A3B8', fontWeight: 600, textTransform: 'uppercase' }}>Catalogue</div>
+          <div style={{ fontSize: 24, fontWeight: 700, color: '#1E293B', marginTop: 2 }}>{rewards.length}</div>
+        </div>
+        <div style={{ ...cardStyle, padding: 14 }}>
+          <div style={{ fontSize: 11, color: '#94A3B8', fontWeight: 600, textTransform: 'uppercase' }}>En attente</div>
+          <div style={{ fontSize: 24, fontWeight: 700, color: '#D97706', marginTop: 2 }}>
+            {claims.filter(c => c.status === 'pending').length}
+          </div>
+        </div>
+        <div style={{ ...cardStyle, padding: 14 }}>
+          <div style={{ fontSize: 11, color: '#94A3B8', fontWeight: 600, textTransform: 'uppercase' }}>Approuvés</div>
+          <div style={{ fontSize: 24, fontWeight: 700, color: '#0EA5E9', marginTop: 2 }}>
+            {claims.filter(c => c.status === 'approved').length}
+          </div>
+        </div>
+        <div style={{ ...cardStyle, padding: 14 }}>
+          <div style={{ fontSize: 11, color: '#94A3B8', fontWeight: 600, textTransform: 'uppercase' }}>Livrés</div>
+          <div style={{ fontSize: 24, fontWeight: 700, color: '#059669', marginTop: 2 }}>
+            {claims.filter(c => c.status === 'delivered').length}
+          </div>
+        </div>
+      </div>
+
+      {/* Filter */}
+      <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
+        {['pending', 'approved', 'delivered', 'rejected', 'all'].map(f => (
+          <button key={f} onClick={() => setFilter(f)} style={{
+            padding: '6px 12px', borderRadius: 999,
+            border: `1px solid ${filter === f ? PRIMARY : '#E2E8F0'}`,
+            background: filter === f ? PRIMARY : 'white',
+            color: filter === f ? 'white' : '#475569',
+            fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
+          }}>
+            {f === 'all' ? 'Toutes' : REWARD_CLAIM_STATUS[f]?.label}
+          </button>
+        ))}
+      </div>
+
+      {filtered.length === 0 ? (
+        <div style={{ ...cardStyle, padding: 40, textAlign: 'center', color: '#94A3B8' }}>
+          <Package size={32} style={{ marginBottom: 8, opacity: 0.4 }} />
+          <div>Aucune réclamation dans ce filtre.</div>
+        </div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {filtered.map(claim => {
+            const st = REWARD_CLAIM_STATUS[claim.status];
+            const isProcessing = processing === claim._id;
+            return (
+              <div key={claim._id} style={{ ...cardStyle, padding: 16 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <div style={{ width: 48, height: 48, borderRadius: 12, background: '#F1F5F9', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24, flexShrink: 0 }}>
+                    {claim.rewardId?.emoji || '🎁'}
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 3 }}>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '3px 10px', background: st.bg, color: st.color, fontSize: 11, fontWeight: 700, borderRadius: 999 }}>
+                        {st.label}
+                      </span>
+                      <span style={{ fontSize: 12, color: '#64748B' }}>
+                        {new Date(claim.createdAt).toLocaleString('fr-FR')}
+                      </span>
+                    </div>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: '#1E293B' }}>{claim.rewardId?.titre}</div>
+                    <div style={{ fontSize: 12, color: '#64748B', marginTop: 3 }}>
+                      <UserIcon size={11} style={{ display: 'inline', marginRight: 3 }} />
+                      {claim.userId?.prenom} {claim.userId?.nom} ({claim.userId?.email})
+                      — {claim.pointsSpent} pts
+                    </div>
+                    {claim.userMessage && (
+                      <div style={{ marginTop: 6, padding: 8, background: '#F8FAFC', borderRadius: 6, fontSize: 12, color: '#475569' }}>
+                        💬 {claim.userMessage}
+                      </div>
+                    )}
+                    {claim.code && (
+                      <div style={{ marginTop: 4, fontSize: 12, fontFamily: 'monospace', color: '#059669' }}>
+                        🎫 Code : <strong>{claim.code}</strong>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {claim.status === 'pending' && !isProcessing && (
+                  <div style={{ display: 'flex', gap: 6, marginTop: 10, justifyContent: 'flex-end', flexWrap: 'wrap' }}>
+                    <button onClick={() => { setProcessing(claim._id); setCode(''); setNote(''); }} style={btnPrimary}>
+                      <Check size={13} /> Traiter
+                    </button>
+                    <button onClick={() => processClaim(claim._id, 'rejected')} style={{ ...btnGhost, color: '#DC2626', borderColor: '#FCA5A5' }}>
+                      <X size={13} /> Refuser (rembourser)
+                    </button>
+                  </div>
+                )}
+
+                {claim.status === 'approved' && !isProcessing && (
+                  <div style={{ display: 'flex', gap: 6, marginTop: 10, justifyContent: 'flex-end' }}>
+                    <button onClick={() => { setProcessing(claim._id); setCode(''); setNote(''); }} style={{ ...btnPrimary, background: '#059669' }}>
+                      <Check size={13} /> Marquer livré
+                    </button>
+                  </div>
+                )}
+
+                {isProcessing && (
+                  <div style={{ marginTop: 10, padding: 12, background: '#F8FAFC', borderRadius: 8 }}>
+                    <input
+                      value={code}
+                      onChange={(e) => setCode(e.target.value)}
+                      placeholder="Code de réduction / lien / numéro (optionnel)"
+                      style={{ width: '100%', padding: 8, fontSize: 13, border: '1px solid #E2E8F0', borderRadius: 6, marginBottom: 8, fontFamily: 'monospace' }}
+                    />
+                    <input
+                      value={note}
+                      onChange={(e) => setNote(e.target.value)}
+                      placeholder="Note pour l'étudiant (optionnel)"
+                      style={{ width: '100%', padding: 8, fontSize: 13, border: '1px solid #E2E8F0', borderRadius: 6, marginBottom: 8 }}
+                    />
+                    <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
+                      <button onClick={() => setProcessing(null)} style={btnGhost}>Annuler</button>
+                      {claim.status === 'pending' && (
+                        <button onClick={() => processClaim(claim._id, 'approved')} style={btnPrimary}>
+                          ✅ Approuver
+                        </button>
+                      )}
+                      <button onClick={() => processClaim(claim._id, 'delivered')} style={{ ...btnPrimary, background: '#059669' }}>
+                        🎁 Livrer
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
   );
 }

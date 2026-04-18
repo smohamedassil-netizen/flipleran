@@ -15,6 +15,11 @@ import {
   addEvaluation,
   getEvaluations,
   getAiHelp,
+  addChecklistItem,
+  toggleChecklistItem,
+  deleteChecklistItem,
+  addIdea,
+  deleteIdea,
 } from '../controllers/projectController.js';
 
 const router = express.Router();
@@ -33,6 +38,15 @@ router.post('/:id/groupes',        requireRole('professeur'), createGroupsManual
 
 // Phases
 router.put('/:id/phases/:phaseId', updatePhase);
+
+// Checklist (tâches d'une phase)
+router.post('/:id/phases/:phaseId/checklist', requireRole('professeur', 'admin'), addChecklistItem);
+router.put('/:id/phases/:phaseId/checklist/:itemId', toggleChecklistItem);
+router.delete('/:id/phases/:phaseId/checklist/:itemId', requireRole('professeur', 'admin'), deleteChecklistItem);
+
+// Idées / suggestions (prof only)
+router.post('/:id/ideas',          requireRole('professeur', 'admin'), addIdea);
+router.delete('/:id/ideas/:ideaId', requireRole('professeur', 'admin'), deleteIdea);
 
 // Livrables (upload fichier)
 router.post('/:id/livrables', uploadLivrable.single('file'), addLivrable);

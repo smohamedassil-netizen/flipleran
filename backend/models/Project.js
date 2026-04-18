@@ -14,16 +14,39 @@ const groupeSchema = new mongoose.Schema({
   membres: [membreSchema]
 }, { _id: true });
 
+const checklistItemSchema = new mongoose.Schema({
+  texte: { type: String, required: true, trim: true },
+  done: { type: Boolean, default: false },
+  doneBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
+  doneAt: { type: Date, default: null },
+  assignedGroupe: { type: Number, default: null }, // si null, tous les groupes
+}, { _id: true });
+
 const phaseSchema = new mongoose.Schema({
   titre: { type: String, required: true },
+  description: { type: String, default: '' },
   dateDebut: Date,
   dateFin: Date,
   statut: {
     type: String,
     enum: ['a_faire', 'en_cours', 'termine'],
     default: 'a_faire'
-  }
+  },
+  checklist: [checklistItemSchema],
 }, { _id: true });
+
+/**
+ * Idées / templates suggérés par le professeur pour le projet.
+ * L'étudiant peut s'en inspirer pour savoir quoi faire.
+ */
+const ideaSchema = new mongoose.Schema({
+  titre: { type: String, required: true, trim: true },
+  description: { type: String, default: '' },
+  type: { type: String, enum: ['exercice', 'workshop', 'recherche', 'livrable', 'autre'], default: 'autre' },
+  difficulte: { type: String, enum: ['facile', 'moyen', 'difficile'], default: 'moyen' },
+  estime: { type: String, default: '' },   // ex: "2h", "1 semaine"
+  addedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+}, { _id: true, timestamps: true });
 
 const livrableSchema = new mongoose.Schema({
   groupeIndex: { type: Number, required: true },
@@ -100,6 +123,7 @@ const projectSchema = new mongoose.Schema({
   livrables: [livrableSchema],
   evaluations: [evaluationSchema],
   activity: [activitySchema],
+  ideas: [ideaSchema],
 }, { timestamps: true });
 
 projectSchema.index({ courseId: 1, createdBy: 1 });
