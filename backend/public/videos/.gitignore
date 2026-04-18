@@ -1,0 +1,13 @@
+# Les vidéos locales sont trop lourdes pour Git.
+# Elles ne sont utilisées qu'en développement local.
+# Pour la prod Render, upload via Cloudinary ou commit manuel avec --force.
+*.mp4
+*.webm
+*.mov
+*.mkv
+*.avi
+
+# Garder le README et la structure
+!README.md
+!.gitignore
+!.gitkeep

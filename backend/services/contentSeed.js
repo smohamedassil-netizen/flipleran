@@ -14,9 +14,31 @@
  * Désactivable : SEED_CONTENT=false dans .env
  */
 
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import User from '../models/User.js';
 import Course from '../models/Course.js';
 import Video from '../models/Video.js';
+import { getLocalFileFor } from './localVideoMap.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const VIDEOS_DIR = path.join(__dirname, '..', 'public', 'videos');
+
+/**
+ * Si un fichier local existe pour (courseTitre, videoTitre), retourne son
+ * URL relative (ex: /videos/isil-l1-algo-01.mp4). Sinon null.
+ */
+function resolveLocalVideo(courseTitre, videoTitre) {
+  const filename = getLocalFileFor(courseTitre, videoTitre);
+  if (!filename) return null;
+  const fullPath = path.join(VIDEOS_DIR, filename);
+  if (fs.existsSync(fullPath)) {
+    return { url: `/videos/${filename}`, filename };
+  }
+  return null;
+}
 
 // Pool de vidéos sample Google Cloud (stables depuis 2014+)
 const GOOGLE_SAMPLE_VIDEOS = [
@@ -395,15 +417,27 @@ export async function seedDemoContent() {
         const v = courseData.videos[i];
         const sample = nextSample();
 
+        // Priorité : fichier local si présent dans backend/public/videos/
+        const local = resolveLocalVideo(courseData.titre, v.titre);
+        const finalUrl = local ? local.url : sample.url;
+        const finalThumb = local ? '' : sample.thumb;
+        const finalDuration = local ? 600 : sample.duration; // estimation si local (le player détectera la vraie)
+
         const existing = await Video.findOne({ courseId: course._id, titre: v.titre });
 
         if (existing) {
-          // Ancienne vidéo YouTube → on la convertit en direct mp4 Google sample
-          if (existing.provider === 'youtube' || !existing.url?.includes('commondatastorage')) {
+          // Si un fichier local existe et que la vidéo pointe ailleurs → on pointe vers le local
+          // Sinon, si l'ancienne URL est YouTube ou cassée → on met un sample
+          const isLocalAlready = existing.url === local?.url;
+          const isUsableCloud = existing.url?.includes('commondatastorage') || existing.url?.includes('res.cloudinary.com');
+          const needsUpdate = !!local ? !isLocalAlready
+            : (existing.provider === 'youtube' || !isUsableCloud);
+
+          if (needsUpdate) {
             existing.provider = 'cloudinary';
-            existing.url = sample.url;
-            existing.thumbnailUrl = sample.thumb;
-            existing.duration = sample.duration;
+            existing.url = finalUrl;
+            if (finalThumb) existing.thumbnailUrl = finalThumb;
+            existing.duration = finalDuration;
             existing.youtubeId = '';
             existing.description = v.description || existing.description;
             if (v.chapters) existing.chapters = v.chapters;
@@ -419,9 +453,9 @@ export async function seedDemoContent() {
           titre:        v.titre,
           description:  v.description || '',
           provider:     'cloudinary', // URL mp4 directe — lue par le <video> HTML5
-          url:          sample.url,
-          thumbnailUrl: sample.thumb,
-          duration:     sample.duration,
+          url:          finalUrl,
+          thumbnailUrl: finalThumb,
+          duration:     finalDuration,
           order:        i,
           chapters:     v.chapters || [],
           courseId:     course._id,

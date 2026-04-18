@@ -101,6 +101,13 @@ app.use(cors({ origin: allowedOrigins }));
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
+// Sert les vidéos locales déposées par le prof dans backend/public/videos/
+// URL : http://.../videos/<filename>.mp4
+app.use('/videos', express.static(path.join(__dirname, 'public', 'videos'), {
+  maxAge: '1h',
+  fallthrough: true,
+}));
+
 // API routes
 app.use('/api/auth',     authRoutes);
 app.use('/api/decks',    deckRoutes);
