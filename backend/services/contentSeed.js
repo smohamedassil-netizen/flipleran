@@ -1,20 +1,47 @@
 /**
  * contentSeed.js — Seed de contenu démo (3 filières × 3 niveaux × 3 cours).
  *
- * Ce script est IDEMPOTENT (ne duplique pas) : il utilise findOneAndUpdate
- * avec upsert sur les clés naturelles (titre+filiere+promotion).
+ * URLs vidéos : Google Cloud sample videos (commondatastorage.googleapis.com)
+ * — ce sont des vidéos publiques stables, utilisées par Google comme
+ * exemples. Elles marchent directement dans <video src="..."> HTML5.
+ * L'utilisateur peut les remplacer par ses propres uploads Cloudinary ou
+ * vidéos YouTube plus tard via l'UI prof.
  *
- * Lancer manuellement : node -e "import('./backend/services/contentSeed.js').then(m => m.seedDemoContent())"
- * Ou appelé au boot du server si SEED_CONTENT=true dans l'env.
+ * Le seed gère 2 cas :
+ *   - Cours/vidéo inexistant : création complète
+ *   - Vidéo existante avec provider=youtube (ancien seed) : UPDATE vers mp4 direct
  *
- * Les IDs YouTube sont des exemples — remplace-les via l'UI prof si besoin.
- * Le site affichera "Video unavailable" pour les IDs invalides, sans casser l'app.
+ * Désactivable : SEED_CONTENT=false dans .env
  */
 
 import User from '../models/User.js';
 import Course from '../models/Course.js';
 import Video from '../models/Video.js';
-import QCM from '../models/QCM.js';
+
+// Pool de vidéos sample Google Cloud (stables depuis 2014+)
+const GOOGLE_SAMPLE_VIDEOS = [
+  { url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',        duration: 596, thumb: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/images/BigBuckBunny.jpg' },
+  { url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4',      duration: 653, thumb: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/images/ElephantsDream.jpg' },
+  { url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',     duration: 15,  thumb: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/images/ForBiggerBlazes.jpg' },
+  { url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4',    duration: 15,  thumb: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/images/ForBiggerEscapes.jpg' },
+  { url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4',        duration: 60,  thumb: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/images/ForBiggerFun.jpg' },
+  { url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4',   duration: 15,  thumb: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/images/ForBiggerJoyrides.jpg' },
+  { url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerMeltdowns.mp4',  duration: 15,  thumb: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/images/ForBiggerMeltdowns.jpg' },
+  { url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4',              duration: 888, thumb: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/images/Sintel.jpg' },
+  { url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/SubaruOutbackOnStreetAndDirt.mp4', duration: 594, thumb: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/images/SubaruOutbackOnStreetAndDirt.jpg' },
+  { url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4',        duration: 734, thumb: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/images/TearsOfSteel.jpg' },
+  { url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/VolkswagenGTIReview.mp4', duration: 15,  thumb: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/images/VolkswagenGTIReview.jpg' },
+  { url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/WeAreGoingOnBullrun.mp4', duration: 47,  thumb: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/images/WeAreGoingOnBullrun.jpg' },
+  { url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/WhatCarCanYouGetForAGrand.mp4', duration: 15, thumb: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/images/WhatCarCanYouGetForAGrand.jpg' },
+];
+
+// Attribue une vidéo sample à chaque entrée (répartition cyclique sur le pool)
+let sampleIdx = 0;
+const nextSample = () => {
+  const s = GOOGLE_SAMPLE_VIDEOS[sampleIdx % GOOGLE_SAMPLE_VIDEOS.length];
+  sampleIdx++;
+  return s;
+};
 
 const CURRICULUM = [
   // ════════ ISIL ════════
@@ -26,19 +53,14 @@ const CURRICULUM = [
         description: 'Introduction aux algorithmes, variables, boucles et fonctions.',
         aiPersona: { nom: 'Algo-Bot', specialite: 'Algorithmique', avatar: '🧠', ton: 'pedagogue', couleur: '#1B4F72' },
         videos: [
-          { titre: 'Qu\'est-ce qu\'un algorithme ?', ytId: '8QldZSvR4Mk', duration: 720, chapters: [
-            { title: 'Définition', timestamp: 0 },
-            { title: 'Premier exemple', timestamp: 180 },
-            { title: 'Pseudocode', timestamp: 420 },
+          { titre: 'Qu\'est-ce qu\'un algorithme ?',     description: "Définition, premier exemple, pseudocode.", chapters: [
+            { title: 'Définition', timestamp: 0 }, { title: 'Premier exemple', timestamp: 180 }, { title: 'Pseudocode', timestamp: 420 },
           ]},
-          { titre: 'Les variables et types de données', ytId: '_uQrJ0TkZlc', duration: 600, chapters: [
-            { title: 'Déclaration', timestamp: 0 },
-            { title: 'Types primitifs', timestamp: 240 },
+          { titre: 'Les variables et types de données', description: "Déclaration de variables et types primitifs.", chapters: [
+            { title: 'Déclaration', timestamp: 0 }, { title: 'Types primitifs', timestamp: 240 },
           ]},
-          { titre: 'Boucles et conditions', ytId: 'Ej_02ICOIgs', duration: 780, chapters: [
-            { title: 'Les conditions if/else', timestamp: 0 },
-            { title: 'Boucle for', timestamp: 280 },
-            { title: 'Boucle while', timestamp: 500 },
+          { titre: 'Boucles et conditions',             description: "if/else, for et while expliqués avec exemples.", chapters: [
+            { title: 'Les conditions if/else', timestamp: 0 }, { title: 'Boucle for', timestamp: 280 }, { title: 'Boucle while', timestamp: 500 },
           ]},
         ],
       },
@@ -47,13 +69,9 @@ const CURRICULUM = [
         description: 'Découvre Python, syntaxe, types, fonctions.',
         aiPersona: { nom: 'Py-Bot', specialite: 'Python', avatar: '🐍', ton: 'fun', couleur: '#1B4F72' },
         videos: [
-          { titre: 'Installer Python + 1er script', ytId: 'Tb4GiTQPKBg', duration: 540, chapters: [
-            { title: 'Installation', timestamp: 0 }, { title: 'Hello World', timestamp: 240 },
-          ]},
-          { titre: 'Types et opérations', ytId: 'hEgO047GxaQ', duration: 660, chapters: [] },
-          { titre: 'Fonctions Python', ytId: 'eipG0kOlzv0', duration: 720, chapters: [
-            { title: 'Définir', timestamp: 0 }, { title: 'Arguments', timestamp: 240 },
-          ]},
+          { titre: 'Installer Python + 1er script', description: 'Installation et Hello World.', chapters: [{ title: 'Installation', timestamp: 0 }, { title: 'Hello World', timestamp: 240 }] },
+          { titre: 'Types et opérations', description: 'Types primitifs et opérations de base.' },
+          { titre: 'Fonctions Python', description: 'Définir et utiliser des fonctions.', chapters: [{ title: 'Définir', timestamp: 0 }, { title: 'Arguments', timestamp: 240 }] },
         ],
       },
       {
@@ -61,8 +79,8 @@ const CURRICULUM = [
         description: 'Logique, arithmétique, ensembles, théorie des graphes.',
         aiPersona: { nom: 'Math-Bot', specialite: 'Mathématiques discrètes', avatar: '🧮', ton: 'pedagogue', couleur: '#1B4F72' },
         videos: [
-          { titre: 'Logique des propositions', ytId: 'e_Kb6AtPl4o', duration: 900, chapters: [] },
-          { titre: 'Théorie des ensembles', ytId: 'Mv2hQphvWXk', duration: 720, chapters: [] },
+          { titre: 'Logique des propositions', description: 'Introduction à la logique mathématique.' },
+          { titre: 'Théorie des ensembles', description: 'Les bases de la théorie des ensembles.' },
         ],
       },
     ],
@@ -75,9 +93,9 @@ const CURRICULUM = [
         description: 'Listes chaînées, piles, files, arbres, graphes.',
         aiPersona: { nom: 'Struct-Bot', specialite: 'Structures de données', avatar: '🌲', ton: 'strict', couleur: '#1B4F72' },
         videos: [
-          { titre: 'Listes chaînées', ytId: 'R9PTBwOzceo', duration: 840, chapters: [] },
-          { titre: 'Piles et files', ytId: 'A4UShc-XL4o', duration: 720, chapters: [] },
-          { titre: 'Arbres binaires', ytId: 'oSWTXtMglKE', duration: 960, chapters: [] },
+          { titre: 'Listes chaînées', description: "Introduction aux listes simplement et doublement chaînées." },
+          { titre: 'Piles et files', description: 'Pile LIFO, File FIFO et cas d\'usage.' },
+          { titre: 'Arbres binaires', description: "Arbres binaires, parcours et arbre binaire de recherche." },
         ],
       },
       {
@@ -85,8 +103,8 @@ const CURRICULUM = [
         description: 'Classes, objets, héritage, polymorphisme.',
         aiPersona: { nom: 'Java-Bot', specialite: 'Java POO', avatar: '☕', ton: 'pedagogue', couleur: '#1B4F72' },
         videos: [
-          { titre: 'Classes et objets', ytId: 'grEKMHGYyns', duration: 600, chapters: [] },
-          { titre: 'Héritage en Java', ytId: 'c3gPZkqxRbg', duration: 780, chapters: [] },
+          { titre: 'Classes et objets', description: "Encapsulation, méthodes, constructeurs." },
+          { titre: 'Héritage en Java', description: "extends, super, polymorphisme." },
         ],
       },
       {
@@ -94,8 +112,8 @@ const CURRICULUM = [
         description: 'Modèle relationnel, SQL, MySQL.',
         aiPersona: { nom: 'SQL-Bot', specialite: 'Bases de données relationnelles', avatar: '🗄️', ton: 'expert', couleur: '#1B4F72' },
         videos: [
-          { titre: 'Introduction SQL', ytId: 'HXV3zeQKqGY', duration: 840, chapters: [] },
-          { titre: 'SELECT, JOIN, WHERE', ytId: 'p3qvj9hO_Bo', duration: 900, chapters: [] },
+          { titre: 'Introduction SQL', description: "CREATE, INSERT, requêtes de base." },
+          { titre: 'SELECT, JOIN, WHERE', description: "Requêtes avancées avec jointures." },
         ],
       },
     ],
@@ -108,9 +126,9 @@ const CURRICULUM = [
         description: 'HTML/CSS/JS, React, Node.js, API REST.',
         aiPersona: { nom: 'Web-Bot', specialite: 'Développement Web', avatar: '🌐', ton: 'fun', couleur: '#1B4F72' },
         videos: [
-          { titre: 'HTML & CSS essentiels', ytId: 'ok-plXXHlWw', duration: 900, chapters: [] },
-          { titre: 'JavaScript moderne', ytId: 'W6NZfCO5SIk', duration: 1200, chapters: [] },
-          { titre: 'Introduction à React', ytId: 'Tn6-PIqc4UM', duration: 1080, chapters: [] },
+          { titre: 'HTML & CSS essentiels', description: 'Structure, balises, sélecteurs, Flexbox.' },
+          { titre: 'JavaScript moderne', description: "ES6+, arrow functions, async/await." },
+          { titre: 'Introduction à React', description: "Composants, JSX, hooks useState/useEffect." },
         ],
       },
       {
@@ -118,9 +136,9 @@ const CURRICULUM = [
         description: 'Concepts IA, ML, réseaux de neurones, NLP.',
         aiPersona: { nom: 'IA-Bot', specialite: 'Intelligence Artificielle', avatar: '🤖', ton: 'expert', couleur: '#1B4F72' },
         videos: [
-          { titre: 'Qu\'est-ce que le ML ?', ytId: 'ukzFI9rgwfU', duration: 720, chapters: [] },
-          { titre: 'Régression linéaire expliquée', ytId: 'nk2CQITm_eo', duration: 600, chapters: [] },
-          { titre: 'Introduction aux réseaux de neurones', ytId: 'aircAruvnKk', duration: 1200, chapters: [] },
+          { titre: 'Qu\'est-ce que le ML ?', description: 'Définition, supervisé vs non supervisé, exemples.' },
+          { titre: 'Régression linéaire expliquée', description: 'Intuition, moindres carrés, applications.' },
+          { titre: 'Introduction aux réseaux de neurones', description: 'Neurone artificiel, perceptron, backpropagation.' },
         ],
       },
       {
@@ -128,8 +146,8 @@ const CURRICULUM = [
         description: 'Fondamentaux, attaques courantes, défense.',
         aiPersona: { nom: 'Cyber-Bot', specialite: 'Cybersécurité', avatar: '🛡️', ton: 'strict', couleur: '#1B4F72' },
         videos: [
-          { titre: 'Les bases de la cybersécurité', ytId: 'inWWhr5tnIA', duration: 900, chapters: [] },
-          { titre: 'Attaques par phishing', ytId: 'GC52vWNY5fg', duration: 600, chapters: [] },
+          { titre: 'Les bases de la cybersécurité', description: 'Triade CIA, authentification, chiffrement.' },
+          { titre: 'Attaques par phishing', description: 'Types d\'attaques, comment les éviter.' },
         ],
       },
     ],
@@ -143,8 +161,8 @@ const CURRICULUM = [
         description: 'Rôles du manager, théories classiques, fonctions.',
         aiPersona: { nom: 'Manage-Bot', specialite: 'Management général', avatar: '💼', ton: 'pedagogue', couleur: '#D97706' },
         videos: [
-          { titre: 'Les 4 fonctions du management', ytId: 'VgqUUV6WVLA', duration: 720, chapters: [] },
-          { titre: 'Théories classiques (Taylor, Fayol)', ytId: 'BmGyVXLuggA', duration: 840, chapters: [] },
+          { titre: 'Les 4 fonctions du management', description: 'Planifier, organiser, diriger, contrôler.' },
+          { titre: 'Théories classiques (Taylor, Fayol)', description: 'OST, administration scientifique, 14 principes.' },
         ],
       },
       {
@@ -152,8 +170,8 @@ const CURRICULUM = [
         description: 'Micro & macro, marché, inflation, chômage.',
         aiPersona: { nom: 'Eco-Bot', specialite: 'Économie', avatar: '📈', ton: 'pedagogue', couleur: '#D97706' },
         videos: [
-          { titre: 'Offre et demande', ytId: 'YgdkUSwcr8M', duration: 600, chapters: [] },
-          { titre: 'Inflation et chômage', ytId: 'fZG6mBO-C2U', duration: 720, chapters: [] },
+          { titre: 'Offre et demande', description: 'Mécanismes du marché expliqués.' },
+          { titre: 'Inflation et chômage', description: 'Courbe de Phillips et politiques économiques.' },
         ],
       },
       {
@@ -161,8 +179,8 @@ const CURRICULUM = [
         description: 'Les 4P, segmentation, positionnement, étude de marché.',
         aiPersona: { nom: 'Market-Bot', specialite: 'Marketing', avatar: '🎯', ton: 'fun', couleur: '#D97706' },
         videos: [
-          { titre: 'Les 4P du marketing', ytId: '8aaRPL4UOHo', duration: 540, chapters: [] },
-          { titre: 'Segmentation client', ytId: 'oLx9oBN-mYI', duration: 600, chapters: [] },
+          { titre: 'Les 4P du marketing', description: 'Produit, Prix, Place, Promotion.' },
+          { titre: 'Segmentation client', description: "Critères et méthodes de segmentation." },
         ],
       },
     ],
@@ -175,8 +193,8 @@ const CURRICULUM = [
         description: 'SWOT, Porter, BCG, stratégies génériques.',
         aiPersona: { nom: 'Strategy-Bot', specialite: 'Stratégie d\'entreprise', avatar: '♟️', ton: 'expert', couleur: '#D97706' },
         videos: [
-          { titre: 'Analyse SWOT', ytId: 'mR9eICQJLXA', duration: 540, chapters: [] },
-          { titre: 'Les 5 forces de Porter', ytId: 'mYF2_FBCvXw', duration: 720, chapters: [] },
+          { titre: 'Analyse SWOT', description: 'Forces, faiblesses, opportunités, menaces.' },
+          { titre: 'Les 5 forces de Porter', description: 'Framework d\'analyse concurrentielle.' },
         ],
       },
       {
@@ -184,8 +202,8 @@ const CURRICULUM = [
         description: 'Recrutement, motivation, évaluation, leadership.',
         aiPersona: { nom: 'RH-Bot', specialite: 'Ressources Humaines', avatar: '👥', ton: 'pedagogue', couleur: '#D97706' },
         videos: [
-          { titre: 'La pyramide de Maslow', ytId: '9hn0PkiPAQU', duration: 480, chapters: [] },
-          { titre: 'Styles de leadership', ytId: 'pMe3q-_HtBY', duration: 660, chapters: [] },
+          { titre: 'La pyramide de Maslow', description: 'Hiérarchie des besoins humains.' },
+          { titre: 'Styles de leadership', description: 'Autoritaire, participatif, délégatif.' },
         ],
       },
       {
@@ -193,7 +211,7 @@ const CURRICULUM = [
         description: 'Formes juridiques, contrats commerciaux.',
         aiPersona: { nom: 'Droit-Bot', specialite: 'Droit des affaires', avatar: '⚖️', ton: 'strict', couleur: '#D97706' },
         videos: [
-          { titre: 'SARL vs SA en Algérie', ytId: 'ki_mZlY8ChQ', duration: 780, chapters: [] },
+          { titre: 'SARL vs SA en Algérie', description: 'Comparaison des formes juridiques.' },
         ],
       },
     ],
@@ -206,8 +224,8 @@ const CURRICULUM = [
         description: 'Gestion d\'équipe, PERT, Gantt, agilité.',
         aiPersona: { nom: 'PM-Bot', specialite: 'Management de projet', avatar: '📊', ton: 'pedagogue', couleur: '#D97706' },
         videos: [
-          { titre: 'Introduction à Scrum', ytId: '2Vt7Ik8Ublw', duration: 720, chapters: [] },
-          { titre: 'Diagramme de Gantt', ytId: 'yhmRoKlQCoE', duration: 540, chapters: [] },
+          { titre: 'Introduction à Scrum', description: 'Rôles, events, artefacts.' },
+          { titre: 'Diagramme de Gantt', description: 'Planification visuelle de projet.' },
         ],
       },
       {
@@ -215,8 +233,8 @@ const CURRICULUM = [
         description: 'Créer une startup, business model, pitch.',
         aiPersona: { nom: 'Entrepreneur-Bot', specialite: 'Entrepreneuriat', avatar: '🚀', ton: 'fun', couleur: '#D97706' },
         videos: [
-          { titre: 'Business Model Canvas', ytId: 'QoAOzMTLP5s', duration: 720, chapters: [] },
-          { titre: 'Pitcher son projet', ytId: 'i6O98o2FRHw', duration: 540, chapters: [] },
+          { titre: 'Business Model Canvas', description: "Les 9 blocs du BMC." },
+          { titre: 'Pitcher son projet', description: "Structure d'un pitch efficace." },
         ],
       },
       {
@@ -224,7 +242,7 @@ const CURRICULUM = [
         description: 'Marketing digital, SEO, réseaux sociaux.',
         aiPersona: { nom: 'Digital-Bot', specialite: 'Marketing digital', avatar: '💻', ton: 'fun', couleur: '#D97706' },
         videos: [
-          { titre: 'SEO : les bases', ytId: 'DvwS7cV9GmQ', duration: 900, chapters: [] },
+          { titre: 'SEO : les bases', description: "Référencement naturel expliqué." },
         ],
       },
     ],
@@ -238,8 +256,8 @@ const CURRICULUM = [
         description: 'Plan comptable, journal, bilan, compte de résultat.',
         aiPersona: { nom: 'Compta-Bot', specialite: 'Comptabilité générale', avatar: '📒', ton: 'pedagogue', couleur: '#059669' },
         videos: [
-          { titre: 'Le bilan comptable expliqué', ytId: 'kwsuAWgB8wU', duration: 840, chapters: [] },
-          { titre: 'Comptes d\'actif et de passif', ytId: 'dt7H6DU88oU', duration: 720, chapters: [] },
+          { titre: 'Le bilan comptable expliqué', description: 'Actif, passif, capitaux propres.' },
+          { titre: 'Comptes d\'actif et de passif', description: 'Mécanique comptable des écritures.' },
         ],
       },
       {
@@ -247,8 +265,8 @@ const CURRICULUM = [
         description: 'Intérêts, capitalisation, actualisation.',
         aiPersona: { nom: 'MathFin-Bot', specialite: 'Math financières', avatar: '📐', ton: 'expert', couleur: '#059669' },
         videos: [
-          { titre: 'Intérêts simples vs composés', ytId: 'EefR-A7ZoD0', duration: 600, chapters: [] },
-          { titre: 'Actualisation et VAN', ytId: 'rNK8fbFGf_Q', duration: 720, chapters: [] },
+          { titre: 'Intérêts simples vs composés', description: 'Formules et comparaison.' },
+          { titre: 'Actualisation et VAN', description: 'Valeur actuelle nette, critères d\'investissement.' },
         ],
       },
       {
@@ -256,7 +274,7 @@ const CURRICULUM = [
         description: 'Marchés, rendement, risque.',
         aiPersona: { nom: 'Finance-Bot', specialite: 'Finance générale', avatar: '💰', ton: 'pedagogue', couleur: '#059669' },
         videos: [
-          { titre: 'Qu\'est-ce que la bourse ?', ytId: 'p7HKvqRI_Bo', duration: 900, chapters: [] },
+          { titre: 'Qu\'est-ce que la bourse ?', description: 'Fonctionnement des marchés financiers.' },
         ],
       },
     ],
@@ -269,8 +287,8 @@ const CURRICULUM = [
         description: 'Ratios, analyse du bilan, diagnostic financier.',
         aiPersona: { nom: 'Analyse-Bot', specialite: 'Analyse financière', avatar: '🔍', ton: 'expert', couleur: '#059669' },
         videos: [
-          { titre: 'Les ratios de liquidité', ytId: 'ZcJY0SQCZ3g', duration: 600, chapters: [] },
-          { titre: 'Le fonds de roulement', ytId: 'xAkccZ5htvU', duration: 540, chapters: [] },
+          { titre: 'Les ratios de liquidité', description: 'Liquidité générale, réduite, immédiate.' },
+          { titre: 'Le fonds de roulement', description: 'FR, BFR, trésorerie nette.' },
         ],
       },
       {
@@ -278,8 +296,8 @@ const CURRICULUM = [
         description: 'Coûts, méthodes ABC, seuil de rentabilité.',
         aiPersona: { nom: 'Cout-Bot', specialite: 'Comptabilité analytique', avatar: '🧾', ton: 'pedagogue', couleur: '#059669' },
         videos: [
-          { titre: 'Coûts fixes vs variables', ytId: 'OoXF-OnbTz4', duration: 540, chapters: [] },
-          { titre: 'Méthode ABC', ytId: 'WyWkHp0g1Hc', duration: 720, chapters: [] },
+          { titre: 'Coûts fixes vs variables', description: 'Classification et décisions associées.' },
+          { titre: 'Méthode ABC', description: 'Activity-Based Costing.' },
         ],
       },
       {
@@ -287,7 +305,7 @@ const CURRICULUM = [
         description: 'Budget, tableaux de bord, KPI.',
         aiPersona: { nom: 'Control-Bot', specialite: 'Contrôle de gestion', avatar: '📊', ton: 'strict', couleur: '#059669' },
         videos: [
-          { titre: 'Construire un budget', ytId: 'yPWHBmV3SAg', duration: 720, chapters: [] },
+          { titre: 'Construire un budget', description: "Budget prévisionnel, analyse des écarts." },
         ],
       },
     ],
@@ -300,8 +318,8 @@ const CURRICULUM = [
         description: 'Démarche d\'audit, risques, rapport.',
         aiPersona: { nom: 'Audit-Bot', specialite: 'Audit financier', avatar: '✅', ton: 'strict', couleur: '#059669' },
         videos: [
-          { titre: 'Introduction à l\'audit', ytId: 'LQ0GX2vbDFA', duration: 840, chapters: [] },
-          { titre: 'Cartographie des risques', ytId: 'Omi1_y8M7Jk', duration: 660, chapters: [] },
+          { titre: 'Introduction à l\'audit', description: "Normes, étapes, certification." },
+          { titre: 'Cartographie des risques', description: "Identification et évaluation des risques." },
         ],
       },
       {
@@ -309,8 +327,8 @@ const CURRICULUM = [
         description: 'Change, risques, couverture, IFRS.',
         aiPersona: { nom: 'FinInt-Bot', specialite: 'Finance internationale', avatar: '🌍', ton: 'expert', couleur: '#059669' },
         videos: [
-          { titre: 'Les marchés de change (FOREX)', ytId: 'sD9TZkzvgQQ', duration: 720, chapters: [] },
-          { titre: 'Les normes IFRS', ytId: 'pZyPJl7AUeA', duration: 840, chapters: [] },
+          { titre: 'Les marchés de change (FOREX)', description: "Cotations, parités, volatilité." },
+          { titre: 'Les normes IFRS', description: "International Financial Reporting Standards." },
         ],
       },
       {
@@ -318,8 +336,8 @@ const CURRICULUM = [
         description: 'Actions, obligations, dérivés, portefeuille.',
         aiPersona: { nom: 'Market-Fin-Bot', specialite: 'Finance de marché', avatar: '💹', ton: 'expert', couleur: '#059669' },
         videos: [
-          { titre: 'Comment évaluer une action ?', ytId: 'dbCx-KzMqAg', duration: 900, chapters: [] },
-          { titre: 'Les options expliquées', ytId: 'SuTXjvNOcFE', duration: 600, chapters: [] },
+          { titre: 'Comment évaluer une action ?', description: "Méthodes DCF, multiples, comparables." },
+          { titre: 'Les options expliquées', description: "Call, Put, Payoff, Black-Scholes." },
         ],
       },
     ],
@@ -327,20 +345,20 @@ const CURRICULUM = [
 ];
 
 export async function seedDemoContent() {
-  // Trouver un prof par filière — ou le premier prof dispo sinon
   let professor = await User.findOne({ role: 'professeur', status: { $ne: 'rejected' } });
   if (!professor) {
-    console.warn('[contentSeed] Aucun professeur trouvé. Impossible de seeder le contenu.');
+    console.warn('[contentSeed] Aucun professeur trouvé — seed skip.');
     return { coursesCreated: 0, videosCreated: 0 };
   }
 
+  sampleIdx = 0; // reset le cursor à chaque seed pour répartition stable
   let coursesCreated = 0;
   let videosCreated = 0;
+  let videosUpdated = 0;
   let skipped = 0;
 
   for (const bloc of CURRICULUM) {
     for (const courseData of bloc.cours) {
-      // Idempotent : upsert du cours
       let course = await Course.findOne({
         titre: courseData.titre,
         filiere: bloc.filiere,
@@ -363,20 +381,37 @@ export async function seedDemoContent() {
         await course.save();
       }
 
-      // Vidéos du cours
       for (let i = 0; i < courseData.videos.length; i++) {
         const v = courseData.videos[i];
+        const sample = nextSample();
+
         const existing = await Video.findOne({ courseId: course._id, titre: v.titre });
-        if (existing) { skipped++; continue; }
+
+        if (existing) {
+          // Ancienne vidéo YouTube → on la convertit en direct mp4 Google sample
+          if (existing.provider === 'youtube' || !existing.url?.includes('commondatastorage')) {
+            existing.provider = 'cloudinary';
+            existing.url = sample.url;
+            existing.thumbnailUrl = sample.thumb;
+            existing.duration = sample.duration;
+            existing.youtubeId = '';
+            existing.description = v.description || existing.description;
+            if (v.chapters) existing.chapters = v.chapters;
+            await existing.save();
+            videosUpdated++;
+          } else {
+            skipped++;
+          }
+          continue;
+        }
 
         await Video.create({
           titre:        v.titre,
           description:  v.description || '',
-          provider:     'youtube',
-          url:          `https://www.youtube.com/embed/${v.ytId}`,
-          youtubeId:    v.ytId,
-          thumbnailUrl: `https://i.ytimg.com/vi/${v.ytId}/hqdefault.jpg`,
-          duration:     v.duration || 600,
+          provider:     'cloudinary', // URL mp4 directe — lue par le <video> HTML5
+          url:          sample.url,
+          thumbnailUrl: sample.thumb,
+          duration:     sample.duration,
           order:        i,
           chapters:     v.chapters || [],
           courseId:     course._id,
@@ -387,6 +422,6 @@ export async function seedDemoContent() {
     }
   }
 
-  console.log(`[contentSeed] ${coursesCreated} cours créés, ${videosCreated} vidéos ajoutées, ${skipped} vidéos déjà présentes.`);
-  return { coursesCreated, videosCreated, skipped };
+  console.log(`[contentSeed] ${coursesCreated} cours créés, ${videosCreated} vidéos ajoutées, ${videosUpdated} vidéos mises à jour (YouTube → mp4), ${skipped} inchangées.`);
+  return { coursesCreated, videosCreated, videosUpdated, skipped };
 }
