@@ -185,15 +185,12 @@ async function createUsers() {
     },
   ];
 
-  const users = await User.insertMany(usersData.map((u) => ({ ...u })));
-
-  // Note : le hook pre('save') ne se déclenche pas avec insertMany.
-  // On re-hash les mots de passe via save() individuel.
-  // Pour le seed on utilise plutôt create() sur chaque user.
+  // Pour le seed on utilise create() sur chaque user (pre-save hook hash le password).
+  // On force status='active' car le seed ne passe pas par le workflow d'approval.
   await User.deleteMany({});
   const created = [];
   for (const u of usersData) {
-    const user = new User(u);
+    const user = new User({ ...u, status: 'active', isActive: true });
     await user.save();
     created.push(user);
   }

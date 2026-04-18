@@ -1,351 +1,449 @@
-import { useEffect, useRef, useState, useCallback } from 'react';
-import { Link } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import Logo from '../components/Logo.jsx';
 import {
-  Video, Users, Brain, ArrowRight, ArrowDown,
-  BarChart3, MessageSquare, GraduationCap,
-  Menu, X, Monitor, BookOpen, ChevronRight
+  Play, ArrowRight, ChevronRight, Sparkles, BookOpen, Users, Trophy,
+  Video, FileText, MessageSquare, Gift, Bot, CheckCircle, Zap, Target,
+  Brain, GraduationCap, Briefcase, Calculator, Star, TrendingUp, Clock,
+  Shield, Award, Layers, Quote,
 } from 'lucide-react';
-import './LandingPage.css';
 
-/* ── Scroll reveal ─────────────────────────────────────────────────────── */
-function useReveal() {
-  const ref = useRef(null);
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const obs = new IntersectionObserver(
-      ([e]) => {
-        if (e.isIntersecting) {
-          el.querySelectorAll('.lp-reveal').forEach((child, i) => {
-            setTimeout(() => child.classList.add('revealed'), i * 120);
-          });
-          obs.unobserve(el);
-        }
-      },
-      { threshold: 0.1 }
-    );
-    obs.observe(el);
-    return () => obs.disconnect();
-  }, []);
-  return ref;
-}
+const FILIERES = [
+  {
+    id: 'ISIL',
+    name: 'Informatique (ISIL)',
+    subtitle: 'Ingénierie Système & Logiciel',
+    color: '#1B4F72',
+    gradient: 'linear-gradient(135deg, #1B4F72 0%, #2874A6 100%)',
+    bg: '#EFF6FF',
+    Icon: Brain,
+    modules: ['Algorithmique', 'Web & Mobile', 'IA & Data', 'Cybersécurité', 'Base de données'],
+    description: 'Maîtrise la programmation, l\'IA et le développement full-stack.',
+  },
+  {
+    id: 'Management',
+    name: 'Management',
+    subtitle: 'Stratégie & Organisation',
+    color: '#D97706',
+    gradient: 'linear-gradient(135deg, #D97706 0%, #F59E0B 100%)',
+    bg: '#FFFBEB',
+    Icon: Briefcase,
+    modules: ['Stratégie d\'entreprise', 'Ressources humaines', 'Marketing', 'Leadership', 'Entrepreneuriat'],
+    description: 'Forme-toi aux meilleurs outils du management moderne.',
+  },
+  {
+    id: 'Finance',
+    name: 'Finance & Comptabilité',
+    subtitle: 'Analyse & Audit',
+    color: '#059669',
+    gradient: 'linear-gradient(135deg, #059669 0%, #10B981 100%)',
+    bg: '#F0FDF4',
+    Icon: Calculator,
+    modules: ['Comptabilité', 'Analyse financière', 'Audit', 'IFRS', 'Finance de marché'],
+    description: 'Deviens expert en finance d\'entreprise et comptabilité.',
+  },
+];
 
-/* ══════════════════════════════════════════════════════════════════════════
-   LandingPage
-   ══════════════════════════════════════════════════════════════════════════ */
+const FEATURES = [
+  { Icon: Video,        title: 'Vidéos courtes découpées',   desc: 'Chapitres de 5-10 min, tu apprends à ton rythme.', color: '#7C3AED' },
+  { Icon: Bot,          title: 'IA spécialisée par module',  desc: 'Un assistant dédié par cours qui connaît ton contenu.', color: '#1B4F72' },
+  { Icon: FileText,     title: 'QCM auto-corrigés',          desc: 'Teste tes connaissances et débloque des badges.', color: '#059669' },
+  { Icon: Users,        title: 'Projets collaboratifs',      desc: 'Prosits CESI, groupes avec rôles, livrables.', color: '#D97706' },
+  { Icon: MessageSquare,title: 'Chat temps réel',           desc: 'Discute avec ta promo et tes profs.', color: '#6366F1' },
+  { Icon: Gift,         title: 'Récompenses réelles',        desc: 'Certifs, réductions, cadeaux — pas juste des points.', color: '#EC4899' },
+];
+
+const STEPS = [
+  { num: '01', title: 'Regarde la vidéo', desc: 'Chez toi, à ton rythme, chapitres courts et transcrit par IA.', Icon: Video },
+  { num: '02', title: 'Teste-toi (QCM)',  desc: 'Auto-évaluation instantanée, gagne des points.', Icon: FileText },
+  { num: '03', title: 'En cours/prosit',  desc: 'Tu arrives préparé, le prof anime, tu pratiques en projet.', Icon: Users },
+  { num: '04', title: 'Échange tes points', desc: 'Contre des certifs, des réductions, des cadeaux réels.', Icon: Gift },
+];
+
+const TESTIMONIALS = [
+  {
+    name: 'Yasmine B.',
+    role: 'L3 ISIL · EM Alger',
+    avatar: '🎓',
+    text: 'L\'assistant IA m\'a sauvé pendant la période d\'examens. Il connaît mes cours mieux que moi.',
+    color: '#1B4F72',
+  },
+  {
+    name: 'Mehdi S.',
+    role: 'L2 Management',
+    avatar: '📈',
+    text: 'Les vidéos courtes c\'est génial. Je peux réviser 10 min dans le bus et faire un QCM.',
+    color: '#D97706',
+  },
+  {
+    name: 'Amira H.',
+    role: 'L3 Finance',
+    avatar: '💼',
+    text: 'J\'ai gagné ma première certif gratuite grâce aux points. Ça motive vraiment à bosser.',
+    color: '#059669',
+  },
+];
+
+const STATS = [
+  { num: '27+',  label: 'Cours disponibles' },
+  { num: '500+', label: 'Étudiants actifs' },
+  { num: '3',    label: 'Spécialités' },
+  { num: '24/7', label: 'Assistant IA' },
+];
+
+const DEMO_CHAT = [
+  { from: 'user', text: 'Explique-moi les pointeurs en C, je galère.' },
+  { from: 'bot',  text: 'Bien sûr ! Un pointeur est une variable qui contient l\'adresse mémoire d\'une autre variable. Dans ton cours "Programmation C - chapitre 4", regarde la vidéo à 12:30 où c\'est expliqué avec un schéma. Veux-tu un exemple concret ?' },
+];
+
 export default function LandingPage() {
-  const [scrolled, setScrolled] = useState(false);
-  const [menuOpen, setMenuOpen] = useState(false);
+  const [demoIndex, setDemoIndex] = useState(0);
 
   useEffect(() => {
-    const fn = () => setScrolled(window.scrollY > 40);
-    window.addEventListener('scroll', fn, { passive: true });
-    return () => window.removeEventListener('scroll', fn);
+    const interval = setInterval(() => {
+      setDemoIndex(i => (i + 1) % (DEMO_CHAT.length + 1));
+    }, 3500);
+    return () => clearInterval(interval);
   }, []);
-
-  const scrollTo = useCallback((id) => {
-    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
-    setMenuOpen(false);
-  }, []);
-
-  const videoRef    = useReveal();
-  const stepsRef    = useReveal();
-  const featuresRef = useReveal();
-  const ctaRef      = useReveal();
 
   return (
-    <div className="lp-root" style={{ fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif" }}>
-
-      {/* ═══ 1. NAVBAR ════════════════════════════════════════════════════ */}
-      <nav className={`lp-nav ${scrolled ? 'scrolled' : ''}`}>
-        <div className="lp-nav-inner">
-          <Link to="/welcome" style={{ textDecoration: 'none' }}>
-            <Logo variant="full" size={30} />
+    <div style={{ minHeight: '100vh', background: 'white', overflow: 'hidden' }}>
+      {/* Navigation */}
+      <nav style={{
+        position: 'sticky', top: 0, zIndex: 100,
+        padding: '14px 32px',
+        background: 'rgba(255,255,255,0.85)',
+        backdropFilter: 'blur(12px)',
+        borderBottom: '1px solid #E5E7EB',
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+      }}>
+        <Logo variant="full" />
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          <Link to="/login" style={{ padding: '9px 16px', textDecoration: 'none', color: '#1B4F72', fontWeight: 600, fontSize: 14 }}>
+            Se connecter
           </Link>
-
-          <div className="lp-desktop-actions">
-            <Link to="/login" className="lp-btn-nav-login"
-              style={{
-                color: scrolled ? '#1B4F72' : '#fff',
-                border: `1.5px solid ${scrolled ? '#1B4F72' : 'rgba(255,255,255,0.4)'}`,
-              }}>
-              Se connecter
-            </Link>
-            <Link to="/register" className="lp-btn-nav-signup">
-              S'inscrire
-            </Link>
-          </div>
-
-          <button className="lp-mobile-toggle"
-            onClick={() => setMenuOpen(!menuOpen)}
-            style={{ color: scrolled ? '#1B4F72' : '#fff' }}>
-            {menuOpen ? <X size={22} /> : <Menu size={22} />}
-          </button>
+          <Link to="/register" style={{
+            padding: '9px 18px', textDecoration: 'none',
+            background: 'linear-gradient(135deg, #1B4F72, #2874A6)',
+            color: 'white', borderRadius: 10, fontWeight: 700, fontSize: 14,
+            display: 'inline-flex', alignItems: 'center', gap: 5,
+            boxShadow: '0 2px 10px rgba(27,79,114,.25)',
+          }}>
+            Commencer <ArrowRight size={14} />
+          </Link>
         </div>
-
-        {menuOpen && (
-          <div className="lp-mobile-dropdown">
-            <Link to="/login" style={{ color: '#1B4F72', fontWeight: 600, textDecoration: 'none', padding: '8px 0' }}>
-              Se connecter
-            </Link>
-            <Link to="/register" className="lp-btn-nav-signup" style={{ textAlign: 'center' }}>
-              S'inscrire
-            </Link>
-          </div>
-        )}
       </nav>
 
-      {/* ═══ 2. HERO ══════════════════════════════════════════════════════ */}
-      <section className="lp-hero">
-        <div className="lp-hero-inner">
-          <div className="lp-hero-text">
-            <h1>
-              Inversez votre façon{' '}
-              <span className="accent">d'apprendre</span>
+      {/* HERO */}
+      <section style={{ padding: '64px 32px 48px', background: 'radial-gradient(ellipse at top, #EFF6FF 0%, white 50%)', position: 'relative' }}>
+        <div style={{ maxWidth: 1200, margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: 48, alignItems: 'center' }}>
+          <div>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 14px', background: 'linear-gradient(135deg, #FEF3C7, #FDE68A)', color: '#92400E', borderRadius: 999, fontSize: 12, fontWeight: 700, marginBottom: 20 }}>
+              <Sparkles size={12} /> Nouvelle plateforme · EM Alger Business School
+            </span>
+
+            <h1 style={{ fontSize: '3.25rem', fontWeight: 900, color: '#0F172A', lineHeight: 1.1, margin: 0, marginBottom: 18, letterSpacing: '-0.03em' }}>
+              La classe inversée, <br />
+              <span style={{ background: 'linear-gradient(135deg, #1B4F72 0%, #2874A6 60%, #D97706 120%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
+                boostée par l'IA.
+              </span>
             </h1>
-            <p>
-              Avec FlipLearn, vous regardez les cours chez vous à votre rythme,
-              puis vous pratiquez activement en classe avec votre professeur.
-              C'est la pédagogie inversée.
+            <p style={{ fontSize: 17, color: '#475569', lineHeight: 1.6, maxWidth: 540, margin: 0, marginBottom: 28 }}>
+              FlipLearn est la plateforme de l'EM Alger qui transforme ton apprentissage : vidéos courtes, assistant IA dédié à chaque module, projets collaboratifs et vraies récompenses pour te motiver.
             </p>
-            <div className="lp-hero-ctas">
-              <Link to="/register" className="lp-btn-accent">
-                Commencer gratuitement <ArrowRight size={18} />
+
+            <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 32 }}>
+              <Link to="/register" style={{
+                padding: '14px 28px', background: 'linear-gradient(135deg, #1B4F72, #2874A6)',
+                color: 'white', borderRadius: 12, textDecoration: 'none',
+                fontWeight: 700, fontSize: 15, display: 'inline-flex', alignItems: 'center', gap: 8,
+                boxShadow: '0 8px 24px rgba(27,79,114,.25)', transition: 'transform .15s',
+              }}
+                onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'}
+                onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}
+              >
+                Créer mon compte <ArrowRight size={16} />
               </Link>
-              <button onClick={() => scrollTo('video')} className="lp-btn-link">
-                Voir la vidéo <ArrowDown size={16} />
-              </button>
+              <a href="#how-it-works" style={{
+                padding: '14px 22px', background: 'white', color: '#1B4F72',
+                border: '2px solid #E5E7EB', borderRadius: 12, textDecoration: 'none',
+                fontWeight: 700, fontSize: 15, display: 'inline-flex', alignItems: 'center', gap: 8,
+              }}>
+                <Play size={14} fill="#1B4F72" /> Comment ça marche ?
+              </a>
+            </div>
+
+            <div style={{ display: 'flex', gap: 32, flexWrap: 'wrap' }}>
+              {STATS.map(s => (
+                <div key={s.label}>
+                  <div style={{ fontSize: 26, fontWeight: 800, color: '#1B4F72' }}>{s.num}</div>
+                  <div style={{ fontSize: 12, color: '#64748B', fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5 }}>{s.label}</div>
+                </div>
+              ))}
             </div>
           </div>
 
-          {/* Schéma interactif classe inversée */}
-          <div className="lp-hero-illustration">
-            <div className="lp-flow">
-              <div className="lp-flow-step">
-                <div className="lp-flow-icon" style={{ background: 'rgba(232,168,56,0.2)' }}>
-                  <Monitor size={22} color="#E8A838" />
-                </div>
-                <div>
-                  <h3>{'1. Chez vous'}</h3>
-                  <p>Regardez les vidéos du cours</p>
-                </div>
-              </div>
-
-              <div className="lp-flow-arrow">↓</div>
-
-              <div className="lp-flow-step">
-                <div className="lp-flow-icon" style={{ background: 'rgba(255,255,255,0.15)' }}>
-                  <Brain size={22} color="#fff" />
-                </div>
-                <div>
-                  <h3>{'2. Avant le cours'}</h3>
-                  <p>Testez-vous avec les QCM</p>
+          {/* Demo chatbot visual */}
+          <div style={{ position: 'relative' }}>
+            <div style={{
+              background: 'white', borderRadius: 20, padding: 22,
+              boxShadow: '0 25px 60px rgba(27,79,114,.18), 0 8px 20px rgba(0,0,0,.06)',
+              transform: 'rotate(-1.5deg)', border: '1px solid #E5E7EB',
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14, paddingBottom: 12, borderBottom: '1px solid #F1F5F9' }}>
+                <div style={{ width: 36, height: 36, borderRadius: 10, background: 'linear-gradient(135deg, #1B4F72, #2874A6)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>🤖</div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: '#1E293B' }}>Assistant Algo-Bot</div>
+                  <div style={{ fontSize: 11, color: '#059669', display: 'flex', alignItems: 'center', gap: 4 }}>
+                    <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#10B981' }} /> En ligne · Module Algorithmique
+                  </div>
                 </div>
               </div>
 
-              <div className="lp-flow-arrow">↓</div>
-
-              <div className="lp-flow-step">
-                <div className="lp-flow-icon" style={{ background: 'rgba(40,116,166,0.3)' }}>
-                  <Users size={22} color="#fff" />
-                </div>
-                <div>
-                  <h3>{'3. En classe'}</h3>
-                  <p>Pratiquez et collaborez</p>
-                </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10, minHeight: 180 }}>
+                {DEMO_CHAT.slice(0, demoIndex + 1).map((msg, i) => (
+                  <div key={i} style={{
+                    display: 'flex', gap: 8,
+                    flexDirection: msg.from === 'bot' ? 'row' : 'row-reverse',
+                    animation: 'fade-in-up 0.4s ease both',
+                  }}>
+                    <div style={{ width: 28, height: 28, borderRadius: '50%', background: msg.from === 'bot' ? '#1B4F72' : '#E2E8F0', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: 14, color: 'white' }}>
+                      {msg.from === 'bot' ? '🤖' : '👤'}
+                    </div>
+                    <div style={{
+                      maxWidth: '80%', padding: '9px 13px',
+                      background: msg.from === 'bot' ? '#F1F5F9' : '#1B4F72',
+                      color: msg.from === 'bot' ? '#1E293B' : 'white',
+                      borderRadius: msg.from === 'bot' ? '12px 12px 12px 2px' : '12px 12px 2px 12px',
+                      fontSize: 13, lineHeight: 1.4,
+                    }}>
+                      {msg.text}
+                    </div>
+                  </div>
+                ))}
+                {demoIndex >= DEMO_CHAT.length && (
+                  <div style={{ textAlign: 'center', fontSize: 11, color: '#94A3B8', fontStyle: 'italic', padding: 8 }}>
+                    ↻ Démo — relance dans quelques secondes
+                  </div>
+                )}
               </div>
+            </div>
+
+            <div style={{ position: 'absolute', top: -18, right: -10, padding: '8px 14px', background: 'white', borderRadius: 12, boxShadow: '0 8px 24px rgba(0,0,0,.08)', display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 700, color: '#059669', border: '1px solid #D1FAE5', transform: 'rotate(3deg)' }}>
+              <Zap size={13} /> +50 pts gagnés
+            </div>
+            <div style={{ position: 'absolute', bottom: -14, left: -8, padding: '6px 12px', background: 'white', borderRadius: 10, boxShadow: '0 8px 24px rgba(0,0,0,.08)', display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, fontWeight: 700, color: '#D97706', border: '1px solid #FDE68A', transform: 'rotate(-2deg)' }}>
+              🔥 3 combos
             </div>
           </div>
         </div>
       </section>
 
-      {/* ═══ 3. VIDEO ═════════════════════════════════════════════════════ */}
-      <section id="video" className="lp-section" style={{ background: 'var(--lp-bg-alt)' }}>
-        <div className="lp-section-inner" ref={videoRef}>
-          <div className="lp-section-header lp-reveal">
-            <h2>Comprendre la classe inversée en quelques minutes</h2>
-            <p>
-              Cette courte vidéo explique le principe de la pédagogie inversée
-              et pourquoi elle améliore l'apprentissage.
+      {/* FILIÈRES */}
+      <section style={{ padding: '64px 32px', background: '#F8FAFC' }}>
+        <div style={{ maxWidth: 1200, margin: '0 auto' }}>
+          <div style={{ textAlign: 'center', marginBottom: 40 }}>
+            <span style={{ display: 'inline-block', padding: '5px 12px', background: '#EFF6FF', color: '#1B4F72', borderRadius: 999, fontSize: 12, fontWeight: 700, marginBottom: 12 }}>3 SPÉCIALITÉS</span>
+            <h2 style={{ fontSize: '2.2rem', fontWeight: 800, color: '#0F172A', margin: 0, marginBottom: 10, letterSpacing: '-0.02em' }}>
+              Conçu pour ta filière
+            </h2>
+            <p style={{ color: '#64748B', fontSize: 16, maxWidth: 560, margin: '0 auto' }}>
+              Chaque filière a son propre parcours, ses modules et son assistant IA spécialisé.
             </p>
           </div>
 
-          <div className="lp-video-embed lp-reveal">
-            <div className="lp-video-embed-inner">
-              <iframe
-                src="https://www.youtube.com/embed/qdKzSq_t8k8"
-                title="La classe inversée expliquée"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-                loading="lazy"
-              />
-            </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 20 }}>
+            {FILIERES.map(f => {
+              const Icon = f.Icon;
+              return (
+                <div key={f.id} style={{
+                  padding: 28, borderRadius: 20, background: 'white',
+                  border: '1px solid #E5E7EB',
+                  transition: 'transform .2s, box-shadow .2s',
+                  position: 'relative', overflow: 'hidden',
+                }}
+                  onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.boxShadow = `0 20px 40px ${f.color}20`; }}
+                  onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; }}
+                >
+                  <div style={{ position: 'absolute', top: -30, right: -30, width: 120, height: 120, borderRadius: '50%', background: f.bg, opacity: 0.5 }} />
+                  <div style={{ position: 'relative' }}>
+                    <div style={{ display: 'inline-flex', width: 56, height: 56, borderRadius: 14, background: f.gradient, alignItems: 'center', justifyContent: 'center', marginBottom: 16, boxShadow: `0 8px 20px ${f.color}33` }}>
+                      <Icon size={26} color="white" />
+                    </div>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: f.color, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 4 }}>
+                      {f.subtitle}
+                    </div>
+                    <h3 style={{ fontSize: 20, fontWeight: 800, color: '#0F172A', margin: 0, marginBottom: 10 }}>{f.name}</h3>
+                    <p style={{ fontSize: 14, color: '#64748B', lineHeight: 1.5, marginBottom: 14 }}>{f.description}</p>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
+                      {f.modules.map(m => (
+                        <span key={m} style={{ padding: '3px 10px', background: f.bg, color: f.color, borderRadius: 999, fontSize: 11, fontWeight: 600 }}>
+                          {m}
+                        </span>
+                      ))}
+                    </div>
+                    <div style={{ marginTop: 16, paddingTop: 14, borderTop: '1px solid #F1F5F9', fontSize: 12, color: '#94A3B8', display: 'flex', alignItems: 'center', gap: 4 }}>
+                      <GraduationCap size={13} /> L1 · L2 · L3
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      {/* COMMENT ÇA MARCHE */}
+      <section id="how-it-works" style={{ padding: '72px 32px', background: 'white' }}>
+        <div style={{ maxWidth: 1200, margin: '0 auto' }}>
+          <div style={{ textAlign: 'center', marginBottom: 48 }}>
+            <span style={{ display: 'inline-block', padding: '5px 12px', background: '#F0FDF4', color: '#059669', borderRadius: 999, fontSize: 12, fontWeight: 700, marginBottom: 12 }}>LA MÉTHODE</span>
+            <h2 style={{ fontSize: '2.2rem', fontWeight: 800, color: '#0F172A', margin: 0, marginBottom: 10, letterSpacing: '-0.02em' }}>
+              La classe inversée, simplement
+            </h2>
+            <p style={{ color: '#64748B', fontSize: 16, maxWidth: 560, margin: '0 auto' }}>
+              Tu prépares à la maison, tu pratiques en classe. Plus efficace, plus engageant.
+            </p>
           </div>
 
-          <p className="lp-video-caption lp-reveal">
-            Dans la classe inversée, l'étudiant découvre le contenu avant la séance.
-            Le temps en classe est alors consacré à la pratique, aux échanges et à
-            l'approfondissement — là où le professeur est le plus utile.
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 20 }}>
+            {STEPS.map((s) => {
+              const Icon = s.Icon;
+              return (
+                <div key={s.num} style={{
+                  padding: 24, borderRadius: 16, background: 'white',
+                  border: '1px solid #E5E7EB', height: '100%',
+                }}>
+                  <div style={{ display: 'inline-flex', width: 44, height: 44, borderRadius: 12, background: 'linear-gradient(135deg, #1B4F72, #2874A6)', alignItems: 'center', justifyContent: 'center', marginBottom: 14 }}>
+                    <Icon size={20} color="white" />
+                  </div>
+                  <div style={{ fontSize: 11, fontWeight: 800, color: '#1B4F72', marginBottom: 4, letterSpacing: 2 }}>
+                    ÉTAPE {s.num}
+                  </div>
+                  <h3 style={{ fontSize: 16, fontWeight: 700, color: '#0F172A', margin: 0, marginBottom: 6 }}>{s.title}</h3>
+                  <p style={{ fontSize: 13, color: '#64748B', lineHeight: 1.5, margin: 0 }}>{s.desc}</p>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      {/* FEATURES */}
+      <section style={{ padding: '64px 32px', background: 'linear-gradient(180deg, #F8FAFC 0%, white 100%)' }}>
+        <div style={{ maxWidth: 1200, margin: '0 auto' }}>
+          <div style={{ textAlign: 'center', marginBottom: 40 }}>
+            <span style={{ display: 'inline-block', padding: '5px 12px', background: '#F5F3FF', color: '#7C3AED', borderRadius: 999, fontSize: 12, fontWeight: 700, marginBottom: 12 }}>FONCTIONNALITÉS</span>
+            <h2 style={{ fontSize: '2.2rem', fontWeight: 800, color: '#0F172A', margin: 0, marginBottom: 10, letterSpacing: '-0.02em' }}>
+              Tout ce qu'il te faut pour réussir
+            </h2>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 16 }}>
+            {FEATURES.map((f) => {
+              const Icon = f.Icon;
+              return (
+                <div key={f.title} style={{
+                  padding: 22, borderRadius: 14, background: 'white', border: '1px solid #E5E7EB',
+                  display: 'flex', gap: 14,
+                  transition: 'transform .2s, border-color .2s',
+                }}
+                  onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.borderColor = f.color; }}
+                  onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.borderColor = '#E5E7EB'; }}
+                >
+                  <div style={{ width: 42, height: 42, borderRadius: 10, background: f.color + '15', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <Icon size={20} color={f.color} />
+                  </div>
+                  <div>
+                    <h3 style={{ fontSize: 15, fontWeight: 700, color: '#0F172A', margin: 0, marginBottom: 4 }}>{f.title}</h3>
+                    <p style={{ fontSize: 13, color: '#64748B', lineHeight: 1.5, margin: 0 }}>{f.desc}</p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      {/* TÉMOIGNAGES */}
+      <section style={{ padding: '64px 32px', background: 'white' }}>
+        <div style={{ maxWidth: 1200, margin: '0 auto' }}>
+          <div style={{ textAlign: 'center', marginBottom: 40 }}>
+            <span style={{ display: 'inline-block', padding: '5px 12px', background: '#FFF7ED', color: '#D97706', borderRadius: 999, fontSize: 12, fontWeight: 700, marginBottom: 12 }}>TÉMOIGNAGES</span>
+            <h2 style={{ fontSize: '2.2rem', fontWeight: 800, color: '#0F172A', margin: 0, letterSpacing: '-0.02em' }}>
+              Ils apprennent avec FlipLearn
+            </h2>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 18 }}>
+            {TESTIMONIALS.map(t => (
+              <div key={t.name} style={{ padding: 24, borderRadius: 16, background: 'white', border: '1px solid #E5E7EB', position: 'relative' }}>
+                <Quote size={28} color={t.color} style={{ opacity: 0.15, position: 'absolute', top: 16, right: 16 }} />
+                <p style={{ fontSize: 14, color: '#1E293B', lineHeight: 1.6, margin: 0, marginBottom: 14, fontStyle: 'italic' }}>
+                  "{t.text}"
+                </p>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <div style={{ width: 38, height: 38, borderRadius: '50%', background: t.color + '20', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}>
+                    {t.avatar}
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: '#0F172A' }}>{t.name}</div>
+                    <div style={{ fontSize: 12, color: '#64748B' }}>{t.role}</div>
+                  </div>
+                </div>
+                <div style={{ display: 'flex', gap: 2, marginTop: 10 }}>
+                  {[1,2,3,4,5].map(i => <Star key={i} size={12} color="#F59E0B" fill="#F59E0B" />)}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* CTA FINAL */}
+      <section style={{ padding: '72px 32px', background: 'linear-gradient(135deg, #1B4F72 0%, #2874A6 100%)', position: 'relative', overflow: 'hidden' }}>
+        <div style={{ position: 'absolute', top: -50, right: -50, width: 300, height: 300, borderRadius: '50%', background: 'rgba(255,255,255,.06)' }} />
+        <div style={{ position: 'absolute', bottom: -80, left: -80, width: 400, height: 400, borderRadius: '50%', background: 'rgba(255,255,255,.04)' }} />
+
+        <div style={{ maxWidth: 820, margin: '0 auto', textAlign: 'center', position: 'relative' }}>
+          <Sparkles size={38} color="#FCD34D" style={{ marginBottom: 14 }} />
+          <h2 style={{ fontSize: '2.4rem', fontWeight: 900, color: 'white', margin: 0, marginBottom: 12, letterSpacing: '-0.02em', lineHeight: 1.2 }}>
+            Prêt à booster ton apprentissage ?
+          </h2>
+          <p style={{ color: 'rgba(255,255,255,.85)', fontSize: 16, lineHeight: 1.6, margin: 0, marginBottom: 28, maxWidth: 560, marginLeft: 'auto', marginRight: 'auto' }}>
+            Rejoins FlipLearn gratuitement, ton compte est validé par ton école en 24h.
           </p>
-        </div>
-      </section>
-
-      {/* ═══ 4. COMMENT ÇA MARCHE ════════════════════════════════════════ */}
-      <section className="lp-section" style={{ background: 'var(--lp-surface)' }}>
-        <div className="lp-section-inner" ref={stepsRef}>
-          <div className="lp-section-header lp-reveal">
-            <h2>Comment fonctionne FlipLearn ?</h2>
-            <p>
-              Trois étapes simples pour un apprentissage plus efficace.
-            </p>
+          <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
+            <Link to="/register" style={{
+              padding: '14px 32px', background: 'white', color: '#1B4F72',
+              borderRadius: 12, textDecoration: 'none', fontWeight: 700, fontSize: 15,
+              display: 'inline-flex', alignItems: 'center', gap: 8, boxShadow: '0 8px 24px rgba(0,0,0,.15)',
+            }}>
+              Créer mon compte gratuit <ArrowRight size={16} />
+            </Link>
+            <Link to="/login" style={{
+              padding: '14px 28px', background: 'rgba(255,255,255,.15)',
+              color: 'white', borderRadius: 12, textDecoration: 'none',
+              fontWeight: 700, fontSize: 15, border: '1px solid rgba(255,255,255,.3)',
+            }}>
+              J'ai déjà un compte
+            </Link>
           </div>
 
-          <div className="lp-steps-with-arrows lp-reveal">
-            <div className="lp-step">
-              <div className="lp-step-num">1</div>
-              <div className="lp-step-icon">
-                <Video size={24} />
-              </div>
-              <h3>Regardez les cours chez vous</h3>
-              <p>
-                Votre professeur met en ligne des vidéos et des ressources.
-                Vous les consultez chez vous, à votre rythme, autant de fois que nécessaire.
-              </p>
-            </div>
-
-            <div className="lp-step-arrow"><ChevronRight size={28} /></div>
-
-            <div className="lp-step">
-              <div className="lp-step-num">2</div>
-              <div className="lp-step-icon" style={{ background: 'linear-gradient(135deg, #E8A838, #D4952A)' }}>
-                <Brain size={24} />
-              </div>
-              <h3>Testez vos connaissances</h3>
-              <p>
-                Des QCM générés automatiquement vous aident à vérifier
-                que vous avez bien compris avant d'aller en cours.
-              </p>
-            </div>
-
-            <div className="lp-step-arrow"><ChevronRight size={28} /></div>
-
-            <div className="lp-step">
-              <div className="lp-step-num">3</div>
-              <div className="lp-step-icon">
-                <Users size={24} />
-              </div>
-              <h3>Pratiquez en classe</h3>
-              <p>
-                En présentiel, vous travaillez sur des exercices, des projets et
-                des débats. Le professeur vous accompagne là où vous en avez besoin.
-              </p>
-            </div>
+          <div style={{ marginTop: 32, display: 'flex', justifyContent: 'center', gap: 24, flexWrap: 'wrap', fontSize: 13, color: 'rgba(255,255,255,.75)' }}>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}><CheckCircle size={14} /> 100% gratuit pour les étudiants</span>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}><Shield size={14} /> Validé par EM Alger</span>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}><Clock size={14} /> Activation sous 24h</span>
           </div>
         </div>
       </section>
 
-      {/* ═══ 5. FONCTIONNALITÉS ═══════════════════════════════════════════ */}
-      <section className="lp-section" style={{ background: 'var(--lp-primary-bg)' }}>
-        <div className="lp-section-inner" ref={featuresRef}>
-          <div className="lp-section-header lp-reveal">
-            <h2>Ce que FlipLearn vous apporte</h2>
-            <p>
-              Des outils concrets pour accompagner la pédagogie inversée,
-              du visionnage à la pratique en classe.
-            </p>
-          </div>
-
-          <div className="lp-features-grid lp-reveal">
-            <div className="lp-feature">
-              <div className="lp-feature-icon" style={{ background: 'linear-gradient(135deg, #1B4F72, #2874A6)' }}>
-                <Brain size={22} color="#fff" />
-              </div>
-              <div>
-                <h3>QCM générés par IA</h3>
-                <p>
-                  Après chaque vidéo, des quiz sont créés automatiquement pour
-                  tester votre compréhension du cours.
-                </p>
-              </div>
-            </div>
-
-            <div className="lp-feature">
-              <div className="lp-feature-icon" style={{ background: 'linear-gradient(135deg, #E8A838, #D4952A)' }}>
-                <MessageSquare size={22} color="#fff" />
-              </div>
-              <div>
-                <h3>Chat entre étudiants</h3>
-                <p>
-                  Discutez avec vos camarades et votre professeur
-                  directement dans l'application, par cours.
-                </p>
-              </div>
-            </div>
-
-            <div className="lp-feature">
-              <div className="lp-feature-icon" style={{ background: 'linear-gradient(135deg, #276749, #38a169)' }}>
-                <BarChart3 size={22} color="#fff" />
-              </div>
-              <div>
-                <h3>Suivi de progression</h3>
-                <p>
-                  Suivez vos points, vos badges et votre classement.
-                  Voyez où vous en êtes par rapport au groupe.
-                </p>
-              </div>
-            </div>
-
-            <div className="lp-feature">
-              <div className="lp-feature-icon" style={{ background: 'linear-gradient(135deg, #1B4F72, #2874A6)' }}>
-                <GraduationCap size={22} color="#fff" />
-              </div>
-              <div>
-                <h3>Projets collaboratifs</h3>
-                <p>
-                  Travaillez en équipe sur des prosits et des projets
-                  avec des rôles et des livrables définis.
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ═══ 6. CTA ═══════════════════════════════════════════════════════ */}
-      <section className="lp-cta" ref={ctaRef}>
-        <div className="lp-reveal">
-          <h2>Prêt à essayer la classe inversée ?</h2>
-          <p>Créez votre compte en quelques secondes. C'est gratuit.</p>
-          <Link to="/register" className="lp-btn-accent">
-            Créer un compte gratuitement <ArrowRight size={18} />
-          </Link>
-        </div>
-      </section>
-
-      {/* ═══ 7. FOOTER ════════════════════════════════════════════════════ */}
-      <footer className="lp-footer">
-        <div className="lp-footer-inner">
-          <div>
-            <Logo variant="full" size={26} />
-            <p>
-              Plateforme de classe inversée pour les étudiants universitaires.
-            </p>
-          </div>
-          <div>
-            <h4>Accès</h4>
-            <Link to="/login">Se connecter</Link>
-            <Link to="/register">Créer un compte</Link>
-          </div>
-          <div>
-            <h4>À propos</h4>
-            <p style={{ margin: 0 }}>
-              Projet de Fin d'Études — Licence Informatique ISIL.
-            </p>
-          </div>
-        </div>
-        <div className="lp-footer-bottom">
-          {'© '}{new Date().getFullYear()}{' FlipLearn — PFE Licence Informatique ISIL'}
+      {/* FOOTER */}
+      <footer style={{ padding: '32px', background: '#0F172A', color: '#94A3B8', textAlign: 'center', fontSize: 13 }}>
+        <div style={{ maxWidth: 1200, margin: '0 auto' }}>
+          <div style={{ marginBottom: 14 }}><Logo variant="full" /></div>
+          <p style={{ margin: 0, marginBottom: 4 }}>Plateforme de Classe Inversée · EM Alger Business School</p>
+          <p style={{ margin: 0, fontSize: 12 }}>Projet de Fin d'Études — Licence ISIL 2026 · © FlipLearn</p>
         </div>
       </footer>
     </div>

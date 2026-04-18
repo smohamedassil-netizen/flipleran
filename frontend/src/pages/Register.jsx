@@ -1,8 +1,11 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useAuth, ROLE_HOME } from '../context/AuthContext.jsx';
+import { useAuth } from '../context/AuthContext.jsx';
 import Logo from '../components/Logo.jsx';
-import { User, Mail, Lock, Eye, EyeOff, GraduationCap, BookOpen, AlertCircle, ChevronDown } from 'lucide-react';
+import {
+  User, Mail, Lock, Eye, EyeOff, GraduationCap, BookOpen, AlertCircle,
+  ChevronDown, Clock, CheckCircle, ShieldCheck, Mail as MailIcon, ArrowRight,
+} from 'lucide-react';
 
 const ROLES = [
   { value: 'etudiant',   label: 'Étudiant',    icon: GraduationCap },
@@ -10,30 +13,33 @@ const ROLES = [
 ];
 
 const FILIERES = [
-  'Informatique', 'Mathématiques', 'Physique', 'Chimie',
-  'Biologie', 'Génie Civil', 'Génie Électrique', 'Autre',
+  { value: 'ISIL',                     label: 'ISIL (Informatique)',          color: '#1B4F72' },
+  { value: 'Management',               label: 'Management',                   color: '#D97706' },
+  { value: 'Finance & Comptabilité',   label: 'Finance & Comptabilité',       color: '#059669' },
 ];
 
+const PROMOTIONS = ['L1', 'L2', 'L3'];
+
 export default function Register() {
-  const [step, setStep]       = useState(1); // 1 = compte, 2 = profil
-  const [form, setForm]       = useState({
+  const [step, setStep] = useState(1);
+  const [form, setForm] = useState({
     nom: '', prenom: '', email: '', password: '', confirm: '',
     role: 'etudiant', filiere: '', promotion: '',
   });
-  const [showPwd, setShowPwd]   = useState(false);
-  const [error, setError]       = useState('');
+  const [showPwd, setShowPwd] = useState(false);
+  const [error, setError] = useState('');
   const [fieldErrors, setFieldErrors] = useState({});
-  const [loading, setLoading]   = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [submitted, setSubmitted] = useState(null); // { email } après succès
 
   const { register } = useAuth();
-  const navigate      = useNavigate();
+  const navigate = useNavigate();
 
   const set = (name, value) => {
     setForm((prev) => ({ ...prev, [name]: value }));
     setFieldErrors((prev) => ({ ...prev, [name]: '' }));
   };
 
-  /* ── validation step 1 ─────────────────────────────────────────────────── */
   const validateStep1 = () => {
     const errs = {};
     if (!form.nom.trim())    errs.nom    = 'Nom requis.';
@@ -45,15 +51,23 @@ export default function Register() {
     return Object.keys(errs).length === 0;
   };
 
-  /* ── submit ────────────────────────────────────────────────────────────── */
+  const validateStep2 = () => {
+    const errs = {};
+    if (!form.filiere)   errs.filiere   = 'Sélectionne une spécialité.';
+    if (!form.promotion) errs.promotion = 'Sélectionne ton niveau.';
+    setFieldErrors(errs);
+    return Object.keys(errs).length === 0;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    if (!validateStep2()) return;
     setLoading(true);
     try {
       const { confirm, ...payload } = form;
-      const user = await register(payload);
-      navigate(ROLE_HOME[user.role] ?? '/', { replace: true });
+      const data = await register(payload);
+      setSubmitted({ email: data.email || form.email, message: data.message });
     } catch (err) {
       setError(err.response?.data?.message ?? 'Une erreur est survenue.');
     } finally {
@@ -61,51 +75,56 @@ export default function Register() {
     }
   };
 
-  /* ── shared input style helper ─────────────────────────────────────────── */
   const inputIcon = (Icon) => (
-    <Icon
-      size={15}
-      style={{
-        position: 'absolute',
-        left: 12,
-        top: '50%',
-        transform: 'translateY(-50%)',
-        color: 'var(--color-text-disabled)',
-        pointerEvents: 'none',
-      }}
-    />
+    <Icon size={15} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--color-text-disabled)', pointerEvents: 'none' }} />
   );
 
+  /* ─── Écran de confirmation post-inscription ─────────────────────────── */
+  if (submitted) {
+    return (
+      <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(135deg, #EFF6FF 0%, #F0FDF4 100%)', padding: 16 }}>
+        <div style={{ width: '100%', maxWidth: 480, background: 'white', borderRadius: 20, padding: '40px 36px', boxShadow: '0 20px 50px rgba(0,0,0,0.08)', textAlign: 'center' }}>
+          <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 80, height: 80, borderRadius: '50%', background: 'linear-gradient(135deg, #FEF3C7, #FDE68A)', marginBottom: 18, animation: 'result-pop 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) both' }}>
+            <Clock size={40} color="#D97706" />
+          </div>
+          <h1 style={{ fontSize: 22, fontWeight: 800, color: '#1B4F72', margin: 0, marginBottom: 8 }}>
+            Compte en attente de validation
+          </h1>
+          <p style={{ color: '#64748B', margin: 0, marginBottom: 20, lineHeight: 1.5 }}>
+            {submitted.message || "Ton inscription a bien été enregistrée. Un administrateur va vérifier ton compte avant que tu puisses te connecter."}
+          </p>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 24, padding: 14, background: '#F8FAFC', borderRadius: 12, textAlign: 'left' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 13, color: '#475569' }}>
+              <MailIcon size={14} color="#1B4F72" />
+              <span>Email enregistré : <strong>{submitted.email}</strong></span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 13, color: '#475569' }}>
+              <ShieldCheck size={14} color="#059669" />
+              <span>Un admin FlipLearn vérifie ta spécialité et ton niveau.</span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 13, color: '#475569' }}>
+              <CheckCircle size={14} color="#D97706" />
+              <span>Tu recevras un email dès que ton compte sera activé.</span>
+            </div>
+          </div>
+
+          <Link to="/login" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '12px 24px', background: 'linear-gradient(135deg, #1B4F72, #2874A6)', color: 'white', textDecoration: 'none', borderRadius: 10, fontWeight: 700, fontSize: 14, boxShadow: '0 4px 14px rgba(27,79,114,.3)' }}>
+            Retour à la connexion <ArrowRight size={14} />
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  /* ─── Formulaire ──────────────────────────────────────────────────── */
   return (
-    <div
-      style={{
-        minHeight: '100vh',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: 'var(--color-bg)',
-        padding: '16px',
-        overflow: 'hidden',
-      }}
-    >
-      <div
-        style={{
-          width: '100%',
-          maxWidth: 460,
-          backgroundColor: 'var(--color-surface)',
-          border: '1px solid var(--color-border)',
-          borderRadius: 'var(--radius-lg)',
-          padding: '40px 36px',
-          boxShadow: 'var(--shadow-sm)',
-        }}
-      >
-        {/* Logo */}
+    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', backgroundColor: 'var(--color-bg)', padding: '16px', overflow: 'hidden' }}>
+      <div style={{ width: '100%', maxWidth: 460, backgroundColor: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-lg)', padding: '40px 36px', boxShadow: 'var(--shadow-sm)' }}>
         <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 28 }}>
           <Logo variant="full" />
         </div>
 
-        {/* Heading */}
         <h1 style={{ fontSize: 'var(--font-size-lg)', fontWeight: 700, color: 'var(--color-text)', textAlign: 'center', marginBottom: 4 }}>
           Créer un compte
         </h1>
@@ -113,21 +132,12 @@ export default function Register() {
           Étape {step} sur 2 — {step === 1 ? 'Vos identifiants' : 'Votre profil'}
         </p>
 
-        {/* Step indicator */}
         <div style={{ display: 'flex', gap: 6, marginBottom: 28 }}>
           {[1, 2].map((s) => (
-            <div
-              key={s}
-              style={{
-                flex: 1, height: 3, borderRadius: 2,
-                backgroundColor: s <= step ? 'var(--color-primary)' : 'var(--color-border)',
-                transition: 'background-color 200ms',
-              }}
-            />
+            <div key={s} style={{ flex: 1, height: 3, borderRadius: 2, backgroundColor: s <= step ? 'var(--color-primary)' : 'var(--color-border)', transition: 'background-color 200ms' }} />
           ))}
         </div>
 
-        {/* Error */}
         {error && (
           <div className="alert alert-error" style={{ marginBottom: 20 }}>
             <AlertCircle size={15} style={{ flexShrink: 0 }} />
@@ -136,20 +146,14 @@ export default function Register() {
         )}
 
         <form onSubmit={step === 1 ? (e) => { e.preventDefault(); if (validateStep1()) setStep(2); } : handleSubmit}>
-          {/* ── STEP 1 ──────────────────────────────────────────────────── */}
           {step === 1 && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-              {/* Nom / Prenom row */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                 <div>
                   <label className="form-label" htmlFor="nom">Nom</label>
                   <div style={{ position: 'relative' }}>
                     {inputIcon(User)}
-                    <input
-                      id="nom" name="nom" className="form-input"
-                      style={{ paddingLeft: 36 }} placeholder="Dupont"
-                      value={form.nom} onChange={(e) => set('nom', e.target.value)}
-                    />
+                    <input id="nom" name="nom" className="form-input" style={{ paddingLeft: 36 }} placeholder="Dupont" value={form.nom} onChange={(e) => set('nom', e.target.value)} />
                   </div>
                   {fieldErrors.nom && <p className="form-error">{fieldErrors.nom}</p>}
                 </div>
@@ -157,65 +161,38 @@ export default function Register() {
                   <label className="form-label" htmlFor="prenom">Prénom</label>
                   <div style={{ position: 'relative' }}>
                     {inputIcon(User)}
-                    <input
-                      id="prenom" name="prenom" className="form-input"
-                      style={{ paddingLeft: 36 }} placeholder="Marie"
-                      value={form.prenom} onChange={(e) => set('prenom', e.target.value)}
-                    />
+                    <input id="prenom" name="prenom" className="form-input" style={{ paddingLeft: 36 }} placeholder="Marie" value={form.prenom} onChange={(e) => set('prenom', e.target.value)} />
                   </div>
                   {fieldErrors.prenom && <p className="form-error">{fieldErrors.prenom}</p>}
                 </div>
               </div>
 
-              {/* Email */}
               <div>
                 <label className="form-label" htmlFor="email">Adresse email</label>
                 <div style={{ position: 'relative' }}>
                   {inputIcon(Mail)}
-                  <input
-                    id="email" name="email" type="email" autoComplete="email"
-                    className="form-input" style={{ paddingLeft: 36 }}
-                    placeholder="vous@exemple.com"
-                    value={form.email} onChange={(e) => set('email', e.target.value)}
-                  />
+                  <input id="email" name="email" type="email" autoComplete="email" className="form-input" style={{ paddingLeft: 36 }} placeholder="vous@exemple.com" value={form.email} onChange={(e) => set('email', e.target.value)} />
                 </div>
                 {fieldErrors.email && <p className="form-error">{fieldErrors.email}</p>}
               </div>
 
-              {/* Password */}
               <div>
                 <label className="form-label" htmlFor="password">Mot de passe</label>
                 <div style={{ position: 'relative' }}>
                   {inputIcon(Lock)}
-                  <input
-                    id="password" name="password"
-                    type={showPwd ? 'text' : 'password'}
-                    className="form-input" style={{ paddingLeft: 36, paddingRight: 40 }}
-                    placeholder="Minimum 6 caractères"
-                    value={form.password} onChange={(e) => set('password', e.target.value)}
-                  />
-                  <button
-                    type="button" onClick={() => setShowPwd((v) => !v)} tabIndex={-1}
-                    style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-disabled)', display: 'flex' }}
-                  >
+                  <input id="password" name="password" type={showPwd ? 'text' : 'password'} className="form-input" style={{ paddingLeft: 36, paddingRight: 40 }} placeholder="Minimum 6 caractères" value={form.password} onChange={(e) => set('password', e.target.value)} />
+                  <button type="button" onClick={() => setShowPwd((v) => !v)} tabIndex={-1} style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-disabled)', display: 'flex' }}>
                     {showPwd ? <EyeOff size={15} /> : <Eye size={15} />}
                   </button>
                 </div>
                 {fieldErrors.password && <p className="form-error">{fieldErrors.password}</p>}
               </div>
 
-              {/* Confirm */}
               <div>
                 <label className="form-label" htmlFor="confirm">Confirmer le mot de passe</label>
                 <div style={{ position: 'relative' }}>
                   {inputIcon(Lock)}
-                  <input
-                    id="confirm" name="confirm"
-                    type={showPwd ? 'text' : 'password'}
-                    className="form-input" style={{ paddingLeft: 36 }}
-                    placeholder="••••••••"
-                    value={form.confirm} onChange={(e) => set('confirm', e.target.value)}
-                  />
+                  <input id="confirm" name="confirm" type={showPwd ? 'text' : 'password'} className="form-input" style={{ paddingLeft: 36 }} placeholder="••••••••" value={form.confirm} onChange={(e) => set('confirm', e.target.value)} />
                 </div>
                 {fieldErrors.confirm && <p className="form-error">{fieldErrors.confirm}</p>}
               </div>
@@ -226,88 +203,79 @@ export default function Register() {
             </div>
           )}
 
-          {/* ── STEP 2 ──────────────────────────────────────────────────── */}
           {step === 2 && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-              {/* Role selector */}
               <div>
                 <label className="form-label">Je suis</label>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
                   {ROLES.map(({ value, label, icon: Icon }) => {
                     const active = form.role === value;
                     return (
-                      <button
-                        key={value} type="button"
-                        onClick={() => set('role', value)}
-                        style={{
-                          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                          gap: 8, padding: '16px 12px',
-                          border: `1px solid ${active ? 'var(--color-primary)' : 'var(--color-border)'}`,
-                          borderRadius: 'var(--radius-lg)',
-                          backgroundColor: active ? 'var(--color-primary-light)' : 'var(--color-surface)',
-                          cursor: 'pointer',
-                          transition: 'border-color 150ms, background-color 150ms',
-                        }}
-                      >
+                      <button key={value} type="button" onClick={() => set('role', value)} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '16px 12px', border: `1px solid ${active ? 'var(--color-primary)' : 'var(--color-border)'}`, borderRadius: 'var(--radius-lg)', backgroundColor: active ? 'var(--color-primary-light)' : 'var(--color-surface)', cursor: 'pointer', transition: 'border-color 150ms, background-color 150ms' }}>
                         <Icon size={20} color={active ? 'var(--color-primary)' : 'var(--color-text-secondary)'} />
-                        <span style={{ fontSize: 'var(--font-size-sm)', fontWeight: 600, color: active ? 'var(--color-primary)' : 'var(--color-text)' }}>
-                          {label}
-                        </span>
+                        <span style={{ fontSize: 'var(--font-size-sm)', fontWeight: 600, color: active ? 'var(--color-primary)' : 'var(--color-text)' }}>{label}</span>
                       </button>
                     );
                   })}
                 </div>
               </div>
 
-              {/* Filiere */}
               <div>
-                <label className="form-label" htmlFor="filiere">Filière</label>
-                <div style={{ position: 'relative' }}>
-                  <select
-                    id="filiere" name="filiere"
-                    className="form-input"
-                    style={{ paddingRight: 36, appearance: 'none', cursor: 'pointer' }}
-                    value={form.filiere}
-                    onChange={(e) => set('filiere', e.target.value)}
-                  >
-                    <option value="">Sélectionner une filière</option>
-                    {FILIERES.map((f) => <option key={f} value={f}>{f}</option>)}
-                  </select>
-                  <ChevronDown
-                    size={15}
-                    style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: 'var(--color-text-secondary)' }}
-                  />
+                <label className="form-label">Spécialité</label>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 8 }}>
+                  {FILIERES.map((f) => {
+                    const active = form.filiere === f.value;
+                    return (
+                      <button key={f.value} type="button" onClick={() => set('filiere', f.value)} style={{
+                        display: 'flex', alignItems: 'center', gap: 10,
+                        padding: '12px 14px',
+                        border: `2px solid ${active ? f.color : '#E5E7EB'}`,
+                        borderRadius: 'var(--radius-md)',
+                        backgroundColor: active ? `${f.color}12` : 'white',
+                        cursor: 'pointer', transition: 'all 150ms', textAlign: 'left',
+                      }}>
+                        <div style={{ width: 14, height: 14, borderRadius: '50%', background: active ? f.color : '#E5E7EB', flexShrink: 0 }} />
+                        <span style={{ fontSize: 14, fontWeight: active ? 700 : 500, color: active ? f.color : '#475569', fontFamily: 'inherit' }}>
+                          {f.label}
+                        </span>
+                      </button>
+                    );
+                  })}
                 </div>
+                {fieldErrors.filiere && <p className="form-error">{fieldErrors.filiere}</p>}
               </div>
 
-              {/* Promotion */}
               <div>
-                <label className="form-label" htmlFor="promotion">Promotion / Année</label>
-                <input
-                  id="promotion" name="promotion"
-                  className="form-input"
-                  placeholder="Ex: L3 2024-2025"
-                  value={form.promotion}
-                  onChange={(e) => set('promotion', e.target.value)}
-                />
+                <label className="form-label">Niveau</label>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
+                  {PROMOTIONS.map((p) => {
+                    const active = form.promotion === p;
+                    return (
+                      <button key={p} type="button" onClick={() => set('promotion', p)} style={{
+                        padding: '10px',
+                        border: `1px solid ${active ? 'var(--color-primary)' : 'var(--color-border)'}`,
+                        borderRadius: 'var(--radius-md)',
+                        backgroundColor: active ? 'var(--color-primary-light)' : 'var(--color-surface)',
+                        color: active ? 'var(--color-primary)' : 'var(--color-text)',
+                        fontWeight: active ? 700 : 500, fontSize: 14, cursor: 'pointer', fontFamily: 'inherit',
+                      }}>
+                        {p}
+                      </button>
+                    );
+                  })}
+                </div>
+                {fieldErrors.promotion && <p className="form-error">{fieldErrors.promotion}</p>}
               </div>
 
-              {/* Actions */}
+              <div style={{ padding: 12, background: '#FEF3C7', borderRadius: 8, fontSize: 12, color: '#92400E', lineHeight: 1.5 }}>
+                <strong>ℹ️ Validation requise :</strong> ton compte sera vérifié par un administrateur avant d'être activé. Tu recevras un email dès qu'il pourra être utilisé.
+              </div>
+
               <div style={{ display: 'flex', gap: 10, marginTop: 4 }}>
-                <button
-                  type="button"
-                  onClick={() => setStep(1)}
-                  className="btn btn-secondary"
-                  style={{ flex: 1, justifyContent: 'center' }}
-                >
+                <button type="button" onClick={() => setStep(1)} className="btn btn-secondary" style={{ flex: 1, justifyContent: 'center' }}>
                   Retour
                 </button>
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="btn btn-primary"
-                  style={{ flex: 1, justifyContent: 'center' }}
-                >
+                <button type="submit" disabled={loading} className="btn btn-primary" style={{ flex: 1, justifyContent: 'center' }}>
                   {loading ? 'Inscription...' : "S'inscrire"}
                 </button>
               </div>
@@ -315,7 +283,6 @@ export default function Register() {
           )}
         </form>
 
-        {/* Footer */}
         <p style={{ textAlign: 'center', fontSize: 'var(--font-size-sm)', color: 'var(--color-text-secondary)', marginTop: 24 }}>
           Déjà un compte ?{' '}
           <Link to="/login" style={{ color: 'var(--color-primary)', fontWeight: 600, textDecoration: 'none' }}>
@@ -324,15 +291,9 @@ export default function Register() {
         </p>
       </div>
 
-      <div style={{
-        textAlign: 'center',
-        marginTop: 24,
-        color: '#94a3b8',
-        fontSize: 12,
-        lineHeight: 1.6
-      }}>
-        <div>Projet de Fin d'Études — Licence Informatique ISIL</div>
-        <div>Plateforme de Classe Inversée © 2025</div>
+      <div style={{ textAlign: 'center', marginTop: 24, color: '#94a3b8', fontSize: 12, lineHeight: 1.6 }}>
+        <div>Projet de Fin d'Études — Licence ISIL</div>
+        <div>Plateforme de Classe Inversée © 2026</div>
       </div>
     </div>
   );

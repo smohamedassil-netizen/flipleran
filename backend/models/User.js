@@ -14,6 +14,11 @@ const userSchema = new mongoose.Schema(
     points:    { type: Number, default: 0 },
     badges:    [{ type: mongoose.Schema.Types.ObjectId, ref: 'Badge' }],
     isActive:  { type: Boolean, default: true },
+    // Validation admin : pending → active → (rejected possible)
+    status:    { type: String, enum: ['pending', 'active', 'rejected'], default: 'pending' },
+    rejectionReason: { type: String, default: '' },
+    approvedBy:{ type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
+    approvedAt:{ type: Date, default: null },
   },
   { timestamps: true }
 );

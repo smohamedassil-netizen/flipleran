@@ -93,6 +93,8 @@ export default function WatchVideo() {
           <VideoPlayer
             videoId={video._id}
             src={video.url}
+            provider={video.provider}
+            youtubeId={video.youtubeId}
             titre={video.titre}
             initialPercent={video.myProgress?.watchedPercent ?? 0}
             nextVideoPath={nextVideoPath}

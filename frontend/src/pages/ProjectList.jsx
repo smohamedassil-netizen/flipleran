@@ -139,7 +139,8 @@ export default function ProjectList() {
   const [projects, setProjects] = useState([]);
   const [loading, setLoading]   = useState(true);
   const [search, setSearch]     = useState('');
-  const [filter, setFilter]     = useState('tous'); // tous | prosit | projet
+  const [filter, setFilter]     = useState('tous'); // tous | prosit | projet | mono | multi
+  const [showPrositInfo, setShowPrositInfo] = useState(false);
 
   const courseId = searchParams.get('courseId');
 
@@ -153,8 +154,10 @@ export default function ProjectList() {
 
   /* ── Filter & search ──────────────────────────────────────────────────── */
   const filtered = projects.filter((p) => {
-    if (filter === 'prosit' && p.type !== 'prosit') return false;
-    if (filter === 'projet' && p.type !== 'projet') return false;
+    if (filter === 'prosit'    && p.type !== 'prosit') return false;
+    if (filter === 'projet'    && p.type !== 'projet') return false;
+    if (filter === 'mono'      && p.isMultiModule)     return false;
+    if (filter === 'multi'     && !p.isMultiModule)    return false;
     if (!search.trim()) return true;
     const s = search.toLowerCase();
     return (
@@ -168,7 +171,10 @@ export default function ProjectList() {
     { key: 'tous',   label: 'Tous' },
     { key: 'prosit', label: 'Prosits' },
     { key: 'projet', label: 'Projets' },
+    { key: 'mono',   label: '📘 Mono-module' },
+    { key: 'multi',  label: '🌐 Collaboratifs' },
   ];
+
 
   return (
     <Layout title="Projets">
@@ -194,8 +200,65 @@ export default function ProjectList() {
           )}
         </div>
 
+        {/* Encart explicatif Prosit vs Projet */}
+        <div style={{
+          marginBottom: 20, padding: 16, borderRadius: 12,
+          background: 'linear-gradient(135deg, #EBF3FA, #F0F9FF)',
+          border: '1px solid #BFDBFE', position: 'relative',
+        }}>
+          <button
+            onClick={() => setShowPrositInfo(v => !v)}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 8, width: '100%',
+              background: 'none', border: 'none', cursor: 'pointer',
+              fontFamily: 'inherit', textAlign: 'left',
+            }}
+          >
+            <div style={{ width: 32, height: 32, borderRadius: 8, background: 'linear-gradient(135deg, #1B4F72, #2874A6)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: 16 }}>
+              💡
+            </div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 14, fontWeight: 700, color: '#1B4F72' }}>
+                Qu'est-ce qu'un Prosit ? Quelle différence avec un Projet ?
+              </div>
+              <div style={{ fontSize: 12, color: '#64748B', marginTop: 2 }}>
+                {showPrositInfo ? 'Cliquer pour replier' : 'Cliquer pour voir la méthodologie pédagogique'}
+              </div>
+            </div>
+            <span style={{ fontSize: 18, color: '#1B4F72', transform: showPrositInfo ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform .2s' }}>⌄</span>
+          </button>
+
+          {showPrositInfo && (
+            <div style={{ marginTop: 14, paddingTop: 14, borderTop: '1px solid #BFDBFE', fontSize: 13, color: '#1E293B', lineHeight: 1.6 }}>
+              <p style={{ margin: 0, marginBottom: 10 }}>
+                <strong>Prosit</strong> (PROblème SITuation) est une méthode pédagogique issue du PBL (apprentissage par problème). Tu apprends en résolvant un problème concret, en 3 phases :
+              </p>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 10, marginBottom: 10 }}>
+                <div style={{ padding: 10, background: 'white', borderRadius: 8, borderLeft: '3px solid #1B4F72' }}>
+                  <div style={{ fontWeight: 700, fontSize: 12, color: '#1B4F72', marginBottom: 3 }}>① Prosit Aller</div>
+                  <div style={{ fontSize: 12, color: '#475569' }}>Découverte du problème, mots-clés, questions.</div>
+                </div>
+                <div style={{ padding: 10, background: 'white', borderRadius: 8, borderLeft: '3px solid #D97706' }}>
+                  <div style={{ fontWeight: 700, fontSize: 12, color: '#D97706', marginBottom: 3 }}>② Recherche</div>
+                  <div style={{ fontSize: 12, color: '#475569' }}>Travail individuel, documentation, réflexion.</div>
+                </div>
+                <div style={{ padding: 10, background: 'white', borderRadius: 8, borderLeft: '3px solid #059669' }}>
+                  <div style={{ fontWeight: 700, fontSize: 12, color: '#059669', marginBottom: 3 }}>③ Prosit Retour</div>
+                  <div style={{ fontSize: 12, color: '#475569' }}>Mise en commun, synthèse, livrable.</div>
+                </div>
+              </div>
+              <p style={{ margin: 0, marginBottom: 8 }}>
+                <strong>Projet</strong> = travail plus long (plusieurs semaines/mois) avec des phases personnalisées, groupes avec rôles (chef de projet, scribe, animateur, chrono, analyste), livrables, soutenance.
+              </p>
+              <div style={{ marginTop: 10, padding: 10, background: '#FFFBEB', borderRadius: 8, fontSize: 12, color: '#92400E' }}>
+                📘 <strong>Mono-module</strong> : lié à un seul cours · 🌐 <strong>Collaboratif multi-modules</strong> : plusieurs filières/cours travaillent ensemble (ex: projet Marketing×Finance×Dev).
+              </div>
+            </div>
+          )}
+        </div>
+
         {/* Filter tabs */}
-        <div style={{ display: 'flex', gap: 6, marginBottom: 16 }}>
+        <div style={{ display: 'flex', gap: 6, marginBottom: 16, flexWrap: 'wrap' }}>
           {TABS.map(({ key, label }) => (
             <button
               key={key}

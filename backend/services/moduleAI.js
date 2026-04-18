@@ -19,6 +19,33 @@ const TONE_DIRECTIVES = {
 };
 
 /**
+ * Directives spécifiques au domaine selon la filière du cours.
+ * Permet à l'IA d'utiliser les bons exemples, le bon vocabulaire et les bonnes références.
+ */
+const FILIERE_DIRECTIVES = {
+  ISIL: `Domaine : Informatique / Ingénierie Système & Logiciel.
+- Utilise du code quand pertinent (Python, JavaScript, C, SQL selon le cours).
+- Réfère-toi aux concepts fondamentaux de l'informatique (algorithmes, structures de données, paradigmes, patterns).
+- Sources de référence : documentation officielle, MDN, RFC, livres classiques (Cormen, Sedgewick…).`,
+
+  Management: `Domaine : Management / Stratégie / Organisation.
+- Utilise des études de cas d'entreprises réelles pour illustrer (PME algériennes, groupes internationaux).
+- Réfère-toi aux modèles classiques (SWOT, Porter, PESTEL, matrice BCG, Drucker, Mintzberg).
+- Sources : Harvard Business Review, cas de management, Peter Drucker, Michael Porter.
+- Les exemples doivent refléter le contexte économique algérien et maghrébin quand c'est possible.`,
+
+  'Finance & Comptabilité': `Domaine : Finance d'entreprise et Comptabilité.
+- Utilise le plan comptable (PCN / IFRS), les normes algériennes (SCF) et internationales.
+- Cite les ratios financiers (ROE, ROA, liquidité, solvabilité) avec exemples chiffrés.
+- Exemples : bilans d'entreprises fictives, calcul d'impôts, analyse financière.
+- Langage technique mais accessible, utilise des tableaux quand nécessaire.`,
+};
+
+function filiereDirective(filiere) {
+  return FILIERE_DIRECTIVES[filiere] || FILIERE_DIRECTIVES.ISIL;
+}
+
+/**
  * Construit un résumé compact du contenu du module pour l'injecter comme contexte RAG.
  * On évite les transcripts complets : on utilise summary + keyConcepts qui sont déjà des extraits synthétiques.
  */
@@ -92,6 +119,8 @@ function buildSystemPrompt(course, moduleContext) {
 Spécialité : ${specialite}.
 ${ton}
 
+${filiereDirective(course.filiere)}
+
 Ta mission : aider les étudiants à comprendre UNIQUEMENT les concepts de ce module. Tu as accès au contenu réel du cours :
 
 ${moduleContext || '(Aucun contenu indexé pour ce module pour le moment.)'}
@@ -99,10 +128,10 @@ ${moduleContext || '(Aucun contenu indexé pour ce module pour le moment.)'}
 RÈGLES STRICTES :
 - Tu réponds TOUJOURS en français.
 - Tu t'appuies EN PRIORITÉ sur le contenu du module ci-dessus. Cite explicitement les vidéos ou ressources pertinentes quand c'est utile (ex: "Regarde la vidéo X ou le chapitre Y").
-- Si la question sort du périmètre du module, redirige poliment l'étudiant vers l'assistant général (/chat/bot) ou vers son professeur.
+- Adapte tes exemples et ton vocabulaire à la filière (voir directives ci-dessus).
+- Si la question sort du périmètre du module, redirige poliment l'étudiant vers l'assistant général ou vers son professeur.
 - Si tu n'as pas assez d'info dans le contenu fourni, dis-le honnêtement et propose à l'étudiant de consulter le prof.
 - Réponses concises (max 4 paragraphes), structurées, pédagogiques.
-- Utilise des exemples de code quand pertinent (mais uniquement s'ils sont liés au module).
 - Ne génère jamais de réponse aux QCM directement — guide l'étudiant pour qu'il trouve lui-même.
 
 Présente-toi brièvement au premier message : "${description}"`;

@@ -29,13 +29,14 @@ export const AuthProvider = ({ children }) => {
     }
   }, []);
 
-  /* Persist user to sessionStorage whenever it changes */
+  /* Persist user to sessionStorage whenever it changes + notifier les autres contexts */
   useEffect(() => {
     if (user) {
       sessionStorage.setItem(STORAGE_KEY, JSON.stringify(user));
     } else {
       sessionStorage.removeItem(STORAGE_KEY);
     }
+    window.dispatchEvent(new Event('fliplearn:user-changed'));
   }, [user]);
 
   /* ── login ─────────────────────────────────────────────────────────────── */
@@ -45,11 +46,10 @@ export const AuthProvider = ({ children }) => {
     return data;
   }, []);
 
-  /* ── register ──────────────────────────────────────────────────────────── */
+  /* ── register — ne connecte PAS automatiquement, le compte est pending ──── */
   const register = useCallback(async (payload) => {
     const { data } = await api.post('/auth/register', payload);
-    setUser(data);
-    return data;
+    return data; // { status: 'pending', email, message }
   }, []);
 
   /* ── logout ────────────────────────────────────────────────────────────── */

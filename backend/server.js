@@ -36,6 +36,23 @@ import trackingRoutes      from './routes/trackingRoutes.js';
 import rewardRoutes        from './routes/rewardRoutes.js';
 import { seedBadges }   from './services/points.js';
 import { seedRewards }  from './services/rewardsSeed.js';
+import { seedDemoContent } from './services/contentSeed.js';
+
+// Migration : les comptes créés avant le système d'approval n'ont pas de status,
+// on les considère actifs par défaut (sinon ils ne pourraient plus se connecter).
+async function migrateUserStatus() {
+  try {
+    const result = await User.updateMany(
+      { status: { $exists: false } },
+      { $set: { status: 'active' } }
+    );
+    if (result.modifiedCount > 0) {
+      console.log(`[migration] ${result.modifiedCount} comptes existants marqués 'active'`);
+    }
+  } catch (err) {
+    console.error('[migration] userStatus:', err.message);
+  }
+}
 import { askBot }       from './services/chatbot.js';
 import { BOT_SENDER }   from './controllers/chatbotController.js';
 import { startNotificationScheduler } from './services/notificationScheduler.js';
@@ -57,8 +74,13 @@ const io = new Server(httpServer, {
 app.set('io', io);
 
 connectDB().then(() => {
+  migrateUserStatus();
   seedBadges().catch(console.error);
   seedRewards().catch(console.error);
+  // Seed 9 cours × 3 vidéos YouTube. Mettre SEED_CONTENT=false pour désactiver.
+  if (process.env.SEED_CONTENT !== 'false') {
+    seedDemoContent().catch(err => console.error('[contentSeed]', err.message));
+  }
   startNotificationScheduler(io);
 });
 

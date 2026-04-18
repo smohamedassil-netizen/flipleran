@@ -7,7 +7,7 @@ import {
   Clock, TrendingUp, TrendingDown, Eye, Mail, Filter,
   MoreHorizontal, RefreshCw, Download, HelpCircle,
   Ticket, Send, ShieldCheck, User as UserIcon, Inbox, Flag,
-  Gift, Award, Package,
+  Gift, Award, Package, UserCheck,
 } from 'lucide-react';
 import Layout from '../components/Layout.jsx';
 import api from '../utils/api.js';
@@ -25,6 +25,7 @@ const SECTIONS = [
   { id: 'courses',   label: 'Cours',          icon: BookOpen },
   { id: 'messages',  label: 'Messages',       icon: MessageSquare },
   { id: 'activity',  label: 'Activité',       icon: Activity },
+  { id: 'pending',   label: 'Inscriptions',   icon: UserCheck },
   { id: 'support',   label: 'Support',        icon: HelpCircle },
   { id: 'rewards',   label: 'Récompenses',    icon: Gift },
 ];
@@ -1678,8 +1679,168 @@ export default function AdminDashboard() {
         {section === 'activity' && <ActivitySection />}
         {section === 'support' && <SupportSection />}
         {section === 'rewards' && <RewardsAdminSection />}
+        {section === 'pending' && <PendingUsersSection />}
       </div>
     </Layout>
+  );
+}
+
+/* ─── PendingUsersSection ──────────────────────────────────────────── */
+function PendingUsersSection() {
+  const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [rejectModal, setRejectModal] = useState(null);
+  const [reason, setReason] = useState('');
+  const [processing, setProcessing] = useState(null);
+
+  const FILIERE_META = {
+    ISIL:                    { label: 'ISIL',       color: '#1B4F72', bg: '#DBEAFE' },
+    Management:              { label: 'Management', color: '#D97706', bg: '#FEF3C7' },
+    'Finance & Comptabilité':{ label: 'Finance',    color: '#059669', bg: '#D1FAE5' },
+  };
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const { data } = await api.get('/auth/pending');
+      setUsers(data);
+    } catch {
+      setUsers([]);
+    } finally { setLoading(false); }
+  }, []);
+
+  useEffect(() => { load(); }, [load]);
+
+  const approve = async (userId) => {
+    setProcessing(userId);
+    try {
+      await api.put(`/auth/users/${userId}/approve`);
+      await load();
+    } catch (err) { alert(err.response?.data?.message || 'Erreur'); }
+    finally { setProcessing(null); }
+  };
+
+  const reject = async () => {
+    if (!rejectModal) return;
+    setProcessing(rejectModal);
+    try {
+      await api.put(`/auth/users/${rejectModal}/reject`, { reason });
+      setRejectModal(null); setReason('');
+      await load();
+    } catch (err) { alert(err.response?.data?.message || 'Erreur'); }
+    finally { setProcessing(null); }
+  };
+
+  if (loading) return <Spinner />;
+
+  return (
+    <div>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+        <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: '#1E293B', display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+          <UserCheck size={20} color={PRIMARY} /> Inscriptions en attente
+          {users.length > 0 && (
+            <span style={{ padding: '2px 10px', background: '#FEF3C7', color: '#92400E', borderRadius: 999, fontSize: 12, fontWeight: 700 }}>
+              {users.length}
+            </span>
+          )}
+        </h2>
+        <button onClick={load} style={btnGhost}>
+          <RefreshCw size={13} /> Rafraîchir
+        </button>
+      </div>
+
+      {users.length === 0 ? (
+        <div style={{ ...cardStyle, padding: 48, textAlign: 'center', color: '#94A3B8' }}>
+          <UserCheck size={32} style={{ opacity: 0.4, marginBottom: 8 }} />
+          <div style={{ fontSize: 14 }}>Aucune inscription en attente. 🎉</div>
+        </div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {users.map(u => {
+            const filiereMeta = FILIERE_META[u.filiere] || { label: u.filiere || '—', color: '#64748B', bg: '#F1F5F9' };
+            return (
+              <div key={u._id} style={{ ...cardStyle, padding: 16, display: 'flex', alignItems: 'center', gap: 14 }}>
+                <div style={{
+                  width: 48, height: 48, borderRadius: '50%',
+                  background: `linear-gradient(135deg, ${filiereMeta.color}, ${filiereMeta.color}dd)`,
+                  color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: 18, fontWeight: 700, flexShrink: 0,
+                }}>
+                  {(u.prenom?.[0] || '') + (u.nom?.[0] || '')}
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 15, fontWeight: 700, color: '#1E293B', marginBottom: 3 }}>
+                    {u.prenom} {u.nom}
+                    <span style={{
+                      marginLeft: 8, padding: '2px 10px',
+                      background: u.role === 'professeur' ? '#EDE9FE' : '#D1FAE5',
+                      color: u.role === 'professeur' ? '#6D28D9' : '#065F46',
+                      fontSize: 11, fontWeight: 700, borderRadius: 6,
+                    }}>
+                      {u.role === 'professeur' ? 'Prof' : 'Étudiant'}
+                    </span>
+                  </div>
+                  <div style={{ fontSize: 12, color: '#64748B', marginBottom: 4 }}>
+                    <Mail size={11} style={{ display: 'inline', marginRight: 4 }} /> {u.email}
+                  </div>
+                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+                    <span style={{ padding: '2px 10px', background: filiereMeta.bg, color: filiereMeta.color, fontSize: 11, fontWeight: 700, borderRadius: 6 }}>
+                      {filiereMeta.label}
+                    </span>
+                    <span style={{ fontSize: 11, color: '#64748B' }}>{u.promotion || '—'}</span>
+                    <span style={{ fontSize: 11, color: '#94A3B8' }}>
+                      • Inscrit le {new Date(u.createdAt).toLocaleDateString('fr-FR')}
+                    </span>
+                  </div>
+                </div>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button
+                    onClick={() => approve(u._id)}
+                    disabled={processing === u._id}
+                    style={{ ...btnPrimary, background: '#059669', opacity: processing === u._id ? 0.6 : 1 }}
+                  >
+                    <Check size={13} /> Valider
+                  </button>
+                  <button
+                    onClick={() => setRejectModal(u._id)}
+                    disabled={processing === u._id}
+                    style={{ ...btnGhost, color: '#DC2626', borderColor: '#FCA5A5' }}
+                  >
+                    <X size={13} /> Refuser
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {rejectModal && (
+        <div onClick={() => !processing && setRejectModal(null)} style={modalOverlay}>
+          <div onClick={(e) => e.stopPropagation()} style={{ ...modalCard, padding: 24 }}>
+            <h3 style={{ margin: 0, marginBottom: 14, fontSize: 17, fontWeight: 700, color: '#1E293B' }}>
+              Refuser cette inscription
+            </h3>
+            <p style={{ fontSize: 13, color: '#64748B', margin: 0, marginBottom: 14 }}>
+              L'utilisateur recevra un email avec la raison du refus. Il ne pourra pas se connecter.
+            </p>
+            <textarea
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              placeholder="Raison du refus (optionnel mais recommandé)…"
+              rows={3}
+              style={{ width: '100%', padding: 10, border: '1px solid #E2E8F0', borderRadius: 8, fontSize: 13, fontFamily: 'inherit', resize: 'vertical', marginBottom: 12 }}
+            />
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+              <button onClick={() => setRejectModal(null)} disabled={processing} style={btnGhost}>Annuler</button>
+              <button onClick={reject} disabled={processing} style={{ ...btnPrimary, background: '#DC2626' }}>
+                <X size={13} /> Refuser
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
 

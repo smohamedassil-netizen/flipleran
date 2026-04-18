@@ -4,6 +4,7 @@ import Layout from '../components/Layout.jsx';
 import api from '../utils/api.js';
 import {
   Upload, FileVideo, X, CheckCircle, AlertCircle, ArrowLeft,
+  Youtube, Link as LinkIcon,
 } from 'lucide-react';
 
 const MAX_SIZE_MB = 100; // Limite Cloudinary gratuit
@@ -13,12 +14,36 @@ export default function ProfessorUpload() {
   const navigate     = useNavigate();
   const inputRef     = useRef(null);
 
+  const [mode,     setMode]     = useState('file'); // 'file' | 'youtube'
   const [file,     setFile]     = useState(null);
-  const [form,     setForm]     = useState({ titre: '', description: '', order: '' });
+  const [form,     setForm]     = useState({ titre: '', description: '', order: '', youtubeUrl: '', duration: '' });
   const [progress, setProgress] = useState(0);   // 0-100
   const [status,   setStatus]   = useState('idle'); // idle | uploading | success | error
   const [errorMsg, setErrorMsg] = useState('');
   const [dragOver, setDragOver] = useState(false);
+
+  const submitYouTube = async (e) => {
+    e.preventDefault();
+    if (!form.titre.trim())       return setErrorMsg('Le titre est obligatoire.');
+    if (!form.youtubeUrl.trim())  return setErrorMsg('URL YouTube requise.');
+
+    setStatus('uploading');
+    setErrorMsg('');
+    try {
+      await api.post('/videos/youtube', {
+        titre:       form.titre,
+        description: form.description,
+        youtubeUrl:  form.youtubeUrl,
+        duration:    Number(form.duration) || 0,
+        order:       Number(form.order) || 0,
+        courseId:    courseId ?? '',
+      });
+      setStatus('success');
+    } catch (err) {
+      setStatus('error');
+      setErrorMsg(err.response?.data?.message ?? "Erreur lors de l'ajout.");
+    }
+  };
 
   /* ── File selection ─────────────────────────────────────────────────────── */
   const acceptFile = (f) => {
@@ -79,7 +104,7 @@ export default function ProfessorUpload() {
 
   const reset = () => {
     setFile(null);
-    setForm({ titre: '', description: '', order: '' });
+    setForm({ titre: '', description: '', order: '', youtubeUrl: '', duration: '' });
     setProgress(0);
     setStatus('idle');
     setErrorMsg('');
@@ -108,6 +133,102 @@ export default function ProfessorUpload() {
       </div>
 
       <div style={{ maxWidth: 640 }}>
+        {/* Tabs Mode */}
+        {status !== 'success' && (
+          <div style={{ display: 'flex', gap: 8, marginBottom: 20, borderBottom: '2px solid #E5E7EB' }}>
+            <button
+              type="button"
+              onClick={() => { setMode('file'); setErrorMsg(''); }}
+              style={{
+                padding: '10px 18px', background: 'none', border: 'none',
+                borderBottom: mode === 'file' ? '3px solid #1B4F72' : '3px solid transparent',
+                marginBottom: -2, cursor: 'pointer', fontFamily: 'inherit',
+                fontSize: 14, fontWeight: mode === 'file' ? 700 : 500,
+                color: mode === 'file' ? '#1B4F72' : '#64748B',
+                display: 'inline-flex', alignItems: 'center', gap: 6,
+              }}
+            >
+              <Upload size={14} /> Upload fichier
+            </button>
+            <button
+              type="button"
+              onClick={() => { setMode('youtube'); setErrorMsg(''); }}
+              style={{
+                padding: '10px 18px', background: 'none', border: 'none',
+                borderBottom: mode === 'youtube' ? '3px solid #DC2626' : '3px solid transparent',
+                marginBottom: -2, cursor: 'pointer', fontFamily: 'inherit',
+                fontSize: 14, fontWeight: mode === 'youtube' ? 700 : 500,
+                color: mode === 'youtube' ? '#DC2626' : '#64748B',
+                display: 'inline-flex', alignItems: 'center', gap: 6,
+              }}
+            >
+              <Youtube size={14} /> Ajouter depuis YouTube
+            </button>
+          </div>
+        )}
+
+        {/* Formulaire YouTube */}
+        {mode === 'youtube' && status !== 'success' && (
+          <form onSubmit={submitYouTube}>
+            {errorMsg && (
+              <div className="alert alert-error" style={{ marginBottom: 20 }}>
+                <AlertCircle size={15} style={{ flexShrink: 0 }} />
+                <span>{errorMsg}</span>
+              </div>
+            )}
+
+            <div className="card" style={{ padding: 20, marginBottom: 16 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
+                <div style={{ width: 40, height: 40, borderRadius: 10, background: '#FEE2E2', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Youtube size={20} color="#DC2626" />
+                </div>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: 15, fontWeight: 700 }}>Ajouter une vidéo YouTube</h3>
+                  <p style={{ margin: 0, fontSize: 12, color: '#64748B' }}>Colle l'URL de la vidéo — elle sera intégrée dans le cours.</p>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                <div>
+                  <label className="form-label">URL YouTube</label>
+                  <div style={{ position: 'relative' }}>
+                    <LinkIcon size={14} color="#94A3B8" style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)' }} />
+                    <input
+                      className="form-input"
+                      style={{ paddingLeft: 34 }}
+                      placeholder="https://www.youtube.com/watch?v=..."
+                      value={form.youtubeUrl}
+                      onChange={(e) => setForm({ ...form, youtubeUrl: e.target.value })}
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="form-label">Titre de la vidéo</label>
+                  <input className="form-input" placeholder="Ex: Introduction aux algorithmes" value={form.titre} onChange={(e) => setForm({ ...form, titre: e.target.value })} />
+                </div>
+                <div>
+                  <label className="form-label">Description (optionnelle)</label>
+                  <textarea className="form-input" rows={2} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                  <div>
+                    <label className="form-label">Durée (secondes)</label>
+                    <input className="form-input" type="number" placeholder="600" value={form.duration} onChange={(e) => setForm({ ...form, duration: e.target.value })} />
+                  </div>
+                  <div>
+                    <label className="form-label">Ordre</label>
+                    <input className="form-input" type="number" placeholder="0" value={form.order} onChange={(e) => setForm({ ...form, order: e.target.value })} />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <button type="submit" disabled={status === 'uploading'} className="btn btn-primary" style={{ width: '100%', justifyContent: 'center' }}>
+              {status === 'uploading' ? 'Ajout en cours…' : 'Ajouter la vidéo YouTube'}
+            </button>
+          </form>
+        )}
+
         {/* ── Success state ─────────────────────────────────────────────── */}
         {status === 'success' ? (
           <div className="card" style={{ textAlign: 'center', padding: '48px 32px' }}>
@@ -127,7 +248,7 @@ export default function ProfessorUpload() {
               </button>
             </div>
           </div>
-        ) : (
+        ) : mode === 'file' ? (
           <form onSubmit={handleSubmit}>
             {/* Error */}
             {errorMsg && (
@@ -296,7 +417,7 @@ export default function ProfessorUpload() {
               {status === 'uploading' ? `Upload... ${progress}%` : 'Uploader la vidéo'}
             </button>
           </form>
-        )}
+        ) : null}
       </div>
     </Layout>
   );

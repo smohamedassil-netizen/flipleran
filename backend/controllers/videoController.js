@@ -84,6 +84,58 @@ export const uploadVideo = async (req, res) => {
   }
 };
 
+/**
+ * Extrait l'ID d'une URL YouTube (plusieurs formats supportés).
+ */
+function parseYouTubeId(url) {
+  if (!url) return null;
+  const patterns = [
+    /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/shorts\/)([a-zA-Z0-9_-]{11})/,
+    /^([a-zA-Z0-9_-]{11})$/,
+  ];
+  for (const re of patterns) {
+    const m = url.match(re);
+    if (m) return m[1];
+  }
+  return null;
+}
+
+/* ─── POST /api/videos/youtube — créer une vidéo depuis URL YouTube ──────── */
+export const createYouTubeVideo = async (req, res) => {
+  try {
+    const { titre, description, courseId, youtubeUrl, duration, order, chapters, deadline } = req.body;
+    if (!titre || !courseId || !youtubeUrl) {
+      return res.status(400).json({ message: 'titre, courseId et youtubeUrl requis.' });
+    }
+
+    const ytId = parseYouTubeId(youtubeUrl);
+    if (!ytId) {
+      return res.status(400).json({ message: "URL YouTube invalide. Formats acceptés : youtube.com/watch?v=..., youtu.be/..., ou l'ID 11 caractères directement." });
+    }
+
+    const thumb = `https://i.ytimg.com/vi/${ytId}/hqdefault.jpg`;
+
+    const video = await Video.create({
+      titre,
+      description: description ?? '',
+      provider:    'youtube',
+      url:         `https://www.youtube.com/embed/${ytId}`,
+      youtubeId:   ytId,
+      thumbnailUrl: thumb,
+      duration:    Number(duration ?? 0),
+      order:       Number(order ?? 0),
+      chapters:    Array.isArray(chapters) ? chapters.filter(c => c.title && c.timestamp >= 0).sort((a, b) => a.timestamp - b.timestamp) : [],
+      deadline:    deadline ? new Date(deadline) : null,
+      courseId,
+      createdBy:   req.user.id,
+    });
+
+    res.status(201).json(video);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
 /* ─── GET /api/videos/course/:courseId ───────────────────────────────────── */
 export const getVideosByCourse = async (req, res) => {
   try {

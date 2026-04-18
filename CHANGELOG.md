@@ -4,6 +4,58 @@ Historique des modifications par date de session.
 
 ---
 
+## 18 Avril 2026 (session 3 — Authentification, 3 filières, YouTube, thèmes)
+
+### Authentification avec validation admin
+- Nouveau champ `User.status` (pending / active / rejected) + `rejectionReason`, `approvedBy`, `approvedAt`
+- Inscription : ne connecte PAS automatiquement, crée un compte pending + notifie les admins
+- Login : bloque pending et rejected avec messages dédiés (encarts colorés spécifiques)
+- Nouveaux endpoints admin : GET /auth/pending, PUT /auth/users/:id/approve, PUT /auth/users/:id/reject
+- Nouvelle section admin "Inscriptions" dans AdminDashboard avec avatar généré par filière
+- Migration au boot : comptes existants (sans status) marqués 'active' automatiquement
+- Email notification à l'étudiant lors d'approbation/refus
+- Écran de confirmation post-inscription avec étapes visuelles
+
+### Landing page refaite
+- Hero avec démo animée du chatbot IA (chat pop-in)
+- 3 cartes filières cliquables (ISIL, Management, Finance) avec modules types
+- Section "Comment ça marche" en 4 étapes
+- 6 features avec hover coloré
+- 3 témoignages étudiants avec étoiles
+- CTA final avec gradient et features trust (100% gratuit, validé par EM Alger, activation 24h)
+
+### Thèmes de couleurs par filière
+- `FILIERE_THEMES` : ISIL=bleu, Management=orange, Finance=vert
+- Hook `useTheme` enrichi avec `filiereTheme`
+- CSS variables `--filiere-primary`, `--filiere-accent`, `--filiere-gradient` appliquées sur document
+- Event `fliplearn:user-changed` émis au login/logout pour sync instantanée
+- Persona IA enrichie : directives domaine par filière (références, exemples, vocabulaire)
+
+### Support vidéos YouTube
+- `Video.provider` ('cloudinary' | 'youtube') + `youtubeId`
+- Parser URL YouTube robuste (youtube.com/watch, youtu.be, embed, shorts, ou ID direct)
+- Nouveau POST /api/videos/youtube (prof/admin)
+- Composant `YouTubeEmbedPlayer` avec iframe + tracking temps d'écoute estimé + bouton "J'ai terminé"
+- Onglet YouTube dans ProfessorUpload : collage d'URL + titre + durée + ordre
+- Thumbnail auto depuis i.ytimg.com
+
+### Contenu démo pré-rempli
+- Nouveau service `contentSeed.js` : 27 vidéos YouTube + 9 cours (3 filières × 3 niveaux)
+- Chaque cours a un `aiPersona` adapté (Algo-Bot, Py-Bot, Manage-Bot, Compta-Bot, etc.)
+- Seed idempotent (ne duplique pas) + désactivable via SEED_CONTENT=false
+- Seed utilise le premier prof trouvé comme propriétaire (override possible)
+
+### UI projets — mono vs multi
+- Onglets filtres enrichis : Tous / Prosits / Projets / 📘 Mono-module / 🌐 Collaboratifs
+- Encart explicatif "Qu'est-ce qu'un Prosit ?" collapsible avec les 3 phases (Aller / Recherche / Retour)
+- Distinction claire Prosit/Projet/Mono/Multi dans l'UI
+
+### Documentation
+- doc_updater.py entrée #010 ajoutée
+- CHANGELOG.md mis à jour
+
+---
+
 ## 18 Avril 2026 (session 2 — UX & engagement)
 
 ### Toast notifications pop animées

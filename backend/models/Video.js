@@ -23,7 +23,9 @@ const videoSchema = new mongoose.Schema(
   {
     titre:        { type: String, required: true, trim: true },
     description:  { type: String, default: '' },
-    url:          { type: String, required: true },       // secure_url Cloudinary
+    provider:     { type: String, enum: ['cloudinary', 'youtube'], default: 'cloudinary' },
+    url:          { type: String, required: true },       // Cloudinary secure_url OU URL YouTube complète
+    youtubeId:    { type: String, default: '' },          // ID YouTube (ex: dQw4w9WgXcQ) pour provider=youtube
     publicId:     { type: String, default: '' },          // pour suppression Cloudinary
     thumbnailUrl: { type: String, default: '' },
     duration:     { type: Number, default: 0 },           // secondes

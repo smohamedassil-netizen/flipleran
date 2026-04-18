@@ -26,9 +26,124 @@ const fmt = (s) => {
  * @param {string}  qcmPath        route vers le QCM de cette vidéo
  * @param {string}  courseId       utilisé pour le bouton "Retour au cours"
  */
+/* ─── Player YouTube (iframe) avec tracking manuel ─────────────────────── */
+function YouTubeEmbedPlayer({
+  videoId, youtubeId, initialPercent, nextVideoPath, qcmPath, courseId, titre, onPointsEarned,
+}) {
+  const navigate = useNavigate();
+  const { watchedPercent, completed, onTimeUpdate, sendProgress } =
+    useVideoProgress(videoId, initialPercent, { onPointsEarned });
+
+  // Progression basée sur le temps passé à regarder (estimée)
+  // L'API iframe YouTube exigerait plus de plomberie, on reste pragmatique
+  const [elapsedSec, setElapsedSec] = useState(0);
+  const [isActive, setIsActive] = useState(true);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (document.hasFocus() && isActive) {
+        setElapsedSec((s) => s + 1);
+      }
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [isActive]);
+
+  // On estime la progression : vidéo de référence 10 min = 600s → 100%
+  // Chaque minute de visionnage = ~10% de progression
+  useEffect(() => {
+    if (elapsedSec === 0 || completed) return;
+    // Trigger progression update toutes les 10s
+    if (elapsedSec % 10 === 0) {
+      const estimated = Math.min(100, Math.floor(elapsedSec / 6));
+      if (estimated > watchedPercent) {
+        onTimeUpdate({ currentTime: elapsedSec, duration: 600 });
+      }
+    }
+  }, [elapsedSec, completed, watchedPercent, onTimeUpdate]);
+
+  const markAsWatched = () => {
+    sendProgress(100);
+  };
+
+  const thresholdReached = watchedPercent >= 80;
+
+  return (
+    <div>
+      <div style={{
+        position: 'relative', width: '100%',
+        aspectRatio: '16 / 9',
+        background: '#000', borderRadius: 'var(--radius-lg)', overflow: 'hidden',
+        boxShadow: '0 4px 24px rgba(0,0,0,.1)',
+      }}>
+        <iframe
+          src={`https://www.youtube.com/embed/${youtubeId}?rel=0&modestbranding=1`}
+          title={titre}
+          frameBorder="0"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allowFullScreen
+          style={{ width: '100%', height: '100%', display: 'block' }}
+          onFocus={() => setIsActive(true)}
+          onBlur={() => setIsActive(false)}
+        />
+      </div>
+
+      {/* Barre progression + actions */}
+      <div style={{ marginTop: 12 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+          <div style={{ flex: 1, height: 6, background: '#E5E7EB', borderRadius: 999, overflow: 'hidden' }}>
+            <div style={{
+              width: `${watchedPercent}%`, height: '100%',
+              background: completed ? 'linear-gradient(90deg, #059669, #10B981)' : 'linear-gradient(90deg, #1B4F72, #2874A6)',
+              transition: 'width 0.5s',
+            }} />
+          </div>
+          <span style={{ fontSize: 12, fontWeight: 700, color: completed ? '#059669' : '#1B4F72', minWidth: 40 }}>
+            {Math.round(watchedPercent)}%
+          </span>
+          {completed && <CheckCircle size={16} color="#059669" />}
+        </div>
+
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', fontSize: 12, color: '#64748B' }}>
+          <span>⏱ Temps passé : {fmt(elapsedSec)}</span>
+          {!completed && (
+            <button
+              onClick={markAsWatched}
+              style={{
+                padding: '7px 14px', background: thresholdReached ? '#059669' : '#1B4F72',
+                color: 'white', border: 'none', borderRadius: 8,
+                fontSize: 12, fontWeight: 700, cursor: 'pointer',
+                display: 'inline-flex', alignItems: 'center', gap: 4,
+                marginLeft: 'auto',
+              }}
+            >
+              <CheckCircle size={12} /> J'ai terminé la vidéo
+            </button>
+          )}
+          {completed && (
+            <div style={{ display: 'flex', gap: 8, marginLeft: 'auto' }}>
+              {qcmPath && (
+                <button onClick={() => navigate(qcmPath)} style={{ padding: '7px 14px', background: 'linear-gradient(135deg, #D97706, #F59E0B)', color: 'white', border: 'none', borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                  📝 Passer le QCM
+                </button>
+              )}
+              {nextVideoPath && (
+                <button onClick={() => navigate(nextVideoPath)} style={{ padding: '7px 14px', background: '#1B4F72', color: 'white', border: 'none', borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                  Vidéo suivante <ChevronRight size={12} />
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function VideoPlayer({
   videoId,
   src,
+  provider,
+  youtubeId,
   titre,
   initialPercent = 0,
   nextVideoPath,
@@ -36,6 +151,22 @@ export default function VideoPlayer({
   courseId,
   onPointsEarned,
 }) {
+  // Route vers player YouTube si provider = youtube
+  if (provider === 'youtube' && youtubeId) {
+    return (
+      <YouTubeEmbedPlayer
+        videoId={videoId}
+        youtubeId={youtubeId}
+        titre={titre}
+        initialPercent={initialPercent}
+        nextVideoPath={nextVideoPath}
+        qcmPath={qcmPath}
+        courseId={courseId}
+        onPointsEarned={onPointsEarned}
+      />
+    );
+  }
+
   const videoRef  = useRef(null);
   const navigate  = useNavigate();
 

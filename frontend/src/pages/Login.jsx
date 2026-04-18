@@ -2,12 +2,13 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth, ROLE_HOME } from '../context/AuthContext.jsx';
 import Logo from '../components/Logo.jsx';
-import { Mail, Lock, Eye, EyeOff, AlertCircle } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, AlertCircle, Clock, XCircle } from 'lucide-react';
 
 export default function Login() {
   const [form, setForm]         = useState({ email: '', password: '' });
   const [showPwd, setShowPwd]   = useState(false);
   const [error, setError]       = useState('');
+  const [errorKind, setErrorKind] = useState('generic'); // generic | pending | rejected
   const [loading, setLoading]   = useState(false);
 
   const { login, logout, user: currentUser } = useAuth();
@@ -27,13 +28,18 @@ export default function Login() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    setErrorKind('generic');
     setLoading(true);
     try {
       const user = await login(form.email, form.password);
       const from = location.state?.from?.pathname;
       navigate(from ?? ROLE_HOME[user.role] ?? '/', { replace: true });
     } catch (err) {
-      setError(err.response?.data?.message ?? 'Une erreur est survenue.');
+      const data = err.response?.data;
+      setError(data?.message ?? 'Une erreur est survenue.');
+      if (data?.status === 'pending') setErrorKind('pending');
+      else if (data?.status === 'rejected') setErrorKind('rejected');
+      else setErrorKind('generic');
     } finally {
       setLoading(false);
     }
@@ -91,8 +97,26 @@ export default function Login() {
           Entrez vos identifiants pour accéder à votre espace.
         </p>
 
-        {/* Error */}
-        {error && (
+        {/* Error — variations visuelles selon statut */}
+        {error && errorKind === 'pending' && (
+          <div style={{ padding: '14px 16px', background: '#FEF3C7', border: '1px solid #FDE68A', borderRadius: 10, marginBottom: 20, display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+            <Clock size={18} color="#D97706" style={{ flexShrink: 0, marginTop: 2 }} />
+            <div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: '#92400E', marginBottom: 3 }}>Compte en attente de validation</div>
+              <div style={{ fontSize: 13, color: '#78350F', lineHeight: 1.5 }}>{error}</div>
+            </div>
+          </div>
+        )}
+        {error && errorKind === 'rejected' && (
+          <div style={{ padding: '14px 16px', background: '#FEE2E2', border: '1px solid #FCA5A5', borderRadius: 10, marginBottom: 20, display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+            <XCircle size={18} color="#DC2626" style={{ flexShrink: 0, marginTop: 2 }} />
+            <div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: '#991B1B', marginBottom: 3 }}>Inscription refusée</div>
+              <div style={{ fontSize: 13, color: '#7F1D1D', lineHeight: 1.5 }}>{error}</div>
+            </div>
+          </div>
+        )}
+        {error && errorKind === 'generic' && (
           <div className="alert alert-error" style={{ marginBottom: 20 }}>
             <AlertCircle size={15} style={{ flexShrink: 0 }} />
             <span>{error}</span>

@@ -1,5 +1,6 @@
 import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
+import { pushNotification } from '../services/notificationService.js';
 
 /* ─── helpers ─────────────────────────────────────────────────────────────── */
 const generateToken = (payload) =>
@@ -15,6 +16,7 @@ const sanitize = (user) => ({
   promotion: user.promotion,
   avatar:    user.avatar,
   points:    user.points,
+  status:    user.status,
 });
 
 /* ─── POST /api/auth/register ─────────────────────────────────────────────── */
@@ -39,12 +41,35 @@ export const register = async (req, res) => {
       role: assignedRole,
       filiere:   filiere   ?? '',
       promotion: promotion ?? '',
+      status: 'pending',
     });
 
-    const data = sanitize(user);
-    const token = generateToken({ id: user._id, role: user.role });
+    // Notifier les admins qu'un nouveau compte attend validation
+    try {
+      const io = req.app.get('io');
+      const admins = await User.find({ role: 'admin', status: 'active', isActive: { $ne: false } }).select('_id');
+      for (const a of admins) {
+        await pushNotification(io, {
+          userId: a._id,
+          type: 'warning',
+          priority: 'high',
+          title: '👤 Nouvelle inscription',
+          message: `${prenom} ${nom} (${assignedRole}) demande à rejoindre FlipLearn.`,
+          link: '/admin?section=pending',
+          relatedType: 'course',
+          relatedId: user._id,
+        });
+      }
+    } catch (err) {
+      console.error('[register] notif admins:', err.message);
+    }
 
-    res.status(201).json({ ...data, token });
+    // PAS de token ici — l'utilisateur doit attendre la validation
+    res.status(201).json({
+      message: 'Compte créé avec succès. Un administrateur doit valider ton inscription avant que tu puisses te connecter.',
+      status: 'pending',
+      email: user.email,
+    });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -62,6 +87,25 @@ export const login = async (req, res) => {
     const user = await User.findOne({ email });
     if (!user || !(await user.matchPassword(password))) {
       return res.status(401).json({ message: 'Email ou mot de passe incorrect.' });
+    }
+
+    // Bloquer si le compte n'est pas encore validé
+    if (user.status === 'pending') {
+      return res.status(403).json({
+        status: 'pending',
+        message: "Ton compte est en attente de validation par un administrateur. Tu recevras un email dès qu'il sera activé.",
+      });
+    }
+    if (user.status === 'rejected') {
+      return res.status(403).json({
+        status: 'rejected',
+        message: user.rejectionReason
+          ? `Ton inscription a été refusée : ${user.rejectionReason}`
+          : "Ton inscription a été refusée par un administrateur.",
+      });
+    }
+    if (user.isActive === false) {
+      return res.status(403).json({ message: 'Compte désactivé. Contacte ton administrateur.' });
     }
 
     const data = sanitize(user);
@@ -148,6 +192,112 @@ export const changePassword = async (req, res) => {
     user.password = newPassword;
     await user.save();
     res.json({ message: 'Mot de passe mis a jour.' });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+/* ─── Endpoints admin : gestion des inscriptions ─────────────────────────── */
+
+// GET /api/auth/pending — liste des comptes en attente (admin)
+export const listPendingUsers = async (req, res) => {
+  try {
+    const users = await User.find({ status: 'pending' })
+      .select('-password')
+      .sort({ createdAt: -1 });
+    res.json(users);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+// PUT /api/auth/users/:id/approve — valider une inscription
+export const approveUser = async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id);
+    if (!user) return res.status(404).json({ message: 'Utilisateur introuvable.' });
+    if (user.status === 'active') {
+      return res.status(400).json({ message: 'Ce compte est déjà actif.' });
+    }
+    user.status = 'active';
+    user.rejectionReason = '';
+    user.approvedBy = req.user.id;
+    user.approvedAt = new Date();
+    user.isActive = true;
+    await user.save();
+
+    // Notif en direct (si l'user est connecté ailleurs, sinon vue à sa prochaine connexion)
+    const io = req.app.get('io');
+    await pushNotification(io, {
+      userId: user._id,
+      type: 'success',
+      priority: 'high',
+      title: '🎉 Compte validé',
+      message: `Bienvenue ${user.prenom} ! Ton compte FlipLearn est activé, tu peux te connecter.`,
+      link: '/login',
+    });
+
+    // Envoi email (si configuré)
+    try {
+      const { sendNotificationEmail } = await import('../services/emailService.js');
+      if (user.email) {
+        sendNotificationEmail(
+          user.email,
+          'Ton compte FlipLearn est activé',
+          `Bonjour ${user.prenom},<br><br>Bonne nouvelle ! Ton compte FlipLearn a été validé par un administrateur. Tu peux dès maintenant te connecter pour accéder à tes cours.<br><br><a href="${process.env.CLIENT_URL?.split(',')[0] || ''}/login">Me connecter →</a>`
+        );
+      }
+    } catch (e) { console.error('[approveUser email]', e.message); }
+
+    res.json(sanitize(user));
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+// PUT /api/auth/users/:id/reject — refuser une inscription
+export const rejectUser = async (req, res) => {
+  try {
+    const { reason } = req.body;
+    const user = await User.findById(req.params.id);
+    if (!user) return res.status(404).json({ message: 'Utilisateur introuvable.' });
+
+    user.status = 'rejected';
+    user.rejectionReason = reason || '';
+    user.approvedBy = req.user.id;
+    user.approvedAt = new Date();
+    user.isActive = false;
+    await user.save();
+
+    try {
+      const { sendNotificationEmail } = await import('../services/emailService.js');
+      if (user.email) {
+        sendNotificationEmail(
+          user.email,
+          'Inscription FlipLearn non validée',
+          `Bonjour ${user.prenom},<br><br>Ton inscription à FlipLearn n'a pas pu être validée.${reason ? `<br><br>Raison : <em>${reason}</em>` : ''}<br><br>Pour toute question, contacte l'administration.`
+        );
+      }
+    } catch (e) { console.error('[rejectUser email]', e.message); }
+
+    res.json(sanitize(user));
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+// GET /api/auth/status?email=... — permet au front de voir le statut d'un compte (sans login)
+export const checkStatus = async (req, res) => {
+  try {
+    const { email } = req.query;
+    if (!email) return res.status(400).json({ message: 'Email requis.' });
+    const user = await User.findOne({ email: email.toLowerCase() }).select('status rejectionReason');
+    if (!user) return res.json({ exists: false });
+    res.json({
+      exists: true,
+      status: user.status,
+      rejectionReason: user.status === 'rejected' ? user.rejectionReason : '',
+    });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }

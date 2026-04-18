@@ -1,6 +1,7 @@
 import express from 'express';
 import {
   uploadVideo,
+  createYouTubeVideo,
   getVideosByCourse,
   getVideoById,
   saveProgress,
@@ -23,6 +24,9 @@ router.post(
   uploadVideoMw.single('video'),
   uploadVideo
 );
+
+// Ajout vidéo YouTube (professeur / admin)
+router.post('/youtube', requireRole('professeur', 'admin'), createYouTubeVideo);
 
 // Liste des vidéos d'un cours (avec progression de l'étudiant courant)
 router.get('/course/:courseId', getVideosByCourse);
