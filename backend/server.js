@@ -39,6 +39,7 @@ import { seedRewards }  from './services/rewardsSeed.js';
 import { seedDemoContent } from './services/contentSeed.js';
 import { seedDemoData } from './services/demoSeed.js';
 import { seedUsers } from './services/usersSeed.js';
+import { migrateBrokenVideos } from './services/videoMigration.js';
 
 // Migration : les comptes créés avant le système d'approval n'ont pas de status,
 // on les considère actifs par défaut (sinon ils ne pourraient plus se connecter).
@@ -77,12 +78,14 @@ app.set('io', io);
 
 connectDB().then(async () => {
   await migrateUserStatus();
+  // Répare toutes les vidéos cassées (YouTube / URL invalide) en mp4 samples stables.
+  // Ne touche pas aux uploads Cloudinary légitimes ni aux samples déjà en place.
+  await migrateBrokenVideos().catch(err => console.error('[videoMigration]', err.message));
+
   seedBadges().catch(console.error);
   seedRewards().catch(console.error);
   if (process.env.SEED_CONTENT !== 'false') {
     try {
-      // Ordre important : users d'abord (pour avoir les profs par filière),
-      // puis contenu (qui assigne le bon prof à chaque cours).
       await seedUsers();
       await seedDemoContent();
       await seedDemoData();
