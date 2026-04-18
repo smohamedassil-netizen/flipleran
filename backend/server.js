@@ -31,9 +31,12 @@ import adminRoutes      from './routes/adminRoutes.js';
 import supportRoutes    from './routes/supportRoutes.js';
 import projectRoutes    from './routes/projectRoutes.js';
 import videoAnalysisRoutes from './routes/videoAnalysisRoutes.js';
+import notificationRoutes  from './routes/notificationRoutes.js';
+import trackingRoutes      from './routes/trackingRoutes.js';
 import { seedBadges }   from './services/points.js';
 import { askBot }       from './services/chatbot.js';
 import { BOT_SENDER }   from './controllers/chatbotController.js';
+import { startNotificationScheduler } from './services/notificationScheduler.js';
 
 const app = express();
 const httpServer = createServer(app);
@@ -51,7 +54,10 @@ const io = new Server(httpServer, {
 
 app.set('io', io);
 
-connectDB().then(() => seedBadges().catch(console.error));
+connectDB().then(() => {
+  seedBadges().catch(console.error);
+  startNotificationScheduler(io);
+});
 
 // Middleware
 app.use(cors({ origin: allowedOrigins }));
@@ -76,6 +82,8 @@ app.use('/api/admin',      adminRoutes);
 app.use('/api/support',    supportRoutes);
 app.use('/api/projects',   projectRoutes);
 app.use('/api/videos',     videoAnalysisRoutes);
+app.use('/api/notifications', notificationRoutes);
+app.use('/api/tracking',   trackingRoutes);
 
 // ── En production : servir le frontend buildé ──────────────────────────────
 if (process.env.NODE_ENV === 'production') {

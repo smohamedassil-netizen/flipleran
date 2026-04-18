@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout.jsx';
 import Breadcrumb from '../components/Breadcrumb.jsx';
+import ProjectActivityFeed from '../components/ProjectActivityFeed.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
 import api from '../utils/api.js';
 import {
@@ -560,6 +561,12 @@ export default function ProjectDetail() {
               </div>
             )}
           </div>
+
+          {/* ── Activity feed temps réel ─────────────────────────────────── */}
+          <ProjectActivityFeed
+            projectId={project._id}
+            initialActivity={project.activity || []}
+          />
 
           {/* ── Auto-évaluation (students only) ──────────────────────────── */}
           {!isProfOrAdmin && canEvaluate && (

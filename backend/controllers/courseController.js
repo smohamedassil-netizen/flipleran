@@ -69,3 +69,33 @@ export const deleteCourse = async (req, res) => {
     res.json({ message: 'Cours supprime' });
   } catch (err) { res.status(500).json({ message: err.message }); }
 };
+
+/**
+ * PUT /api/courses/:id/ai-persona
+ * Permet au prof (ou admin) de configurer l'assistant IA du module.
+ */
+export const updateAiPersona = async (req, res) => {
+  try {
+    const { nom, specialite, avatar, ton, description, couleur } = req.body;
+    const filter = req.user.role === 'admin'
+      ? { _id: req.params.id }
+      : { _id: req.params.id, professorId: req.user.id };
+
+    const course = await Course.findOneAndUpdate(
+      filter,
+      { $set: {
+        'aiPersona.nom': nom,
+        'aiPersona.specialite': specialite,
+        'aiPersona.avatar': avatar,
+        'aiPersona.ton': ton,
+        'aiPersona.description': description,
+        'aiPersona.couleur': couleur,
+      } },
+      { new: true }
+    );
+    if (!course) return res.status(404).json({ message: 'Cours introuvable ou accès refusé' });
+    res.json(course);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};

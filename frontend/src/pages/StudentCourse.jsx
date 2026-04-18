@@ -411,6 +411,18 @@ export default function StudentCourse() {
             <MessageSquare size={15} />
             Chat du cours
           </button>
+          {/* Assistant IA du module */}
+          <button
+            className="btn btn-ghost"
+            style={{
+              width: '100%', justifyContent: 'center', marginTop: '6px',
+              background: 'linear-gradient(135deg, #1B4F72, #2874A6)',
+              color: 'white', border: 'none',
+            }}
+            onClick={() => navigate(`/courses/${courseId}/assistant`)}
+          >
+            🤖 Assistant IA du module
+          </button>
         </div>
       </div>
 

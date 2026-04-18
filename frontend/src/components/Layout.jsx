@@ -58,6 +58,8 @@ const NAV = {
       section: 'Mon espace',
       items: [
         { label: 'Mon profil',      icon: User,            to: '/profile' },
+        { label: 'Notifications',   icon: Bell,            to: '/notifications' },
+        { label: 'Mes tickets',     icon: ClipboardList,   to: '/my-tickets' },
         { label: 'Aide & Support',  icon: HelpCircle,      to: '/support' },
       ],
     },
@@ -77,7 +79,7 @@ const NAV = {
       section: 'Gestion',
       items: [
         { label: 'Gérer les badges', icon: Award,          to: '/professor/badges' },
-        { label: 'Suivi étudiants',  icon: BarChart3,      to: '/professor/dashboard' },
+        { label: 'Suivi étudiants',  icon: BarChart3,      to: '/professor/tracking' },
       ],
     },
     {
@@ -90,6 +92,7 @@ const NAV = {
       section: 'Mon espace',
       items: [
         { label: 'Mon profil',      icon: User,            to: '/profile' },
+        { label: 'Notifications',   icon: Bell,            to: '/notifications' },
         { label: 'Aide & Support',  icon: HelpCircle,      to: '/support' },
       ],
     },

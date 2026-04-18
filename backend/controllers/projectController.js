@@ -2,6 +2,50 @@ import Project from '../models/Project.js';
 import User from '../models/User.js';
 import { uploadBuffer } from '../config/cloudinary.js';
 import Groq from 'groq-sdk';
+import { pushNotification } from '../services/notificationService.js';
+
+/**
+ * Ajoute une entrée d'activité + notifie les membres via Socket.io.
+ */
+async function logActivity(req, project, type, description, meta = {}) {
+  project.activity.push({ type, authorId: req.user.id, description, meta });
+  const io = req.app.get('io');
+  const event = {
+    projectId: project._id,
+    type,
+    description,
+    meta,
+    at: new Date().toISOString(),
+    by: req.user.id,
+  };
+  if (io) {
+    io.to(`project_${project._id}`).emit('project:activity', event);
+    // Notifier les membres (hors auteur)
+    const memberIds = new Set();
+    project.groupes.forEach(g => g.membres.forEach(m => memberIds.add(m.userId.toString())));
+    memberIds.delete(req.user.id);
+    for (const uid of memberIds) {
+      io.to(`user_${uid}`).emit('project:activity', event);
+    }
+  }
+}
+
+async function notifyMembers(req, project, notif) {
+  const io = req.app.get('io');
+  const memberIds = new Set();
+  project.groupes.forEach(g => g.membres.forEach(m => memberIds.add(m.userId.toString())));
+  memberIds.delete(req.user.id);
+  for (const uid of memberIds) {
+    await pushNotification(io, {
+      userId: uid,
+      type: 'project_status',
+      ...notif,
+      link: notif.link || `/projects/${project._id}`,
+      relatedType: 'project',
+      relatedId: project._id,
+    });
+  }
+}
 
 let groq;
 function getGroq() {
@@ -16,7 +60,7 @@ export const createProject = async (req, res) => {
       return res.status(403).json({ message: 'Seul un professeur peut créer un projet.' });
     }
 
-    const { titre, description, type, courseId, enonce, motsCles, dateDebut, dateFin, dateSoutenance } = req.body;
+    const { titre, description, type, courseId, modules = [], enonce, motsCles, dateDebut, dateFin, dateSoutenance } = req.body;
     if (!titre || !type) {
       return res.status(400).json({ message: 'titre et type sont requis.' });
     }
@@ -26,6 +70,7 @@ export const createProject = async (req, res) => {
       description: description ?? '',
       type,
       courseId: courseId || undefined,
+      modules: Array.isArray(modules) ? modules : [],
       createdBy: req.user.id,
     };
 
@@ -52,6 +97,7 @@ export const createProject = async (req, res) => {
 
     const project = await Project.create(data);
     await project.populate('createdBy', 'nom prenom');
+    await project.populate('modules', 'titre filiere');
     res.status(201).json(project);
   } catch (err) {
     console.error('createProject error:', err.message);
@@ -79,9 +125,18 @@ export const getProjects = async (req, res) => {
 
     const projects = await Project.find(filter)
       .populate('createdBy', 'nom prenom')
+      .populate('modules', 'titre filiere')
       .sort({ createdAt: -1 });
 
-    res.json(projects);
+    // Annoter multi-modules
+    const enriched = projects.map(p => {
+      const obj = p.toObject();
+      obj.isMultiModule = (obj.modules?.length || 0) > 1 ||
+        (obj.modules?.length === 1 && obj.courseId && obj.modules[0]._id.toString() !== obj.courseId.toString());
+      return obj;
+    });
+
+    res.json(enriched);
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -92,13 +147,18 @@ export const getProject = async (req, res) => {
   try {
     const project = await Project.findById(req.params.id)
       .populate('createdBy', 'nom prenom')
+      .populate('modules', 'titre filiere')
       .populate('groupes.membres.userId', 'nom prenom email filiere')
       .populate('livrables.uploadedBy', 'nom prenom')
       .populate('evaluations.evaluateur', 'nom prenom')
-      .populate('evaluations.cible', 'nom prenom');
+      .populate('evaluations.cible', 'nom prenom')
+      .populate('activity.authorId', 'nom prenom role');
 
     if (!project) return res.status(404).json({ message: 'Projet introuvable.' });
-    res.json(project);
+    const obj = project.toObject();
+    obj.isMultiModule = (obj.modules?.length || 0) > 1 ||
+      (obj.modules?.length === 1 && obj.courseId && obj.modules[0]._id.toString() !== obj.courseId.toString());
+    res.json(obj);
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -231,9 +291,21 @@ export const updatePhase = async (req, res) => {
     if (!phase) return res.status(404).json({ message: 'Phase introuvable.' });
 
     const { statut, dateDebut, dateFin } = req.body;
+    const oldStatut = phase.statut;
     if (statut) phase.statut = statut;
     if (dateDebut) phase.dateDebut = dateDebut;
     if (dateFin) phase.dateFin = dateFin;
+
+    if (statut && statut !== oldStatut) {
+      await logActivity(req, project, 'phase_status',
+        `Phase "${phase.titre}" : ${oldStatut} → ${statut}`,
+        { phaseId: phase._id, oldStatut, newStatut: statut });
+      await notifyMembers(req, project, {
+        priority: statut === 'termine' ? 'high' : 'normal',
+        title: statut === 'termine' ? '✅ Phase terminée' : '📁 Phase mise à jour',
+        message: `La phase "${phase.titre}" du projet "${project.titre}" est passée en "${statut}".`,
+      });
+    }
 
     await project.save();
     res.json(phase);
@@ -282,6 +354,15 @@ export const addLivrable = async (req, res) => {
       url: result.secure_url,
       publicId: result.public_id,
       uploadedBy: req.user.id,
+    });
+
+    const groupeNom = project.groupes[groupeIndex]?.nom || `Groupe ${groupeIndex + 1}`;
+    await logActivity(req, project, 'livrable_added',
+      `Nouveau livrable "${titre}" déposé par ${groupeNom}`,
+      { groupeIndex, titre, type });
+    await notifyMembers(req, project, {
+      title: '📎 Livrable déposé',
+      message: `Un nouveau livrable "${titre}" a été déposé sur le projet "${project.titre}".`,
     });
 
     await project.save();

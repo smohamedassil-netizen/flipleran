@@ -52,6 +52,7 @@ const qcmSchema = new mongoose.Schema(
     pointsPerQuestion:{ type: Number, default: 10 },
     timerSeconds:     { type: Number, default: 30 },
     resultats:        [resultatSchema],
+    deadline:         { type: Date, default: null },
   },
   { timestamps: true }
 );

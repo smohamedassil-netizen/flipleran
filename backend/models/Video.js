@@ -32,6 +32,7 @@ const videoSchema = new mongoose.Schema(
     courseId:     { type: mongoose.Schema.Types.ObjectId, ref: 'Course', required: true },
     createdBy:    { type: mongoose.Schema.Types.ObjectId, ref: 'User',   required: true },
     watchedBy:    [watchedEntrySchema],
+    deadline:     { type: Date, default: null },
   },
   { timestamps: true }
 );

@@ -35,6 +35,10 @@ import LandingPage          from './pages/LandingPage.jsx';
 import ProjectList          from './pages/ProjectList.jsx';
 import ProjectDetail        from './pages/ProjectDetail.jsx';
 import ProjectCreate        from './pages/ProjectCreate.jsx';
+import NotificationsPage    from './pages/NotificationsPage.jsx';
+import ProfessorTracking    from './pages/ProfessorTracking.jsx';
+import MyTickets            from './pages/MyTickets.jsx';
+import ModuleAssistant      from './pages/ModuleAssistant.jsx';
 
 /* ── Pages d'erreur ────────────────────────────────────────────────────────── */
 function ErrorPage({ code, title, description }) {
@@ -111,6 +115,9 @@ export default function App() {
             <Route path="/support"                    element={<Support />} />
             <Route path="/projects"                  element={<ProjectList />} />
             <Route path="/projects/:projectId"       element={<ProjectDetail />} />
+            <Route path="/notifications"             element={<NotificationsPage />} />
+            <Route path="/my-tickets"                element={<MyTickets />} />
+            <Route path="/courses/:courseId/assistant" element={<ModuleAssistant />} />
           </Route>
 
           {/* Professeur + Admin only */}
@@ -122,6 +129,8 @@ export default function App() {
             <Route path="/professor/qcm"                       element={<ProfessorQCMHub />} />
             <Route path="/professor/badges"                    element={<BadgeManagement />} />
             <Route path="/professor/projects/create"            element={<ProjectCreate />} />
+            <Route path="/professor/tracking"                   element={<ProfessorTracking />} />
+            <Route path="/professor/tracking/:courseId"         element={<ProfessorTracking />} />
           </Route>
 
           {/* Admin only */}

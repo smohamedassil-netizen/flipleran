@@ -53,6 +53,19 @@ const evaluationSchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now }
 }, { _id: true });
 
+/**
+ * Entrée de timeline : traçabilité des actions sur le projet.
+ * Types : phase_status, livrable_added, livrable_removed, evaluation_added,
+ *         status_change, groupes_updated, membre_joined, note
+ */
+const activitySchema = new mongoose.Schema({
+  type:        { type: String, required: true },
+  authorId:    { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  description: { type: String, required: true },
+  meta:        { type: mongoose.Schema.Types.Mixed, default: {} },
+  at:          { type: Date, default: Date.now },
+}, { _id: true });
+
 const projectSchema = new mongoose.Schema({
   titre: { type: String, required: true },
   description: String,
@@ -78,11 +91,15 @@ const projectSchema = new mongoose.Schema({
   dateFin: Date,
   dateSoutenance: Date,
 
+  // Modules associés (multi-modules pour projets collaboratifs transverses)
+  modules: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Course' }],
+
   // Structure
   groupes: [groupeSchema],
   phases: [phaseSchema],
   livrables: [livrableSchema],
-  evaluations: [evaluationSchema]
+  evaluations: [evaluationSchema],
+  activity: [activitySchema],
 }, { timestamps: true });
 
 projectSchema.index({ courseId: 1, createdBy: 1 });

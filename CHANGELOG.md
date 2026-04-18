@@ -4,6 +4,50 @@ Historique des modifications par date de session.
 
 ---
 
+## 18 Avril 2026
+
+### Notifications persistantes & rappels automatiques (node-cron)
+- Nouveau modèle `Notification.js` avec dédoublonnage (dedupKey) et index composé
+- Champ `deadline` ajouté à `QCM`, `Video` ; `Project.phases.dateFin` déjà existant
+- Service `notificationService.js` : push unifié (DB + Socket.io)
+- Scheduler `notificationScheduler.js` (node-cron) tournant à 08:00 quotidien
+- Rappels automatiques à J-7/J-3/J-1/J-0 pour QCM non complétés, vidéos non vues, phases projets
+- Nouvelles routes `/api/notifications` (list, unread-count, read, read-all, delete, clear)
+- Refonte complète de `NotificationContext.jsx` : DB-backed, plus de localStorage
+- Nouvelle page `/notifications` (NotificationsPage.jsx) avec filtres et actions
+
+### Suivi étudiants pour le professeur
+- Nouvelles routes `/api/tracking` (my-courses, course/:id, course/:id/remind)
+- Nouvelle page `/professor/tracking` : stats globales + tableau détaillé par étudiant
+- Rappels manuels ciblés (par vidéo, par QCM, ou général) envoyés comme notifications
+
+### IA spécialisée par module (RAG léger)
+- Ajout de `aiPersona` sur `Course` (nom, specialite, avatar, ton, description, couleur)
+- Nouveau service `moduleAI.js` : contexte RAG à partir des summaries + keyConcepts des VideoAnalysis
+- Nouvelles routes `/api/chatbot/module/:courseId` (GET persona + historique, POST message)
+- Route `/api/courses/:id/ai-persona` pour que le prof configure son assistant
+- Nouvelle page `/courses/:courseId/assistant` (ModuleAssistant.jsx) avec éditeur de persona
+- Bouton 'Assistant IA du module' dans StudentCourse
+
+### Tickets support enrichis
+- Modèle `SupportTicket` enrichi : priority, category, conversation[], resolvedAt, status 'closed'
+- Controller entièrement refait + `/api/support/mine`, `/api/support/:id`, `/api/support/:id/message`, `/api/support/:id/priority`
+- Nouvelle page `/my-tickets` (MyTickets.jsx) : filtres, création avec priorité, conversation multi-turn
+- Notifications persistées à chaque étape (création, prise en charge, résolution, nouveau message)
+
+### Timeline projets temps réel
+- Nouveaux champs `Project.modules: [Course]` (pour projets multi-modules collaboratifs) et `Project.activity[]`
+- Helpers `logActivity` + `notifyMembers` dans projectController
+- Émission Socket.io `project:activity` sur changement de phase et ajout de livrable
+- `getProjects` retourne maintenant `isMultiModule` calculé
+- Badges 'Mono-module' / 'Multi-modules (N)' dans ProjectList
+- Nouveau composant `ProjectActivityFeed.jsx` avec indicateur '● En direct' intégré dans ProjectDetail
+
+### Documentation
+- Appel à `doc_updater.py` → Documentation_PFE.docx modification #008 + Tutoriel_FlipLearn.docx mis à jour
+
+---
+
 ## 28 Mars 2026
 
 ### Module Classe par Projet (PBL)

@@ -1,0 +1,204 @@
+import cron from 'node-cron';
+import QCM from '../models/QCM.js';
+import Video from '../models/Video.js';
+import Project from '../models/Project.js';
+import Course from '../models/Course.js';
+import User from '../models/User.js';
+import Progress from '../models/Progress.js';
+import { pushNotification } from './notificationService.js';
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+function dateKey(d = new Date()) {
+  return d.toISOString().slice(0, 10).replace(/-/g, '');
+}
+
+function daysUntil(date) {
+  if (!date) return null;
+  return Math.ceil((new Date(date).getTime() - Date.now()) / DAY_MS);
+}
+
+/**
+ * Récupère les étudiants d'un cours (même filière/promotion OU ayant une progression sur ce cours).
+ */
+async function getStudentsForCourse(courseId) {
+  const course = await Course.findById(courseId).select('filiere promotion');
+  if (!course) return [];
+  const students = await User.find({
+    role: 'etudiant',
+    isActive: { $ne: false },
+    filiere: course.filiere,
+    promotion: course.promotion,
+  }).select('_id');
+  return students.map(s => s._id.toString());
+}
+
+/* ─── Rappels QCM ──────────────────────────────────────────────────────── */
+export async function checkQCMDeadlines(io) {
+  const now = new Date();
+  const horizon = new Date(now.getTime() + 7 * DAY_MS);
+
+  const qcms = await QCM.find({
+    deadline: { $gte: now, $lte: horizon },
+  }).populate({ path: 'videoId', select: 'titre courseId' });
+
+  for (const qcm of qcms) {
+    if (!qcm.videoId) continue;
+    const days = daysUntil(qcm.deadline);
+    if (days === null || days < 0) continue;
+    // Rappels à J-7, J-3, J-1, J-0
+    if (![0, 1, 3, 7].includes(days)) continue;
+
+    const studentIds = await getStudentsForCourse(qcm.videoId.courseId);
+    const completedIds = new Set(qcm.resultats.map(r => r.userId.toString()));
+    const pendingIds = studentIds.filter(id => !completedIds.has(id));
+
+    for (const userId of pendingIds) {
+      const dk = `qcm_${qcm._id}_${userId}_d${days}`;
+      const urgency = days <= 1 ? 'urgent' : days <= 3 ? 'high' : 'normal';
+      const when = days === 0 ? "aujourd'hui" : days === 1 ? 'demain' : `dans ${days} jours`;
+      await pushNotification(io, {
+        userId,
+        type: 'reminder_qcm',
+        priority: urgency,
+        title: '📝 QCM à faire',
+        message: `Le QCM "${qcm.titre}" expire ${when}. Fais-le avant la deadline !`,
+        link: `/qcm/${qcm.videoId._id}`,
+        relatedType: 'qcm',
+        relatedId: qcm._id,
+        dedupKey: dk,
+      });
+    }
+  }
+}
+
+/* ─── Rappels vidéos ───────────────────────────────────────────────────── */
+export async function checkVideoDeadlines(io) {
+  const now = new Date();
+  const horizon = new Date(now.getTime() + 7 * DAY_MS);
+
+  const videos = await Video.find({
+    deadline: { $gte: now, $lte: horizon },
+  }).select('titre courseId deadline watchedBy');
+
+  for (const video of videos) {
+    const days = daysUntil(video.deadline);
+    if (days === null || days < 0) continue;
+    if (![0, 1, 3, 7].includes(days)) continue;
+
+    const studentIds = await getStudentsForCourse(video.courseId);
+    const watchedIds = new Set(
+      video.watchedBy.filter(w => w.completed).map(w => w.userId.toString())
+    );
+    const pendingIds = studentIds.filter(id => !watchedIds.has(id));
+
+    for (const userId of pendingIds) {
+      const dk = `video_${video._id}_${userId}_d${days}`;
+      const urgency = days <= 1 ? 'urgent' : days <= 3 ? 'high' : 'normal';
+      const when = days === 0 ? "aujourd'hui" : days === 1 ? 'demain' : `dans ${days} jours`;
+      await pushNotification(io, {
+        userId,
+        type: 'reminder_video',
+        priority: urgency,
+        title: '🎥 Vidéo à regarder',
+        message: `La vidéo "${video.titre}" doit être vue ${when}.`,
+        link: `/watch/${video._id}`,
+        relatedType: 'video',
+        relatedId: video._id,
+        dedupKey: dk,
+      });
+    }
+  }
+}
+
+/* ─── Rappels projets (phases + deadline finale) ──────────────────────── */
+export async function checkProjectDeadlines(io) {
+  const now = new Date();
+  const horizon = new Date(now.getTime() + 7 * DAY_MS);
+
+  const projects = await Project.find({
+    status: { $in: ['actif', 'brouillon'] },
+    $or: [
+      { dateFin: { $gte: now, $lte: horizon } },
+      { 'phases.dateFin': { $gte: now, $lte: horizon } },
+    ],
+  });
+
+  for (const project of projects) {
+    // Membres du projet (tous groupes confondus)
+    const memberIds = new Set();
+    project.groupes.forEach(g => {
+      g.membres.forEach(m => memberIds.add(m.userId.toString()));
+    });
+
+    // Deadline projet global
+    if (project.dateFin) {
+      const days = daysUntil(project.dateFin);
+      if (days !== null && days >= 0 && [0, 1, 3, 7].includes(days)) {
+        const when = days === 0 ? "aujourd'hui" : days === 1 ? 'demain' : `dans ${days} jours`;
+        const urgency = days <= 1 ? 'urgent' : days <= 3 ? 'high' : 'normal';
+        for (const userId of memberIds) {
+          await pushNotification(io, {
+            userId,
+            type: 'reminder_project',
+            priority: urgency,
+            title: '📁 Projet à rendre',
+            message: `Le projet "${project.titre}" doit être rendu ${when}.`,
+            link: `/projects/${project._id}`,
+            relatedType: 'project',
+            relatedId: project._id,
+            dedupKey: `project_${project._id}_final_d${days}`,
+          });
+        }
+      }
+    }
+
+    // Deadlines phases
+    for (const phase of project.phases) {
+      if (phase.statut === 'termine' || !phase.dateFin) continue;
+      const days = daysUntil(phase.dateFin);
+      if (days === null || days < 0) continue;
+      if (![0, 1, 3].includes(days)) continue;
+      const when = days === 0 ? "aujourd'hui" : days === 1 ? 'demain' : `dans ${days} jours`;
+      const urgency = days <= 1 ? 'urgent' : 'high';
+      for (const userId of memberIds) {
+        await pushNotification(io, {
+          userId,
+          type: 'reminder_project',
+          priority: urgency,
+          title: '⏳ Phase à compléter',
+          message: `La phase "${phase.titre}" du projet "${project.titre}" expire ${when}.`,
+          link: `/projects/${project._id}`,
+          relatedType: 'project',
+          relatedId: project._id,
+          dedupKey: `project_${project._id}_phase_${phase._id}_d${days}`,
+        });
+      }
+    }
+  }
+}
+
+/* ─── Lanceur complet ────────────────────────────────────────────────── */
+export async function runAllDeadlineChecks(io) {
+  try {
+    await checkQCMDeadlines(io);
+    await checkVideoDeadlines(io);
+    await checkProjectDeadlines(io);
+    console.log(`[Scheduler] Deadline checks completed at ${new Date().toISOString()}`);
+  } catch (err) {
+    console.error('[Scheduler] error:', err.message);
+  }
+}
+
+/* ─── Initialisation des tâches cron ─────────────────────────────────── */
+export function startNotificationScheduler(io) {
+  // Tous les jours à 08:00 (heure serveur)
+  cron.schedule('0 8 * * *', () => {
+    runAllDeadlineChecks(io);
+  });
+
+  // Un premier check 30s après démarrage (utile en dev)
+  setTimeout(() => runAllDeadlineChecks(io), 30_000);
+
+  console.log('[Scheduler] Notification scheduler started (daily at 08:00)');
+}

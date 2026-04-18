@@ -85,6 +85,22 @@ function ProjectCard({ project, onClick }) {
         }}>
           {statusCfg.label}
         </span>
+        {project.isMultiModule ? (
+          <span title={project.modules?.map(m => m.titre).join(' • ')} style={{
+            fontSize: 11, fontWeight: 700, padding: '2px 10px',
+            borderRadius: 'var(--radius-sm)', backgroundColor: '#fef3c7', color: '#92400e',
+            display: 'inline-flex', alignItems: 'center', gap: 4,
+          }}>
+            🌐 Multi-modules ({project.modules?.length || 0})
+          </span>
+        ) : (
+          <span style={{
+            fontSize: 11, fontWeight: 700, padding: '2px 10px',
+            borderRadius: 'var(--radius-sm)', backgroundColor: '#e0e7ff', color: '#3730a3',
+          }}>
+            📘 Mono-module
+          </span>
+        )}
         {project.coursId?.titre && (
           <span className="badge">{project.coursId.titre}</span>
         )}
