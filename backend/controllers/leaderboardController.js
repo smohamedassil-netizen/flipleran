@@ -1,5 +1,6 @@
 import User     from '../models/User.js';
 import Progress from '../models/Progress.js';
+import Course   from '../models/Course.js';
 
 /* ─── GET /api/leaderboard/course/:courseId ─────────────────────────────────
    Classement des étudiants pour un cours donné (basé sur les points globaux
@@ -9,6 +10,15 @@ export const getCourseLeaderboard = async (req, res) => {
   try {
     const { courseId } = req.params;
     const limit = Math.min(parseInt(req.query.limit ?? '50', 10), 100);
+
+    // Vérifier que l'étudiant a bien accès à ce cours (même filière/promotion)
+    if (req.user.role === 'etudiant') {
+      const course = await Course.findById(courseId).select('filiere promotion');
+      if (!course) return res.status(404).json({ message: 'Cours introuvable' });
+      if (course.filiere !== req.user.filiere || course.promotion !== req.user.promotion) {
+        return res.status(403).json({ message: 'Ce cours ne fait pas partie de ta filière.' });
+      }
+    }
 
     // Find all students enrolled in this course (have a Progress doc)
     const progresses = await Progress.find({ courseId })
@@ -62,7 +72,15 @@ export const getGlobalLeaderboard = async (req, res) => {
   try {
     const limit = Math.min(parseInt(req.query.limit ?? '50', 10), 100);
 
-    const students = await User.find({ role: 'etudiant' })
+    // Étudiant : classement limité à sa filière + promotion.
+    // Prof/admin : global.
+    const filter = { role: 'etudiant', isActive: { $ne: false } };
+    if (req.user.role === 'etudiant') {
+      filter.filiere = req.user.filiere;
+      filter.promotion = req.user.promotion;
+    }
+
+    const students = await User.find(filter)
       .select('nom prenom avatar points badges filiere promotion')
       .sort({ points: -1 })
       .limit(limit);
@@ -83,10 +101,13 @@ export const getGlobalLeaderboard = async (req, res) => {
     const myEntry = entries.find((e) => e.userId.toString() === req.user.id.toString());
     let myRank = myEntry?.rank ?? null;
     if (!myRank) {
-      const totalAbove = await User.countDocuments({
-        role: 'etudiant',
-        points: { $gt: (await User.findById(req.user.id).select('points'))?.points ?? 0 },
-      });
+      const myPoints = (await User.findById(req.user.id).select('points'))?.points ?? 0;
+      const aboveFilter = { role: 'etudiant', points: { $gt: myPoints } };
+      if (req.user.role === 'etudiant') {
+        aboveFilter.filiere = req.user.filiere;
+        aboveFilter.promotion = req.user.promotion;
+      }
+      const totalAbove = await User.countDocuments(aboveFilter);
       myRank = totalAbove + 1;
     }
 

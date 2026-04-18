@@ -113,14 +113,31 @@ export const getProjects = async (req, res) => {
 
     if (courseId) {
       filter.courseId = courseId;
+    } else if (req.user.role === 'etudiant') {
+      // Étudiant : projets dont il est membre OU projets associés à un cours de sa filière/promotion
+      const Course = (await import('../models/Course.js')).default;
+      const myCourses = await Course.find({
+        filiere: req.user.filiere,
+        promotion: req.user.promotion,
+      }).select('_id');
+      const myCourseIds = myCourses.map(c => c._id);
+
+      filter = {
+        $or: [
+          { 'groupes.membres.userId': req.user.id },
+          { courseId: { $in: myCourseIds } },
+          { modules: { $in: myCourseIds } },
+        ],
+      };
     } else {
-      // Retourner les projets du cours OU ceux où l'utilisateur participe
+      // Prof/Admin : projets créés ou auxquels ils participent
       filter = {
         $or: [
           { createdBy: req.user.id },
           { 'groupes.membres.userId': req.user.id },
         ],
       };
+      if (req.user.role === 'admin') filter = {};
     }
 
     const projects = await Project.find(filter)
@@ -155,6 +172,27 @@ export const getProject = async (req, res) => {
       .populate('activity.authorId', 'nom prenom role');
 
     if (!project) return res.status(404).json({ message: 'Projet introuvable.' });
+
+    // Étudiant : vérifier qu'il peut voir ce projet
+    if (req.user.role === 'etudiant') {
+      const isMember = project.groupes?.some(g =>
+        g.membres?.some(m => (m.userId?._id || m.userId)?.toString() === req.user.id)
+      );
+      if (!isMember) {
+        const Course = (await import('../models/Course.js')).default;
+        const linked = [project.courseId, ...(project.modules || [])].filter(Boolean);
+        const linkedIds = linked.map(m => m._id || m);
+        const inMyScope = await Course.countDocuments({
+          _id: { $in: linkedIds },
+          filiere: req.user.filiere,
+          promotion: req.user.promotion,
+        });
+        if (!inMyScope) {
+          return res.status(403).json({ message: 'Ce projet ne fait pas partie de ta filière.' });
+        }
+      }
+    }
+
     const obj = project.toObject();
     obj.isMultiModule = (obj.modules?.length || 0) > 1 ||
       (obj.modules?.length === 1 && obj.courseId && obj.modules[0]._id.toString() !== obj.courseId.toString());

@@ -54,6 +54,16 @@ export const uploadResource = async (req, res) => {
 /* ─── GET /api/resources/course/:courseId ────────────────────────────────── */
 export const getResourcesByCourse = async (req, res) => {
   try {
+    // Étudiant : vérifier que le cours est de sa filière/promotion
+    if (req.user.role === 'etudiant') {
+      const Course = (await import('../models/Course.js')).default;
+      const course = await Course.findById(req.params.courseId).select('filiere promotion');
+      if (!course) return res.status(404).json({ message: 'Cours introuvable.' });
+      if (course.filiere !== req.user.filiere || course.promotion !== req.user.promotion) {
+        return res.status(403).json({ message: 'Ce cours ne fait pas partie de ta filière.' });
+      }
+    }
+
     const resources = await Resource.find({ courseId: req.params.courseId })
       .populate('uploadedBy', 'nom prenom')
       .sort({ createdAt: -1 });

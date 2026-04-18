@@ -139,6 +139,16 @@ export const createYouTubeVideo = async (req, res) => {
 /* ─── GET /api/videos/course/:courseId ───────────────────────────────────── */
 export const getVideosByCourse = async (req, res) => {
   try {
+    // Étudiant : vérifier que le cours est de sa filière/promotion
+    if (req.user.role === 'etudiant') {
+      const Course = (await import('../models/Course.js')).default;
+      const course = await Course.findById(req.params.courseId).select('filiere promotion');
+      if (!course) return res.status(404).json({ message: 'Cours introuvable.' });
+      if (course.filiere !== req.user.filiere || course.promotion !== req.user.promotion) {
+        return res.status(403).json({ message: 'Ce cours ne fait pas partie de ta filière.' });
+      }
+    }
+
     const videos = await Video.find({ courseId: req.params.courseId })
       .sort({ order: 1, createdAt: 1 })
       .select('-watchedBy');          // on n'envoie pas tout le tableau côté liste
@@ -167,9 +177,15 @@ export const getVideosByCourse = async (req, res) => {
 export const getVideoById = async (req, res) => {
   try {
     const video = await Video.findById(req.params.id)
-      .populate('courseId', 'titre')
+      .populate('courseId', 'titre filiere promotion')
       .populate('createdBy', 'nom prenom');
     if (!video) return res.status(404).json({ message: 'Video introuvable.' });
+
+    // Étudiant : vérifier que la vidéo appartient à sa filière
+    if (req.user.role === 'etudiant' && video.courseId &&
+        (video.courseId.filiere !== req.user.filiere || video.courseId.promotion !== req.user.promotion)) {
+      return res.status(403).json({ message: 'Cette vidéo ne fait pas partie de ta filière.' });
+    }
 
     const entry = getUserEntry(video, req.user.id);
     res.json({

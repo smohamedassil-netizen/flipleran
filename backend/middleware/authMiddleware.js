@@ -19,15 +19,30 @@ const authMiddleware = async (req, res, next) => {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
     // Vérification légère : l'utilisateur existe toujours en base et est actif
-    const user = await User.findById(decoded.id).select('isActive');
+    // + récupération filiere/promotion pour les filtres dans les controllers
+    const user = await User.findById(decoded.id).select('isActive status filiere promotion nom prenom email');
     if (!user) {
       return res.status(401).json({ message: 'Acces refuse : utilisateur introuvable.' });
     }
     if (user.isActive === false) {
       return res.status(403).json({ message: 'Compte désactivé. Contactez votre administrateur.' });
     }
+    if (user.status === 'pending') {
+      return res.status(403).json({ status: 'pending', message: 'Compte en attente de validation.' });
+    }
+    if (user.status === 'rejected') {
+      return res.status(403).json({ status: 'rejected', message: 'Compte refusé.' });
+    }
 
-    req.user = { id: decoded.id, role: decoded.role };
+    req.user = {
+      id: decoded.id,
+      role: decoded.role,
+      filiere: user.filiere || '',
+      promotion: user.promotion || '',
+      nom: user.nom,
+      prenom: user.prenom,
+      email: user.email,
+    };
     next();
   } catch (err) {
     const message =

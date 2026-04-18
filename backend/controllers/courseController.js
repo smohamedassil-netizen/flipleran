@@ -2,9 +2,19 @@ import Course from '../models/Course.js';
 
 export const getCourses = async (req, res) => {
   try {
-    const filter = req.user.role === 'professeur'
-      ? { professorId: req.user.id }
-      : { isActive: true };
+    let filter;
+    if (req.user.role === 'professeur') {
+      filter = { professorId: req.user.id };
+    } else if (req.user.role === 'admin') {
+      filter = {};
+    } else {
+      // Étudiant : uniquement les cours de sa filière + sa promotion
+      filter = {
+        isActive: true,
+        filiere: req.user.filiere,
+        promotion: req.user.promotion,
+      };
+    }
     const courses = await Course.find(filter).populate('professorId', 'nom prenom avatar').sort({ createdAt: -1 });
     res.json(courses);
   } catch (err) { res.status(500).json({ message: err.message }); }
@@ -46,6 +56,11 @@ export const getCourseById = async (req, res) => {
   try {
     const course = await Course.findById(req.params.id).populate('professorId', 'nom prenom avatar');
     if (!course) return res.status(404).json({ message: 'Cours introuvable' });
+    // Étudiant : vérifier que le cours est bien de sa filière/promotion
+    if (req.user.role === 'etudiant' &&
+        (course.filiere !== req.user.filiere || course.promotion !== req.user.promotion)) {
+      return res.status(403).json({ message: 'Ce cours ne fait pas partie de ta filière.' });
+    }
     res.json(course);
   } catch (err) { res.status(500).json({ message: err.message }); }
 };

@@ -44,10 +44,25 @@ export const getContacts = async (req, res) => {
     const me = await User.findById(req.user.id).select('role filiere promotion');
     if (!me) return res.status(404).json({ message: 'Utilisateur introuvable.' });
 
-    const contacts = await User.find({
-      _id: { $ne: me._id },
-      isActive: { $ne: false },
-    }).select('nom prenom email role filiere promotion avatar').limit(200);
+    // Étudiants : on limite aux étudiants de la même filière+promotion + TOUS les profs + admins
+    // Profs/admins : voient tout le monde
+    let userFilter;
+    if (me.role === 'etudiant') {
+      userFilter = {
+        _id: { $ne: me._id },
+        isActive: { $ne: false },
+        $or: [
+          { role: 'etudiant', filiere: me.filiere, promotion: me.promotion },
+          { role: 'professeur' },
+          { role: 'admin' },
+        ],
+      };
+    } else {
+      userFilter = { _id: { $ne: me._id }, isActive: { $ne: false } };
+    }
+
+    const contacts = await User.find(userFilter)
+      .select('nom prenom email role filiere promotion avatar').limit(200);
 
     // For each contact, find the last private message
     const myId = req.user.id;
