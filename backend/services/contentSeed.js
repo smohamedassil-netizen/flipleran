@@ -345,10 +345,19 @@ const CURRICULUM = [
 ];
 
 export async function seedDemoContent() {
-  let professor = await User.findOne({ role: 'professeur', status: { $ne: 'rejected' } });
-  if (!professor) {
+  const fallbackProf = await User.findOne({ role: 'professeur', status: { $ne: 'rejected' } });
+  if (!fallbackProf) {
     console.warn('[contentSeed] Aucun professeur trouvé — seed skip.');
     return { coursesCreated: 0, videosCreated: 0 };
+  }
+
+  // Cache des profs par filière pour assignation cohérente
+  const profByFiliere = {};
+  async function getProfFor(filiere) {
+    if (profByFiliere[filiere]) return profByFiliere[filiere];
+    const p = await User.findOne({ role: 'professeur', filiere, status: { $ne: 'rejected' } });
+    profByFiliere[filiere] = p || fallbackProf;
+    return profByFiliere[filiere];
   }
 
   sampleIdx = 0; // reset le cursor à chaque seed pour répartition stable
@@ -358,6 +367,7 @@ export async function seedDemoContent() {
   let skipped = 0;
 
   for (const bloc of CURRICULUM) {
+    const prof = await getProfFor(bloc.filiere);
     for (const courseData of bloc.cours) {
       let course = await Course.findOne({
         titre: courseData.titre,
@@ -371,7 +381,7 @@ export async function seedDemoContent() {
           description: courseData.description,
           filiere:     bloc.filiere,
           promotion:   bloc.promotion,
-          professorId: professor._id,
+          professorId: prof._id,
           aiPersona:   courseData.aiPersona || {},
           isActive:    true,
         });
@@ -415,7 +425,7 @@ export async function seedDemoContent() {
           order:        i,
           chapters:     v.chapters || [],
           courseId:     course._id,
-          createdBy:    professor._id,
+          createdBy:    prof._id,
         });
         videosCreated++;
       }

@@ -38,6 +38,7 @@ import { seedBadges }   from './services/points.js';
 import { seedRewards }  from './services/rewardsSeed.js';
 import { seedDemoContent } from './services/contentSeed.js';
 import { seedDemoData } from './services/demoSeed.js';
+import { seedUsers } from './services/usersSeed.js';
 
 // Migration : les comptes créés avant le système d'approval n'ont pas de status,
 // on les considère actifs par défaut (sinon ils ne pourraient plus se connecter).
@@ -78,12 +79,12 @@ connectDB().then(async () => {
   await migrateUserStatus();
   seedBadges().catch(console.error);
   seedRewards().catch(console.error);
-  // Seed du catalogue cours + vidéos (mp4 samples Google Cloud).
-  // Met à jour les anciennes vidéos YouTube vers mp4 stables.
   if (process.env.SEED_CONTENT !== 'false') {
     try {
+      // Ordre important : users d'abord (pour avoir les profs par filière),
+      // puis contenu (qui assigne le bon prof à chaque cours).
+      await seedUsers();
       await seedDemoContent();
-      // Ensuite : QCMs + ressources + prosits + projets (nécessitent cours + vidéos)
       await seedDemoData();
     } catch (err) {
       console.error('[seed]', err.message);
