@@ -1,0 +1,70 @@
+# Blueprint Render — décrit tous les services de FlipLearn
+# Docs : https://render.com/docs/blueprint-spec
+#
+# Pour déployer : Dashboard Render → New + → Blueprint → choisir ce repo.
+# Render lira ce fichier et créera / mettra à jour les services automatiquement.
+#
+# Après création, configure les variables "sync: false" dans le dashboard
+# (MongoDB URI, clés Cloudinary, Groq, OpenAI, etc.).
+
+services:
+  # ─── Backend Node.js + Frontend static (service existant) ──────────────
+  - type: web
+    name: fliplearn-api
+    runtime: node
+    plan: free
+    rootDir: backend
+    buildCommand: npm install
+    startCommand: node server.js
+    healthCheckPath: /
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: MONGODB_URI
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: CLIENT_URL
+        sync: false
+      - key: CLOUDINARY_CLOUD_NAME
+        sync: false
+      - key: CLOUDINARY_API_KEY
+        sync: false
+      - key: CLOUDINARY_API_SECRET
+        sync: false
+      - key: GROQ_API_KEY
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: BREVO_API_KEY
+        sync: false
+      - key: RESEND_API_KEY
+        sync: false
+      # Liaison avec le microservice IA (URL récupérée automatiquement depuis fliplearn-ai)
+      - key: AI_SERVICE_URL
+        fromService:
+          type: web
+          name: fliplearn-ai
+          property: host
+      - key: AI_SERVICE_TOKEN
+        sync: false  # doit être identique côté fliplearn-ai
+
+  # ─── Microservice IA Python (TensorFlow) ───────────────────────────────
+  - type: web
+    name: fliplearn-ai
+    runtime: python
+    plan: starter           # Requis : TensorFlow ne tient PAS dans le free tier (512 Mo)
+    rootDir: ai-service
+    buildCommand: pip install --upgrade pip && pip install -r requirements.txt
+    startCommand: gunicorn -w 1 -b 0.0.0.0:$PORT app:app --timeout 180
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: MONGODB_URI
+        sync: false         # Même valeur que fliplearn-api
+      - key: AI_SERVICE_TOKEN
+        sync: false         # Même valeur que côté fliplearn-api
+      # Render fournit automatiquement $PORT, pas besoin de l'écrire

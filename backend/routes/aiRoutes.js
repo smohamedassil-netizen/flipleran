@@ -3,6 +3,7 @@ import {
   atRiskStudents,
   classOverview,
   getHealth,
+  personalizedReview,
   predict,
   predictForMe,
   trainModels,
@@ -16,6 +17,7 @@ router.get('/health', getHealth);
 router.post('/train', trainModels);
 router.post('/predict', predict);
 router.get('/me/:courseId', predictForMe);
+router.get('/personalized-review/:courseId', personalizedReview);
 router.get('/at-risk', atRiskStudents);
 router.get('/overview', classOverview);
 

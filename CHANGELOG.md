@@ -4,6 +4,25 @@ Historique des modifications par date de session.
 
 ---
 
+## 22 Avril 2026 (session IA #2 — Combo ML+LLM + Blueprint Render)
+
+### Plan de rattrapage IA personnalisé (feature killer combo)
+- Nouvel endpoint `GET /api/ai/personalized-review/:courseId` qui orchestre 3 systèmes IA :
+  1. **TensorFlow** prédit le score final + probabilité de décrochage de l'étudiant
+  2. **MongoDB** identifie les 2-3 chapitres les plus faibles via l'historique QCM
+  3. **Groq** génère 5 QCM ciblés sur le chapitre le plus faible (utilise les concepts de VideoAnalysis)
+- Nouveau composant `PersonalizedReviewPanel.jsx` : modal avec gradient header, carte de risque colorée, chapitres à revoir, QCM interactif (navigation par onglets, vérification + explication)
+- Bouton "Plan de rattrapage IA" intégré dans `StudentCourse.jsx` (étudiants uniquement)
+- Graceful fallback : affichage propre même si Groq/TF sont indisponibles
+
+### Déploiement Render automatisé
+- Nouveau `render.yaml` à la racine décrivant les 2 services en mode Blueprint
+- Liaison automatique `AI_SERVICE_URL` via `fromService` (plus besoin de coller manuellement l'URL)
+- Plan `starter` (7$/mois) obligatoire pour `fliplearn-ai` (TF ne tient pas dans le free tier)
+- Guide complet `DEPLOYMENT_AI.md` : 2 options (Blueprint vs manuel) + checklist des secrets
+
+---
+
 ## 22 Avril 2026 (session IA — Microservice TensorFlow)
 
 ### Nouveau microservice IA (`ai-service/`)

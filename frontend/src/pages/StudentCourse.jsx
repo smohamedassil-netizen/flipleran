@@ -8,7 +8,9 @@ import {
   Play, CheckCircle, Clock, Lock, Home,
   BookOpen, AlertCircle, ChevronRight, MessageSquare,
   ArrowLeft, Upload, FileText, PenTool, Edit3, Trash2,
+  Sparkles,
 } from 'lucide-react';
+import PersonalizedReviewPanel from '../components/PersonalizedReviewPanel.jsx';
 
 /* ─── Status helpers ──────────────────────────────────────────────────────── */
 const getStatus = (progress) => {
@@ -150,6 +152,7 @@ export default function StudentCourse() {
   const [editingVideo, setEditingVideo] = useState(null);
   const [editForm, setEditForm] = useState({ titre: '', description: '', order: 0, chapters: [] });
   const [deleteConfirm, setDeleteConfirm] = useState(null);
+  const [reviewOpen, setReviewOpen] = useState(false);
 
   const formatTime = (s) => {
     const m = Math.floor(s / 60);
@@ -423,8 +426,30 @@ export default function StudentCourse() {
           >
             🤖 Assistant IA du module
           </button>
+          {/* Plan de rattrapage IA — réservé aux étudiants */}
+          {!isProfOrAdmin && (
+            <button
+              className="btn btn-ghost"
+              style={{
+                width: '100%', justifyContent: 'center', marginTop: '6px', gap: 8,
+                background: 'linear-gradient(135deg, #7c3aed, #1B4F72)',
+                color: 'white', border: 'none',
+              }}
+              onClick={() => setReviewOpen(true)}
+            >
+              <Sparkles size={15} />
+              Plan de rattrapage IA
+            </button>
+          )}
         </div>
       </div>
+
+      {/* Modal plan de rattrapage IA */}
+      <PersonalizedReviewPanel
+        courseId={courseId}
+        open={reviewOpen}
+        onClose={() => setReviewOpen(false)}
+      />
 
       {/* ── Modal édition vidéo ─────────────────────────────────────────── */}
       {editingVideo && (
