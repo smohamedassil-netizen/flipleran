@@ -34,6 +34,7 @@ import videoAnalysisRoutes from './routes/videoAnalysisRoutes.js';
 import notificationRoutes  from './routes/notificationRoutes.js';
 import trackingRoutes      from './routes/trackingRoutes.js';
 import rewardRoutes        from './routes/rewardRoutes.js';
+import aiRoutes            from './routes/aiRoutes.js';
 import { seedBadges }   from './services/points.js';
 import { seedRewards }  from './services/rewardsSeed.js';
 import { seedDemoContent } from './services/contentSeed.js';
@@ -129,6 +130,7 @@ app.use('/api/videos',     videoAnalysisRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/tracking',   trackingRoutes);
 app.use('/api/rewards',    rewardRoutes);
+app.use('/api/ai',         aiRoutes);
 
 // ── En production : servir le frontend buildé ──────────────────────────────
 if (process.env.NODE_ENV === 'production') {

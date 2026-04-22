@@ -32,6 +32,7 @@ import {
   HelpCircle,
   Award,
   Gift,
+  BrainCircuit,
 } from 'lucide-react';
 
 /* ─── Nav config per role ───────────────────────────────────────────────────── */
@@ -80,6 +81,7 @@ const NAV = {
       items: [
         { label: 'Gérer les badges', icon: Award,          to: '/professor/badges' },
         { label: 'Suivi étudiants',  icon: BarChart3,      to: '/professor/tracking' },
+        { label: 'IA pédagogique',   icon: BrainCircuit,   to: '/professor/ai' },
       ],
     },
     {

@@ -4,6 +4,33 @@ Historique des modifications par date de session.
 
 ---
 
+## 22 Avril 2026 (session IA — Microservice TensorFlow)
+
+### Nouveau microservice IA (`ai-service/`)
+- Architecture microservices : Python/Flask (port 5001) séparé du backend Node.js
+- **Prédicteur de réussite** : modèle Keras MLP (régression) qui prédit le score final 0-100 d'un étudiant sur un cours — métriques MAE / RMSE / R²
+- **Détecteur de décrochage** : modèle Keras MLP (classification binaire) avec class_weight — métriques Accuracy / Precision / Recall / F1 / ROC-AUC
+- Pipeline `extract_data.py` : agrège 9 features depuis MongoDB (Progress, QCM, User, Course, Deck) + fallback synthétique réaliste si données insuffisantes
+- Inférence thread-safe avec cache paresseux des modèles (`predictor.py`)
+- API Flask sécurisée par token partagé `X-AI-Service-Token` : `/health`, `/train`, `/predict/features`, `/predict/student/:uid/:cid`, `/students/at-risk`
+
+### Intégration backend Node.js
+- Nouveau service `backend/services/aiService.js` (fetch natif, aucune dépendance ajoutée)
+- Controller `aiController.js` + routes `/api/ai/*` avec contrôle de rôle (prof/admin pour train et at-risk)
+- Variables d'environnement `AI_SERVICE_URL` + `AI_SERVICE_TOKEN` documentées dans `.env.example`
+
+### Dashboard React IA pédagogique
+- Nouvelle page `frontend/src/pages/AIDashboard.jsx` sur `/professor/ai`
+- Affiche les métriques des modèles, stats globales (étudiants actifs, cours, score moyen), et tableau des étudiants à risque classés par probabilité
+- Boutons "Entraîner les modèles" (déclenche l'entraînement côté Python) et "Rafraîchir"
+- Entrée sidebar "IA pédagogique" (icône BrainCircuit) sous la section Gestion
+
+### Documentation
+- README complet dans `ai-service/README.md` (installation, workflow, endpoints, pitch soutenance)
+- Documentation PFE mise à jour (modif #014) via `doc_updater.py`
+
+---
+
 ## 18 Avril 2026 (session 3 — Authentification, 3 filières, YouTube, thèmes)
 
 ### Authentification avec validation admin

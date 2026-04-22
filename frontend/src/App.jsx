@@ -39,6 +39,7 @@ import NotificationsPage    from './pages/NotificationsPage.jsx';
 import ProfessorTracking    from './pages/ProfessorTracking.jsx';
 import ModuleAssistant      from './pages/ModuleAssistant.jsx';
 import Rewards              from './pages/Rewards.jsx';
+import AIDashboard          from './pages/AIDashboard.jsx';
 
 /* ── Pages d'erreur ────────────────────────────────────────────────────────── */
 function ErrorPage({ code, title, description }) {
@@ -132,6 +133,7 @@ export default function App() {
             <Route path="/professor/projects/create"            element={<ProjectCreate />} />
             <Route path="/professor/tracking"                   element={<ProfessorTracking />} />
             <Route path="/professor/tracking/:courseId"         element={<ProfessorTracking />} />
+            <Route path="/professor/ai"                         element={<AIDashboard />} />
           </Route>
 
           {/* Admin only */}

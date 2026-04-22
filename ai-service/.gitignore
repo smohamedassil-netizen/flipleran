@@ -1,0 +1,14 @@
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+env/
+.env
+*.log
+data/*.csv
+!data/.gitkeep
+models/*.h5
+models/*.keras
+models/*.pkl
+!models/.gitkeep
