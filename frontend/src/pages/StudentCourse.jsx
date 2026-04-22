@@ -153,6 +153,7 @@ export default function StudentCourse() {
   const [editForm, setEditForm] = useState({ titre: '', description: '', order: 0, chapters: [] });
   const [deleteConfirm, setDeleteConfirm] = useState(null);
   const [reviewOpen, setReviewOpen] = useState(false);
+  const [aiRisk, setAiRisk] = useState(null);
 
   const formatTime = (s) => {
     const m = Math.floor(s / 60);
@@ -230,7 +231,16 @@ export default function StudentCourse() {
       }
     };
     fetchData();
-  }, [courseId]);
+
+    // Récupère le niveau de risque IA persisté en base (non bloquant) — pour la bannière auto.
+    // Ne dépend pas du microservice Python : lit directement Progress.aiRiskLevel
+    // qui est mis à jour automatiquement après chaque QCM soumis.
+    if (!isProfOrAdmin) {
+      api.get(`/ai/my-risk/${courseId}`)
+        .then(({ data }) => setAiRisk(data))
+        .catch(() => setAiRisk(null));
+    }
+  }, [courseId, isProfOrAdmin]);
 
   /* ── Stats ────────────────────────────────────────────────────────────────── */
   const completed   = videos.filter((v) => getStatus(v.myProgress) === 'completed').length;
@@ -288,6 +298,52 @@ export default function StudentCourse() {
           )}
         </div>
       </div>
+
+      {/* ── Bannière auto : plan de rattrapage IA si risque modéré ou + ── */}
+      {!isProfOrAdmin && aiRisk?.dropout_risk_level &&
+       ['modéré', 'élevé', 'critique'].includes(aiRisk.dropout_risk_level) && (
+        <div
+          onClick={() => setReviewOpen(true)}
+          style={{
+            marginBottom: 16, padding: '14px 18px', borderRadius: 12,
+            background: aiRisk.dropout_risk_level === 'critique'
+              ? 'linear-gradient(135deg, #fee2e2, #fecaca)'
+              : aiRisk.dropout_risk_level === 'élevé'
+                ? 'linear-gradient(135deg, #ffedd5, #fed7aa)'
+                : 'linear-gradient(135deg, #fef3c7, #fde68a)',
+            border: `1px solid ${
+              aiRisk.dropout_risk_level === 'critique' ? '#fca5a5' :
+              aiRisk.dropout_risk_level === 'élevé' ? '#fdba74' : '#fcd34d'
+            }`,
+            cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 14,
+            boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+          }}
+        >
+          <div style={{
+            width: 42, height: 42, borderRadius: 10, flexShrink: 0,
+            background: 'rgba(255,255,255,0.6)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>
+            <Sparkles size={22} color={
+              aiRisk.dropout_risk_level === 'critique' ? '#dc2626' :
+              aiRisk.dropout_risk_level === 'élevé' ? '#ea580c' : '#ca8a04'
+            } />
+          </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 14, fontWeight: 700, color: '#7c2d12', marginBottom: 2 }}>
+              {aiRisk.dropout_risk_level === 'critique'
+                ? '🚨 L\'IA a détecté un risque critique sur ce cours'
+                : aiRisk.dropout_risk_level === 'élevé'
+                  ? '⚠️ Tu as besoin d\'un coup de pouce sur ce cours'
+                  : '💡 On peut t\'aider à progresser sur ce cours'}
+            </div>
+            <div style={{ fontSize: 13, color: '#78350f' }}>
+              Clique pour voir ton plan de rattrapage personnalisé généré par l'IA
+            </div>
+          </div>
+          <ChevronRight size={20} color="#78350f" style={{ flexShrink: 0 }} />
+        </div>
+      )}
 
       <div className="responsive-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: 24, alignItems: 'start' }}>
 

@@ -3,6 +3,7 @@ import User     from '../models/User.js';
 import Progress from '../models/Progress.js';
 import { addPoints, checkChampionBadge } from '../services/points.js';
 import { generateQuizQuestions } from '../services/chatbot.js';
+import { autoPredictAfterQcm } from '../services/aiAutomation.js';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    POST /api/qcm/create
@@ -205,6 +206,14 @@ export const submitQCM = async (req, res) => {
         },
         { upsert: true }
       );
+
+      // Auto-prédiction IA en arrière-plan (fire-and-forget) :
+      // recalcule le niveau de risque et alerte le prof si ça s'aggrave.
+      autoPredictAfterQcm({
+        userId: req.user.id,
+        courseId: video.courseId,
+        io: req.app.get('io'),
+      }).catch(() => { /* déjà loggé dans le service */ });
     }
 
     // Réponse enrichie avec les bonnes réponses et explications

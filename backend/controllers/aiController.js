@@ -101,6 +101,33 @@ export async function predictForMe(req, res) {
   }
 }
 
+/* ─── GET /api/ai/my-risk/:courseId ───────────────────────────────────── */
+/**
+ * Version LÉGÈRE qui lit le niveau de risque depuis Progress (persisté par
+ * l'automatisation après chaque QCM). Ne dépend PAS du microservice Python
+ * — toujours rapide, toujours disponible.
+ *
+ * Utilisé par la bannière automatique sur StudentCourse.
+ */
+export async function myRiskForCourse(req, res) {
+  const { courseId } = req.params;
+  try {
+    const progress = await Progress.findOne(
+      { userId: req.user.id, courseId },
+      { aiRiskLevel: 1, aiPredictedScore: 1, aiDropoutProbability: 1, aiRiskUpdatedAt: 1 }
+    ).lean();
+
+    res.json({
+      dropout_risk_level:   progress?.aiRiskLevel || null,
+      predicted_score:      progress?.aiPredictedScore ?? null,
+      dropout_probability:  progress?.aiDropoutProbability ?? null,
+      updated_at:           progress?.aiRiskUpdatedAt || null,
+    });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+}
+
 /* ─── GET /api/ai/at-risk (prof uniquement) ───────────────────────────── */
 export async function atRiskStudents(req, res) {
   if (!isTeacher(req.user)) {

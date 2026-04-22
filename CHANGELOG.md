@@ -4,6 +4,25 @@ Historique des modifications par date de session.
 
 ---
 
+## 22 Avril 2026 (session IA #3 — Automatisation complete en arriere-plan)
+
+### 3 automatisations IA invisibles pour l'utilisateur
+- **Auto-entrainement hebdomadaire** : cron dimanches 03:00 re-entraine les modeles TF sur les nouvelles donnees. Plus besoin du bouton manuel "Entrainer les modeles".
+- **Auto-prediction apres QCM** : hook fire-and-forget dans `qcmController.submitQCM` qui recalcule le niveau de risque et le persiste dans `Progress.aiRiskLevel`.
+- **Auto-alerte au prof** : si un etudiant passe en risque `modere/eleve/critique`, notification temps reel (Socket.io) envoyee au prof du cours avec priorite escalee.
+
+### Nouvelle banniere automatique cote etudiant
+- `StudentCourse.jsx` : banniere coloree qui apparait en haut de la page si l'IA a detecte un risque >= modere (rouge/orange/jaune selon le niveau).
+- Clic → ouvre le plan de rattrapage IA.
+- Nouveau endpoint leger `GET /api/ai/my-risk/:courseId` qui lit `Progress` directement (ne depend pas du microservice Python).
+
+### Architecture
+- Nouveau service `backend/services/aiAutomation.js` centralisant les 3 automatisations.
+- Progress etendu avec 4 champs : `aiPredictedScore`, `aiDropoutProbability`, `aiRiskLevel`, `aiRiskUpdatedAt`.
+- Gestion intelligente de la degradation : notification prof UNIQUEMENT si le niveau empire (pas pour un etudiant deja faible qui reste faible).
+
+---
+
 ## 22 Avril 2026 (session IA #2 — Combo ML+LLM + Blueprint Render)
 
 ### Plan de rattrapage IA personnalisé (feature killer combo)

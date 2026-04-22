@@ -60,6 +60,7 @@ async function migrateUserStatus() {
 import { askBot }       from './services/chatbot.js';
 import { BOT_SENDER }   from './controllers/chatbotController.js';
 import { startNotificationScheduler } from './services/notificationScheduler.js';
+import { scheduleAutoTraining } from './services/aiAutomation.js';
 
 const app = express();
 const httpServer = createServer(app);
@@ -95,6 +96,7 @@ connectDB().then(async () => {
     }
   }
   startNotificationScheduler(io);
+  scheduleAutoTraining();
 });
 
 // Middleware
