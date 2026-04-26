@@ -2,9 +2,11 @@
  * usersSeed.js — Crée des utilisateurs de test couvrant TOUTES les combinaisons
  * filière × promotion, pour permettre de tester l'isolation par filière.
  *
+ * Règle métier école : 1 prof = 1 filière + 1 promotion.
+ *
  * Crée :
  *   - 1 admin
- *   - 3 professeurs (1 par filière)
+ *   - 9 professeurs (3 filières × 3 promotions)
  *   - 9 étudiants (ISIL/Management/Finance × L1/L2/L3)
  *
  * Tous avec status='active' et isActive=true pour un accès immédiat.
@@ -29,34 +31,19 @@ const USERS = [
     promotion: '',
   },
 
-  // ═════════════ Professeurs (1 par filière) ═════════════
-  {
-    email: 'karim.isil@fliplearn.dz',
-    password: PASSWORD,
-    nom: 'Benali',
-    prenom: 'Karim',
-    role: 'professeur',
-    filiere: 'ISIL',
-    promotion: '',
-  },
-  {
-    email: 'sara.manage@fliplearn.dz',
-    password: PASSWORD,
-    nom: 'Meziane',
-    prenom: 'Sara',
-    role: 'professeur',
-    filiere: 'Management',
-    promotion: '',
-  },
-  {
-    email: 'hakim.finance@fliplearn.dz',
-    password: PASSWORD,
-    nom: 'Khaldi',
-    prenom: 'Hakim',
-    role: 'professeur',
-    filiere: 'Finance & Comptabilité',
-    promotion: '',
-  },
+  // ═════════════ Professeurs (1 par filière × promotion) ═════════════
+  // ISIL
+  { email: 'karim.isil.l1@fliplearn.dz',    password: PASSWORD, nom: 'Benali',   prenom: 'Karim',   role: 'professeur', filiere: 'ISIL',                    promotion: 'L1' },
+  { email: 'leila.isil.l2@fliplearn.dz',    password: PASSWORD, nom: 'Zidane',   prenom: 'Leila',   role: 'professeur', filiere: 'ISIL',                    promotion: 'L2' },
+  { email: 'omar.isil.l3@fliplearn.dz',     password: PASSWORD, nom: 'Saadi',    prenom: 'Omar',    role: 'professeur', filiere: 'ISIL',                    promotion: 'L3' },
+  // Management
+  { email: 'sara.manage.l1@fliplearn.dz',   password: PASSWORD, nom: 'Meziane',  prenom: 'Sara',    role: 'professeur', filiere: 'Management',              promotion: 'L1' },
+  { email: 'riad.manage.l2@fliplearn.dz',   password: PASSWORD, nom: 'Kaci',     prenom: 'Riad',    role: 'professeur', filiere: 'Management',              promotion: 'L2' },
+  { email: 'fatima.manage.l3@fliplearn.dz', password: PASSWORD, nom: 'Bouzid',   prenom: 'Fatima',  role: 'professeur', filiere: 'Management',              promotion: 'L3' },
+  // Finance & Comptabilité
+  { email: 'hakim.finance.l1@fliplearn.dz', password: PASSWORD, nom: 'Khaldi',   prenom: 'Hakim',   role: 'professeur', filiere: 'Finance & Comptabilité',  promotion: 'L1' },
+  { email: 'sonia.finance.l2@fliplearn.dz', password: PASSWORD, nom: 'Tamazirt', prenom: 'Sonia',   role: 'professeur', filiere: 'Finance & Comptabilité',  promotion: 'L2' },
+  { email: 'nabil.finance.l3@fliplearn.dz', password: PASSWORD, nom: 'Berrezoug',prenom: 'Nabil',   role: 'professeur', filiere: 'Finance & Comptabilité',  promotion: 'L3' },
 
   // ═════════════ Étudiants ISIL ═════════════
   {

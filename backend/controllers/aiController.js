@@ -16,6 +16,38 @@ import {
 /* ─── Helpers ─────────────────────────────────────────────────────────── */
 const isTeacher = (user) => user?.role === 'professeur' || user?.role === 'admin';
 const isStudent = (user) => user?.role === 'etudiant';
+const isAdmin   = (user) => user?.role === 'admin';
+
+/**
+ * Règle métier : un prof ne voit QUE les étudiants de ses cours.
+ * Un étudiant est "dans un cours" s'il partage filière + promotion avec le cours.
+ *
+ * Retourne { courseIds: [], studentIds: [] } — listes vides pour un prof sans cours.
+ * L'admin retourne null pour signaler "accès global".
+ */
+async function getTeacherScope(user) {
+  if (isAdmin(user)) return null; // admin = pas de filtre
+
+  const myCourses = await Course.find(
+    { professorId: user.id, isActive: true },
+    { _id: 1, filiere: 1, promotion: 1 }
+  ).lean();
+
+  if (myCourses.length === 0) {
+    return { courseIds: [], studentIds: [] };
+  }
+
+  const filters = myCourses.map((c) => ({ filiere: c.filiere, promotion: c.promotion }));
+  const students = await User.find(
+    { role: 'etudiant', status: 'active', $or: filters },
+    { _id: 1 }
+  ).lean();
+
+  return {
+    courseIds: myCourses.map((c) => String(c._id)),
+    studentIds: students.map((s) => String(s._id)),
+  };
+}
 
 function handleAIError(res, err, defaultStatus = 502) {
   const status = err.status || defaultStatus;
@@ -137,11 +169,25 @@ export async function atRiskStudents(req, res) {
   const { courseId, limit } = req.query;
 
   try {
+    // Vérifier que le prof demande bien un de SES cours (sinon 403)
+    const scope = await getTeacherScope(req.user);
+    if (scope && courseId && !scope.courseIds.includes(String(courseId))) {
+      return res.status(403).json({ message: 'Ce cours ne vous appartient pas.' });
+    }
+
     const data = await aiAtRiskStudents({
       courseId: courseId || null,
       limit: limit ? Number(limit) : 50,
     });
-    res.json(data);
+
+    // Filtrer les étudiants pour ne garder que ceux du prof (règle 1 prof = 1 promo/module)
+    let students = data.students || [];
+    if (scope) {
+      const allowed = new Set(scope.studentIds);
+      students = students.filter((s) => allowed.has(String(s.user_id)));
+    }
+
+    res.json({ students });
   } catch (err) {
     handleAIError(res, err);
   }
@@ -280,8 +326,9 @@ export async function personalizedReview(req, res) {
 
 /* ─── GET /api/ai/overview (prof uniquement) ──────────────────────────── */
 /**
- * Vue agrégée pour le dashboard prof : stats globales + top étudiants à risque.
- * Combine les prédictions IA avec des stats MongoDB classiques.
+ * Vue agrégée pour le dashboard prof : stats de SES étudiants uniquement.
+ * Respecte la règle métier "1 prof = 1 module / 1 promotion".
+ * L'admin voit tout le monde.
  */
 export async function classOverview(req, res) {
   if (!isTeacher(req.user)) {
@@ -289,14 +336,47 @@ export async function classOverview(req, res) {
   }
 
   try {
-    const [totalStudents, totalCourses, atRisk] = await Promise.all([
-      User.countDocuments({ role: 'etudiant', status: 'active' }),
-      Course.countDocuments({ isActive: true }),
-      aiAtRiskStudents({ courseId: req.query.courseId || null, limit: 10 }).catch(() => ({ students: [] })),
+    const scope = await getTeacherScope(req.user);
+    const isAdminUser = scope === null;
+
+    // --- Cohortes prof vs admin ---
+    const studentFilter = isAdminUser
+      ? { role: 'etudiant', status: 'active' }
+      : { role: 'etudiant', status: 'active', _id: { $in: scope.studentIds } };
+
+    const courseFilter = isAdminUser
+      ? { isActive: true }
+      : { isActive: true, _id: { $in: scope.courseIds } };
+
+    const [totalStudents, totalCourses, myCourses] = await Promise.all([
+      User.countDocuments(studentFilter),
+      Course.countDocuments(courseFilter),
+      Course.find(courseFilter, { titre: 1, filiere: 1, promotion: 1 }).lean(),
     ]);
 
-    // Moyenne générale des scores QCM récents
-    const recentProgress = await Progress.find({}, { qcmScores: 1 }).limit(500).lean();
+    // --- At-risk depuis le service Python, puis filtrage prof ---
+    let topAtRisk = [];
+    try {
+      const raw = await aiAtRiskStudents({ courseId: req.query.courseId || null, limit: 50 });
+      let students = raw.students || [];
+      if (!isAdminUser) {
+        const allowed = new Set(scope.studentIds);
+        students = students.filter((s) => allowed.has(String(s.user_id)));
+      }
+      topAtRisk = students.slice(0, 10);
+    } catch {
+      topAtRisk = [];
+    }
+
+    // --- Moyenne des scores QCM (uniquement sur les étudiants du prof) ---
+    const progressFilter = isAdminUser
+      ? {}
+      : { userId: { $in: scope.studentIds } };
+
+    const recentProgress = await Progress.find(progressFilter, { qcmScores: 1 })
+      .limit(500)
+      .lean();
+
     const allScores = recentProgress.flatMap((p) =>
       (p.qcmScores || []).map((s) => Number(s.score || 0))
     );
@@ -306,11 +386,18 @@ export async function classOverview(req, res) {
         : 0;
 
     res.json({
+      scope: isAdminUser ? 'admin' : 'teacher',
       totalStudents,
       totalCourses,
       averageScore: avgScore,
-      atRiskCount: atRisk.students?.length || 0,
-      topAtRisk: atRisk.students || [],
+      atRiskCount: topAtRisk.length,
+      topAtRisk,
+      myCourses: myCourses.map((c) => ({
+        _id: String(c._id),
+        titre: c.titre,
+        filiere: c.filiere,
+        promotion: c.promotion,
+      })),
     });
   } catch (err) {
     handleAIError(res, err);

@@ -373,23 +373,30 @@ export async function seedDemoContent() {
     return { coursesCreated: 0, videosCreated: 0 };
   }
 
-  // Cache des profs par filière pour assignation cohérente
-  const profByFiliere = {};
-  async function getProfFor(filiere) {
-    if (profByFiliere[filiere]) return profByFiliere[filiere];
-    const p = await User.findOne({ role: 'professeur', filiere, status: { $ne: 'rejected' } });
-    profByFiliere[filiere] = p || fallbackProf;
-    return profByFiliere[filiere];
+  // Cache des profs par couple filière+promotion (règle école : 1 prof = 1 module + 1 promo)
+  const profByKey = {};
+  async function getProfFor(filiere, promotion) {
+    const key = `${filiere}|${promotion}`;
+    if (profByKey[key]) return profByKey[key];
+
+    // Priorité 1 : match exact filière + promotion
+    let p = await User.findOne({ role: 'professeur', filiere, promotion, status: { $ne: 'rejected' } });
+    // Priorité 2 : filière seule (legacy)
+    if (!p) p = await User.findOne({ role: 'professeur', filiere, status: { $ne: 'rejected' } });
+    // Priorité 3 : fallback global
+    profByKey[key] = p || fallbackProf;
+    return profByKey[key];
   }
 
   sampleIdx = 0; // reset le cursor à chaque seed pour répartition stable
   let coursesCreated = 0;
+  let coursesReassigned = 0;
   let videosCreated = 0;
   let videosUpdated = 0;
   let skipped = 0;
 
   for (const bloc of CURRICULUM) {
-    const prof = await getProfFor(bloc.filiere);
+    const prof = await getProfFor(bloc.filiere, bloc.promotion);
     for (const courseData of bloc.cours) {
       let course = await Course.findOne({
         titre: courseData.titre,
@@ -408,9 +415,19 @@ export async function seedDemoContent() {
           isActive:    true,
         });
         coursesCreated++;
-      } else if (!course.aiPersona?.nom && courseData.aiPersona) {
-        course.aiPersona = courseData.aiPersona;
-        await course.save();
+      } else {
+        let needSave = false;
+        // Corriger l'assignation si le cours pointe vers un mauvais prof
+        if (String(course.professorId) !== String(prof._id)) {
+          course.professorId = prof._id;
+          needSave = true;
+          coursesReassigned++;
+        }
+        if (!course.aiPersona?.nom && courseData.aiPersona) {
+          course.aiPersona = courseData.aiPersona;
+          needSave = true;
+        }
+        if (needSave) await course.save();
       }
 
       for (let i = 0; i < courseData.videos.length; i++) {
@@ -466,6 +483,6 @@ export async function seedDemoContent() {
     }
   }
 
-  console.log(`[contentSeed] ${coursesCreated} cours créés, ${videosCreated} vidéos ajoutées, ${videosUpdated} vidéos mises à jour (YouTube → mp4), ${skipped} inchangées.`);
-  return { coursesCreated, videosCreated, videosUpdated, skipped };
+  console.log(`[contentSeed] ${coursesCreated} cours créés, ${coursesReassigned} réassignés au bon prof, ${videosCreated} vidéos ajoutées, ${videosUpdated} vidéos mises à jour, ${skipped} inchangées.`);
+  return { coursesCreated, coursesReassigned, videosCreated, videosUpdated, skipped };
 }

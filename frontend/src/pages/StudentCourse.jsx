@@ -10,7 +10,6 @@ import {
   ArrowLeft, Upload, FileText, PenTool, Edit3, Trash2,
   Sparkles,
 } from 'lucide-react';
-import PersonalizedReviewPanel from '../components/PersonalizedReviewPanel.jsx';
 
 /* ─── Status helpers ──────────────────────────────────────────────────────── */
 const getStatus = (progress) => {
@@ -152,7 +151,6 @@ export default function StudentCourse() {
   const [editingVideo, setEditingVideo] = useState(null);
   const [editForm, setEditForm] = useState({ titre: '', description: '', order: 0, chapters: [] });
   const [deleteConfirm, setDeleteConfirm] = useState(null);
-  const [reviewOpen, setReviewOpen] = useState(false);
   const [aiRisk, setAiRisk] = useState(null);
 
   const formatTime = (s) => {
@@ -303,7 +301,7 @@ export default function StudentCourse() {
       {!isProfOrAdmin && aiRisk?.dropout_risk_level &&
        ['modéré', 'élevé', 'critique'].includes(aiRisk.dropout_risk_level) && (
         <div
-          onClick={() => setReviewOpen(true)}
+          onClick={() => navigate(`/my/ai-coach/${courseId}`)}
           style={{
             marginBottom: 16, padding: '14px 18px', borderRadius: 12,
             background: aiRisk.dropout_risk_level === 'critique'
@@ -482,7 +480,7 @@ export default function StudentCourse() {
           >
             🤖 Assistant IA du module
           </button>
-          {/* Plan de rattrapage IA — réservé aux étudiants */}
+          {/* Coach IA personnel — réservé aux étudiants */}
           {!isProfOrAdmin && (
             <button
               className="btn btn-ghost"
@@ -491,21 +489,14 @@ export default function StudentCourse() {
                 background: 'linear-gradient(135deg, #7c3aed, #1B4F72)',
                 color: 'white', border: 'none',
               }}
-              onClick={() => setReviewOpen(true)}
+              onClick={() => navigate(`/my/ai-coach/${courseId}`)}
             >
               <Sparkles size={15} />
-              Plan de rattrapage IA
+              Mon coach IA
             </button>
           )}
         </div>
       </div>
-
-      {/* Modal plan de rattrapage IA */}
-      <PersonalizedReviewPanel
-        courseId={courseId}
-        open={reviewOpen}
-        onClose={() => setReviewOpen(false)}
-      />
 
       {/* ── Modal édition vidéo ─────────────────────────────────────────── */}
       {editingVideo && (
