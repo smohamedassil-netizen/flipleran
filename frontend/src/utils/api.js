@@ -2,8 +2,14 @@ import axios from 'axios';
 
 const STORAGE_KEY = 'fliplearn_user';
 
+// En dev : '/api' (proxifié par Vite vers localhost:5000)
+// En prod : VITE_API_URL doit pointer vers le backend Render (ex: https://fliplearn-5lsz.onrender.com)
+const API_ROOT = import.meta.env.VITE_API_URL
+  ? `${import.meta.env.VITE_API_URL.replace(/\/$/, '')}/api`
+  : '/api';
+
 const api = axios.create({
-  baseURL: '/api',
+  baseURL: API_ROOT,
   timeout: 15000,
 });
 
