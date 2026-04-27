@@ -13,11 +13,6 @@ const progressSchema = new mongoose.Schema(
       },
     ],
     lastActivity:     { type: Date, default: Date.now },
-    // Champs IA mis à jour automatiquement après chaque QCM soumis
-    aiPredictedScore:    { type: Number, default: null },
-    aiDropoutProbability:{ type: Number, default: null },
-    aiRiskLevel:         { type: String, enum: ['faible', 'modéré', 'élevé', 'critique', null], default: null },
-    aiRiskUpdatedAt:     { type: Date, default: null },
   },
   { timestamps: true }
 );

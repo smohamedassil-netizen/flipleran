@@ -39,8 +39,6 @@ import NotificationsPage    from './pages/NotificationsPage.jsx';
 import ProfessorTracking    from './pages/ProfessorTracking.jsx';
 import ModuleAssistant      from './pages/ModuleAssistant.jsx';
 import Rewards              from './pages/Rewards.jsx';
-import AIDashboard          from './pages/AIDashboard.jsx';
-import StudentAICoach       from './pages/StudentAICoach.jsx';
 
 /* ── Pages d'erreur ────────────────────────────────────────────────────────── */
 function ErrorPage({ code, title, description }) {
@@ -123,11 +121,6 @@ export default function App() {
             <Route path="/rewards"                   element={<Rewards />} />
           </Route>
 
-          {/* Étudiant uniquement — coach IA personnel */}
-          <Route element={<ProtectedRoute roles={['etudiant']} />}>
-            <Route path="/my/ai-coach/:courseId" element={<StudentAICoach />} />
-          </Route>
-
           {/* Professeur + Admin only */}
           <Route element={<ProtectedRoute roles={['professeur', 'admin']} />}>
             <Route path="/professor/dashboard/:courseId"         element={<ProfessorDashboard />} />
@@ -139,7 +132,6 @@ export default function App() {
             <Route path="/professor/projects/create"            element={<ProjectCreate />} />
             <Route path="/professor/tracking"                   element={<ProfessorTracking />} />
             <Route path="/professor/tracking/:courseId"         element={<ProfessorTracking />} />
-            <Route path="/professor/ai"                         element={<AIDashboard />} />
           </Route>
 
           {/* Admin only */}

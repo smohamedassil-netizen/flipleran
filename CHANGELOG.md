@@ -4,6 +4,38 @@ Historique des modifications par date de session.
 
 ---
 
+## 28 Avril 2026 (recentrage — retrait de l'IA prédictive TensorFlow)
+
+### Décision pédagogique
+- Le projet contenait trop de briques IA (ML + LLM + automatisations + dashboards) → saturation.
+- Recentrage sur les **agents IA conversationnels** uniquement, qui apportent une vraie valeur en classe inversée.
+- Vision retenue : **encadrement personnalisé via assistants** (par module + analyse vidéo + génération QCM), pas de "prédicteur d'échec".
+
+### Fichiers supprimés
+- `ai-service/` (microservice Python TensorFlow complet : 2 modèles MLP + Flask + datasets)
+- `backend/services/aiService.js`, `backend/services/aiAutomation.js`
+- `backend/controllers/aiController.js`, `backend/routes/aiRoutes.js`
+- `frontend/src/pages/AIDashboard.jsx`, `frontend/src/pages/StudentAICoach.jsx`
+- `frontend/src/components/PersonalizedReviewPanel.jsx`
+- `DEPLOYMENT_AI.md`
+
+### Fichiers modifiés
+- `backend/server.js` : retrait import `aiRoutes` + appel `scheduleAutoTraining`
+- `backend/controllers/qcmController.js` : retrait hook `autoPredictAfterQcm`
+- `backend/models/Progress.js` : suppression des 4 champs IA (`aiPredictedScore`, `aiDropoutProbability`, `aiRiskLevel`, `aiRiskUpdatedAt`)
+- `backend/.env.example` : retrait `AI_SERVICE_URL` + `AI_SERVICE_TOKEN`
+- `frontend/src/App.jsx` : retrait routes `/professor/ai` et `/my/ai-coach/:courseId`
+- `frontend/src/components/Layout.jsx` : retrait item sidebar "IA pédagogique"
+- `frontend/src/pages/StudentCourse.jsx` : retrait bannière de risque + bouton "Mon coach IA"
+- `render.yaml` : retrait du service `fliplearn-ai` (Python)
+
+### Ce qui reste (agents IA cohérents)
+1. **Module Assistant** (`moduleAI.js`) — chat par cours avec persona + RAG sur le contenu
+2. **Analyse vidéo** (`videoAnalyzer.js`) — Whisper + GPT-4o → transcript / résumé / concepts clés
+3. **Génération QCM par IA** (`generateQuizQuestions`) — outil prof, gain de temps réel
+
+---
+
 ## 22 Avril 2026 (session IA #3 — Automatisation complete en arriere-plan)
 
 ### 3 automatisations IA invisibles pour l'utilisateur
