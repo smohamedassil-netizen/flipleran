@@ -312,6 +312,11 @@ export const updateVideo = async (req, res) => {
     const video = await Video.findById(req.params.id);
     if (!video) return res.status(404).json({ message: 'Video introuvable.' });
 
+    // Seul le créateur ou un admin peut modifier
+    if (req.user.role !== 'admin' && String(video.createdBy) !== String(req.user.id)) {
+      return res.status(403).json({ message: 'Vous ne pouvez modifier que vos propres vidéos.' });
+    }
+
     const { titre, description, order, chapters } = req.body;
     if (titre !== undefined) video.titre = titre;
     if (description !== undefined) video.description = description;
@@ -335,6 +340,11 @@ export const deleteVideo = async (req, res) => {
   try {
     const video = await Video.findById(req.params.id);
     if (!video) return res.status(404).json({ message: 'Video introuvable.' });
+
+    // Seul le créateur ou un admin peut supprimer
+    if (req.user.role !== 'admin' && String(video.createdBy) !== String(req.user.id)) {
+      return res.status(403).json({ message: 'Vous ne pouvez supprimer que vos propres vidéos.' });
+    }
 
     if (video.publicId) {
       await deleteAsset(video.publicId, 'video').catch(() => {}); // best-effort

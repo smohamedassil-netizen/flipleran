@@ -179,16 +179,21 @@ export const submitQCM = async (req, res) => {
     const Video = (await import('../models/Video.js')).default;
     const video = await Video.findById(qcm.videoId).select('courseId');
 
+    // Les points sont attribués UNIQUEMENT via addPoints() :
+    //   - +10 pour avoir terminé le QCM
+    //   - +pointsEarned (basé sur le score) → reflète le barème
+    //   - +20 bonus si score > 80
+    // (avant ce fix, User.findByIdAndUpdate doublait pointsEarned)
     let pointsResult = null;
     try {
-      await User.findByIdAndUpdate(req.user.id, { $inc: { points: pointsEarned } });
+      await addPoints(req.user.id, pointsEarned, 'qcm_score');
       const baseResult = await addPoints(req.user.id, 10, 'qcm_completed');
       if (score > 80) {
         pointsResult = await addPoints(req.user.id, 20, 'qcm_bonus');
-        pointsResult.earned = 10 + 20 + pointsEarned;
+        pointsResult.earned = pointsEarned + 10 + 20;
       } else {
         pointsResult = baseResult;
-        pointsResult.earned = 10 + pointsEarned;
+        pointsResult.earned = pointsEarned + 10;
       }
       if (video) {
         await checkChampionBadge(video.courseId).catch(() => {});

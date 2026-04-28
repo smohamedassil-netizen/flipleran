@@ -201,7 +201,6 @@ export const getActivity = async (req, res) => {
 /* POST /api/admin/users */
 export const createUser = async (req, res) => {
   try {
-    const bcrypt = (await import('bcryptjs')).default;
     const { nom, prenom, email, password, role, filiere, promotion } = req.body;
 
     if (!nom || !prenom || !email || !password) {
@@ -211,11 +210,10 @@ export const createUser = async (req, res) => {
     const existing = await User.findOne({ email: email.toLowerCase() });
     if (existing) return res.status(400).json({ message: 'Cet email est déjà utilisé.' });
 
-    const salt = await bcrypt.genSalt(10);
-    const hashed = await bcrypt.hash(password, salt);
-
+    // Le pre-save hook du modèle User hash le mot de passe automatiquement.
+    // Pas de hash manuel ici (sinon double-hash → impossible de se connecter).
     const user = await User.create({
-      nom, prenom, email: email.toLowerCase(), password: hashed,
+      nom, prenom, email: email.toLowerCase(), password,
       role: role || 'etudiant', filiere: filiere || '', promotion: promotion || '',
     });
 

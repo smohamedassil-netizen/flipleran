@@ -2,9 +2,55 @@ import Message from '../models/Message.js';
 import User    from '../models/User.js';
 import Course  from '../models/Course.js';
 
+/**
+ * Vérifie qu'un utilisateur a le droit d'accéder à un roomId donné.
+ * Conventions de roomId :
+ *   - private_<id1>_<id2> : conversation privée → le user doit être id1 ou id2
+ *   - course_<courseId>   : chat de cours → le user doit être inscrit/owner du cours
+ *   - bot_<userId>        : chatbot personnel → le user doit être userId
+ *   - module_<courseId>_<userId> : assistant module perso → le user doit être userId
+ */
+async function canAccessRoom(roomId, userId, userRole) {
+  if (!roomId || typeof roomId !== 'string') return false;
+  if (userRole === 'admin') return true;
+
+  const myId = String(userId);
+
+  if (roomId.startsWith('private_')) {
+    const [, id1, id2] = roomId.split('_');
+    return id1 === myId || id2 === myId;
+  }
+  if (roomId.startsWith('bot_')) {
+    return roomId === `bot_${myId}`;
+  }
+  if (roomId.startsWith('module_')) {
+    const parts = roomId.split('_');
+    // module_<courseId>_<userId>
+    return parts[parts.length - 1] === myId;
+  }
+  if (roomId.startsWith('course_')) {
+    const courseId = roomId.slice('course_'.length);
+    if (!courseId) return false;
+    // Le prof du cours OU les étudiants de la même filière+promotion
+    const course = await Course.findById(courseId)
+      .select('professorId filiere promotion').lean();
+    if (!course) return false;
+    if (String(course.professorId) === myId) return true;
+    const me = await User.findById(myId).select('role filiere promotion').lean();
+    return !!(me && me.role === 'etudiant'
+      && me.filiere === course.filiere
+      && me.promotion === course.promotion);
+  }
+  return false;
+}
+
 export const getMessages = async (req, res) => {
   try {
     const { roomId } = req.params;
+    const allowed = await canAccessRoom(roomId, req.user.id, req.user.role);
+    if (!allowed) {
+      return res.status(403).json({ message: 'Accès refusé à cette conversation.' });
+    }
     const messages = await Message.find({ roomId })
       .populate('senderId', 'nom prenom avatar')
       .sort({ createdAt: 1 })

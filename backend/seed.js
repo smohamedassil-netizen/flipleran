@@ -19,8 +19,12 @@ import Message from "./models/Message.js";
 import Progress from "./models/Progress.js";
 import { seedBadges } from "./services/points.js";
 
-const MONGO_URI =
-  "mongodb+srv://smohamedassil_db_user:Assilk18@assilk18.7dmk50s.mongodb.net/fliplearn?retryWrites=true&w=majority";
+const MONGO_URI = process.env.MONGODB_URI;
+if (!MONGO_URI) {
+  console.error('❌ MONGODB_URI manquant dans le .env');
+  console.error('   Crée un fichier backend/.env avec MONGODB_URI=mongodb+srv://...');
+  process.exit(1);
+}
 
 /* ─── Helpers ────────────────────────────────────────────────────────────── */
 const log = (msg) => console.log(`  ✓ ${msg}`);

@@ -78,9 +78,10 @@ app.set('io', io);
 
 connectDB().then(async () => {
   await migrateUserStatus();
-  // Répare toutes les vidéos cassées (YouTube / URL invalide) en mp4 samples stables.
-  // Ne touche pas aux uploads Cloudinary légitimes ni aux samples déjà en place.
-  await migrateBrokenVideos().catch(err => console.error('[videoMigration]', err.message));
+  // [DÉSACTIVÉ 28/04/2026] migrateBrokenVideos() écrasait silencieusement les vidéos
+  // YouTube par des MP4 samples au démarrage, ce qui détruisait les uploads légitimes.
+  // À ne JAMAIS réactiver tel quel.
+  // await migrateBrokenVideos().catch(err => console.error('[videoMigration]', err.message));
 
   seedBadges().catch(console.error);
   seedRewards().catch(console.error);
