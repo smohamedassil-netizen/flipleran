@@ -83,7 +83,25 @@ function QcmPromptModal({ qcmPath, onClose }) {
  * @param {string}  qcmPath        route vers le QCM de cette vidéo
  * @param {string}  courseId       utilisé pour le bouton "Retour au cours"
  */
-/* ─── Player YouTube (iframe) avec tracking manuel ─────────────────────── */
+/* ─── Charge le script YouTube IFrame API une seule fois ───────────────── */
+function loadYouTubeAPI() {
+  return new Promise((resolve) => {
+    if (window.YT && window.YT.Player) return resolve(window.YT);
+    if (!document.getElementById('yt-iframe-api')) {
+      const tag = document.createElement('script');
+      tag.id  = 'yt-iframe-api';
+      tag.src = 'https://www.youtube.com/iframe_api';
+      document.head.appendChild(tag);
+    }
+    const prev = window.onYouTubeIframeAPIReady;
+    window.onYouTubeIframeAPIReady = () => {
+      if (typeof prev === 'function') prev();
+      resolve(window.YT);
+    };
+  });
+}
+
+/* ─── Player YouTube via IFrame API : vrai tracking du temps regardé ────── */
 function YouTubeEmbedPlayer({
   videoId, youtubeId, initialPercent, nextVideoPath, qcmPath, courseId, titre, userRole, onPointsEarned,
 }) {
@@ -92,32 +110,55 @@ function YouTubeEmbedPlayer({
   const { watchedPercent, completed, onTimeUpdate, sendProgress } =
     useVideoProgress(videoId, initialPercent, { onPointsEarned });
 
-  // Progression basée sur le temps passé à regarder (estimée)
-  // L'API iframe YouTube exigerait plus de plomberie, on reste pragmatique
-  const [elapsedSec, setElapsedSec] = useState(0);
-  const [isActive, setIsActive] = useState(true);
+  const playerRef    = useRef(null);
+  const ytReady      = useRef(false);
+  const containerId  = `yt-${videoId}`;
 
+  // Initialise le YT.Player une fois que l'API est chargée.
   useEffect(() => {
-    const interval = setInterval(() => {
-      if (document.hasFocus() && isActive) {
-        setElapsedSec((s) => s + 1);
-      }
-    }, 1000);
-    return () => clearInterval(interval);
-  }, [isActive]);
-
-  // On estime la progression : vidéo de référence 10 min = 600s → 100%
-  // Chaque minute de visionnage = ~10% de progression
-  useEffect(() => {
-    if (elapsedSec === 0 || completed) return;
-    // Trigger progression update toutes les 10s
-    if (elapsedSec % 10 === 0) {
-      const estimated = Math.min(100, Math.floor(elapsedSec / 6));
-      if (estimated > watchedPercent) {
-        onTimeUpdate({ currentTime: elapsedSec, duration: 600 });
-      }
-    }
-  }, [elapsedSec, completed, watchedPercent, onTimeUpdate]);
+    let mounted = true;
+    let pollInterval;
+    loadYouTubeAPI().then((YT) => {
+      if (!mounted) return;
+      playerRef.current = new YT.Player(containerId, {
+        videoId: youtubeId,
+        playerVars: { rel: 0, modestbranding: 1 },
+        events: {
+          onReady: () => {
+            ytReady.current = true;
+            // Restaurer la position si progression sauvegardée
+            const dur = playerRef.current.getDuration();
+            if (initialPercent > 0 && initialPercent < THRESHOLD && dur > 0) {
+              playerRef.current.seekTo((initialPercent / 100) * dur, true);
+            }
+          },
+          onStateChange: (e) => {
+            // 1 = playing : démarrer le polling du temps
+            if (e.data === 1) {
+              clearInterval(pollInterval);
+              pollInterval = setInterval(() => {
+                const p = playerRef.current;
+                if (!p || !ytReady.current) return;
+                const cur = p.getCurrentTime?.() ?? 0;
+                const dur = p.getDuration?.() ?? 0;
+                if (dur > 0) onTimeUpdate(cur, dur);
+              }, 2000);
+            } else {
+              clearInterval(pollInterval);
+            }
+            // 0 = ended
+            if (e.data === 0) sendProgress(100);
+          },
+        },
+      });
+    });
+    return () => {
+      mounted = false;
+      clearInterval(pollInterval);
+      try { playerRef.current?.destroy?.(); } catch { /* ignore */ }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [youtubeId]);
 
   const markAsWatched = () => {
     sendProgress(100);
@@ -134,36 +175,27 @@ function YouTubeEmbedPlayer({
         background: '#000', borderRadius: 'var(--radius-lg)', overflow: 'hidden',
         boxShadow: '0 4px 24px rgba(0,0,0,.1)',
       }}>
-        <iframe
-          src={`https://www.youtube.com/embed/${youtubeId}?rel=0&modestbranding=1`}
-          title={titre}
-          frameBorder="0"
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-          allowFullScreen
-          style={{ width: '100%', height: '100%', display: 'block' }}
-          onFocus={() => setIsActive(true)}
-          onBlur={() => setIsActive(false)}
-        />
+        {/* Le YT.Player remplace ce div par l'iframe officielle, on récupère le vrai temps via API */}
+        <div id={containerId} style={{ width: '100%', height: '100%' }} title={titre} />
       </div>
 
       {/* Barre progression + actions */}
       <div style={{ marginTop: 12 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
-          <div style={{ flex: 1, height: 6, background: '#E5E7EB', borderRadius: 999, overflow: 'hidden' }}>
+          <div style={{ flex: 1, height: 6, background: 'var(--color-border)', borderRadius: 999, overflow: 'hidden' }}>
             <div style={{
               width: `${watchedPercent}%`, height: '100%',
-              background: completed ? 'linear-gradient(90deg, #059669, #10B981)' : 'linear-gradient(90deg, #1B4F72, #2874A6)',
+              background: completed ? 'linear-gradient(90deg, var(--color-success), #10B981)' : 'linear-gradient(90deg, var(--color-primary), var(--color-primary-hover))',
               transition: 'width 0.5s',
             }} />
           </div>
-          <span style={{ fontSize: 12, fontWeight: 700, color: completed ? '#059669' : '#1B4F72', minWidth: 40 }}>
+          <span style={{ fontSize: 12, fontWeight: 700, color: completed ? 'var(--color-success)' : 'var(--color-primary)', minWidth: 40 }}>
             {Math.round(watchedPercent)}%
           </span>
-          {completed && <CheckCircle size={16} color="#059669" />}
+          {completed && <CheckCircle size={16} color="var(--color-success)" />}
         </div>
 
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', fontSize: 12, color: '#64748B' }}>
-          <span>⏱ Temps passé : {fmt(elapsedSec)}</span>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', fontSize: 12, color: 'var(--color-text-secondary)' }}>
           {!isStudent && (
             <span style={{ padding: '3px 10px', background: '#FEF3C7', color: '#92400E', borderRadius: 6, fontSize: 11, fontWeight: 700, marginLeft: 8 }}>
               Mode prévisualisation prof
@@ -417,6 +449,7 @@ export default function VideoPlayer({
             {/* Play/Pause */}
             <button
               onClick={togglePlay}
+              aria-label={playing ? 'Mettre en pause' : 'Lire la vidéo'}
               style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#fff', display: 'flex', padding: 0 }}
             >
               {playing ? <Pause size={20} /> : <Play size={20} />}
@@ -425,6 +458,7 @@ export default function VideoPlayer({
             {/* Volume */}
             <button
               onClick={() => setMuted((m) => !m)}
+              aria-label={muted ? 'Réactiver le son' : 'Couper le son'}
               style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#fff', display: 'flex', padding: 0 }}
             >
               {muted ? <VolumeX size={18} /> : <Volume2 size={18} />}
@@ -432,6 +466,7 @@ export default function VideoPlayer({
             <input
               type="range" min={0} max={1} step={0.05}
               value={muted ? 0 : volume}
+              aria-label="Volume"
               onChange={(e) => { setVolume(Number(e.target.value)); setMuted(false); }}
               style={{ width: 64, accentColor: 'var(--color-accent)', cursor: 'pointer' }}
             />
@@ -444,6 +479,7 @@ export default function VideoPlayer({
             {/* Fullscreen */}
             <button
               onClick={fullscreen}
+              aria-label="Passer en plein écran"
               style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#fff', display: 'flex', padding: 0 }}
             >
               <Maximize size={17} />

@@ -25,11 +25,15 @@ export default function Login() {
   const handleChange = (e) =>
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
 
+  const [serverWaking, setServerWaking] = useState(false);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setErrorKind('generic');
     setLoading(true);
+    // Affiche un message "réveil du serveur" si la requête traîne (Render free tier dort après 15 min)
+    const wakeTimer = setTimeout(() => setServerWaking(true), 4000);
     try {
       const user = await login(form.email, form.password);
       const from = location.state?.from?.pathname;
@@ -41,6 +45,8 @@ export default function Login() {
       else if (data?.status === 'rejected') setErrorKind('rejected');
       else setErrorKind('generic');
     } finally {
+      clearTimeout(wakeTimer);
+      setServerWaking(false);
       setLoading(false);
     }
   };
@@ -212,6 +218,20 @@ export default function Login() {
           >
             {loading ? 'Connexion...' : 'Se connecter'}
           </button>
+
+          {/* Message si le serveur Render free tier sort de veille (>4s) */}
+          {serverWaking && (
+            <div style={{
+              padding: '10px 14px', borderRadius: 8,
+              background: 'var(--color-primary-light)',
+              border: '1px solid var(--color-primary)',
+              fontSize: 12, color: 'var(--color-primary)',
+              display: 'flex', alignItems: 'center', gap: 8,
+            }}>
+              <Clock size={14} />
+              <span>Réveil du serveur en cours… (jusqu'à 60 secondes pour la 1ʳᵉ connexion)</span>
+            </div>
+          )}
         </form>
 
         {/* Footer */}

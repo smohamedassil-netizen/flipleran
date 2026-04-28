@@ -4,7 +4,7 @@ import Layout from '../components/Layout.jsx';
 import api from '../utils/api.js';
 import {
   ArrowLeft, BarChart3, Users, Video as VideoIcon, FileText,
-  Send, CheckCircle, Clock, AlertTriangle, Search, Bell,
+  Send, CheckCircle, Clock, AlertTriangle, Search, Bell, MessageCircle,
 } from 'lucide-react';
 
 function StatCard({ icon: Icon, label, value, suffix, color }) {
@@ -44,6 +44,11 @@ export default function ProfessorTracking() {
   const [reminderMsg, setReminderMsg] = useState('');
   const [sending, setSending] = useState(false);
   const [feedback, setFeedback] = useState('');
+
+  /* Feedback ciblé prof -> étudiant */
+  const [fbModal, setFbModal] = useState(null); // { student }
+  const [fbMessage, setFbMessage] = useState('');
+  const [fbSending, setFbSending] = useState(false);
 
   /* ── Charger la liste des cours du prof ────────────────────────────── */
   useEffect(() => {
@@ -92,6 +97,27 @@ export default function ProfessorTracking() {
       setTimeout(() => setFeedback(''), 3000);
     } finally {
       setSending(false);
+    }
+  };
+
+  const sendFeedback = async () => {
+    if (!fbModal || !fbMessage.trim()) return;
+    setFbSending(true);
+    try {
+      await api.post('/feedback', {
+        studentId: fbModal.student._id,
+        courseId:  selectedCourseId,
+        message:   fbMessage.trim(),
+      });
+      setFeedback(`Retour envoyé à ${fbModal.student.prenom} ${fbModal.student.nom}.`);
+      setTimeout(() => setFeedback(''), 3000);
+      setFbModal(null);
+      setFbMessage('');
+    } catch (err) {
+      setFeedback("Erreur d'envoi du retour.");
+      setTimeout(() => setFeedback(''), 3000);
+    } finally {
+      setFbSending(false);
     }
   };
 
@@ -284,12 +310,21 @@ export default function ProfessorTracking() {
                       </div>
                       {row.inactive && <div style={{ fontSize: 11, color: '#dc2626', fontWeight: 600 }}>Inactif</div>}
                     </div>
-                    <div style={{ textAlign: 'right' }}>
+                    <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'flex-end' }}>
                       <button
                         onClick={() => openReminder(row.student, 'course', null, '')}
+                        aria-label={`Envoyer un rappel à ${row.student.prenom} ${row.student.nom}`}
                         style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '6px 10px', border: '1px solid #1B4F72', borderRadius: 6, background: 'white', color: '#1B4F72', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}
                       >
                         <Send size={12} /> Rappel
+                      </button>
+                      <button
+                        onClick={() => { setFbMessage(''); setFbModal({ student: row.student }); }}
+                        aria-label={`Donner un retour à ${row.student.prenom} ${row.student.nom}`}
+                        title="Envoyer un retour pédagogique ciblé"
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '6px 10px', border: '1px solid #D97706', borderRadius: 6, background: 'white', color: '#D97706', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}
+                      >
+                        <MessageCircle size={12} /> Retour
                       </button>
                     </div>
                   </div>
@@ -335,6 +370,50 @@ export default function ProfessorTracking() {
                   style={{ padding: '8px 14px', border: 'none', borderRadius: 8, background: '#1B4F72', color: 'white', cursor: sending ? 'not-allowed' : 'pointer', fontSize: 13, fontWeight: 600 }}
                 >
                   {sending ? 'Envoi…' : 'Envoyer'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Modal de feedback pédagogique ciblé */}
+        {fbModal && (
+          <div
+            onClick={() => !fbSending && setFbModal(null)}
+            style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16, zIndex: 1000 }}
+          >
+            <div onClick={(e) => e.stopPropagation()} style={{ background: 'white', borderRadius: 12, padding: 24, width: '100%', maxWidth: 520 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+                <div style={{ width: 36, height: 36, borderRadius: 8, background: '#FEF3C7', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <MessageCircle size={18} color="#D97706" />
+                </div>
+                <h3 style={{ fontSize: 18, fontWeight: 700, color: '#92400E', margin: 0 }}>Retour pédagogique</h3>
+              </div>
+              <p style={{ fontSize: 14, color: '#64748b', margin: '0 0 12px' }}>
+                À <strong>{fbModal.student.prenom} {fbModal.student.nom}</strong>. Le message arrive en notification + dans sa page <em>Mes retours</em>.
+              </p>
+              <textarea
+                value={fbMessage}
+                onChange={(e) => setFbMessage(e.target.value)}
+                placeholder="Ex : « Bon score sur le QCM 1, mais revois la vidéo 3 entre 4:20 et 7:00 — tu as confondu while et for. »"
+                rows={5}
+                maxLength={2000}
+                style={{ width: '100%', padding: 12, border: '1px solid #e5e7eb', borderRadius: 8, fontSize: 14, fontFamily: 'inherit', resize: 'vertical', marginBottom: 6 }}
+              />
+              <div style={{ fontSize: 11, color: '#94a3b8', marginBottom: 12, textAlign: 'right' }}>
+                {fbMessage.length}/2000
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+                <button onClick={() => setFbModal(null)} disabled={fbSending} style={{ padding: '8px 14px', border: '1px solid #e5e7eb', borderRadius: 8, background: 'white', cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>
+                  Annuler
+                </button>
+                <button
+                  onClick={sendFeedback}
+                  disabled={fbSending || !fbMessage.trim()}
+                  style={{ padding: '8px 14px', border: 'none', borderRadius: 8, background: !fbMessage.trim() ? '#94A3B8' : '#D97706', color: 'white', cursor: fbSending || !fbMessage.trim() ? 'not-allowed' : 'pointer', fontSize: 13, fontWeight: 600 }}
+                >
+                  <MessageCircle size={13} style={{ marginRight: 4, verticalAlign: 'middle' }} />
+                  {fbSending ? 'Envoi…' : 'Envoyer le retour'}
                 </button>
               </div>
             </div>

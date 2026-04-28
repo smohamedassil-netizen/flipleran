@@ -248,23 +248,43 @@ export default function ModuleAssistant() {
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
               <Sparkles size={14} />
-              <span style={{ fontSize: 12, opacity: .9, textTransform: 'uppercase', letterSpacing: 1 }}>Assistant IA dédié</span>
+              <span style={{ fontSize: 12, opacity: .9, textTransform: 'uppercase', letterSpacing: 1 }}>
+                {canConfigure ? 'Assistant IA dédié' : 'Assistant IA configuré par votre professeur'}
+              </span>
             </div>
             <h2 style={{ fontSize: 22, fontWeight: 700, margin: 0, marginBottom: 2 }}>{persona.nom}</h2>
-            <div style={{ fontSize: 13, opacity: .9, display: 'flex', alignItems: 'center', gap: 6 }}>
+            <div style={{ fontSize: 13, opacity: .9, display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
               <BookOpen size={12} /> {persona.specialite}
+              {persona.ton && (
+                <span style={{ padding: '2px 8px', background: 'rgba(255,255,255,.2)', borderRadius: 10, fontSize: 11 }}>
+                  ton {persona.ton}
+                </span>
+              )}
             </div>
           </div>
           {canConfigure && (
             <button
               onClick={() => setShowEditor(true)}
               title="Configurer l'assistant"
+              aria-label="Configurer le persona de l'assistant IA"
               style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 12px', background: 'rgba(255,255,255,.15)', border: '1px solid rgba(255,255,255,.3)', borderRadius: 8, color: 'white', cursor: 'pointer', fontSize: 13, fontWeight: 600 }}
             >
               <Settings size={14} /> Configurer
             </button>
           )}
         </div>
+
+        {/* Encart description (visible étudiant pour comprendre le contexte) */}
+        {!canConfigure && persona.description && (
+          <div style={{
+            padding: '10px 14px', marginBottom: 12, borderRadius: 10,
+            background: 'var(--color-primary-light)',
+            borderLeft: `3px solid ${persona.couleur}`,
+            fontSize: 12, color: 'var(--color-text)', lineHeight: 1.5, flexShrink: 0,
+          }}>
+            <strong>À propos de {persona.nom} :</strong> {persona.description}
+          </div>
+        )}
 
         {/* Messages */}
         <div style={{ flex: 1, overflowY: 'auto', padding: 16, background: '#f8fafc', borderRadius: 12, border: '1px solid #e5e7eb' }}>

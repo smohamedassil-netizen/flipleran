@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import api from '../utils/api.js';
+import ConfirmDialog from './ConfirmDialog.jsx';
 import {
   CheckSquare, Square, Plus, Trash2, Lightbulb, X, Target,
   Zap, BookOpen, Hammer, Sparkles, ChevronDown, ChevronUp, TrendingUp,
@@ -114,6 +115,7 @@ export function PhaseChecklist({ projectId, phase, canManage, onUpdate }) {
   const [adding, setAdding] = useState(false);
   const [newText, setNewText] = useState('');
   const [loading, setLoading] = useState(false);
+  const [pendingDelete, setPendingDelete] = useState(null); // item to delete (confirm dialog)
 
   const items = phase.checklist || [];
   const doneCount = items.filter(i => i.done).length;
@@ -138,10 +140,11 @@ export function PhaseChecklist({ projectId, phase, canManage, onUpdate }) {
     } catch (err) { alert(err.response?.data?.message || 'Erreur'); }
   };
 
-  const remove = async (item) => {
-    if (!confirm(`Supprimer "${item.texte}" ?`)) return;
+  const confirmRemove = async () => {
+    if (!pendingDelete) return;
     try {
-      await api.delete(`/projects/${projectId}/phases/${phase._id}/checklist/${item._id}`);
+      await api.delete(`/projects/${projectId}/phases/${phase._id}/checklist/${pendingDelete._id}`);
+      setPendingDelete(null);
       onUpdate();
     } catch (err) { alert(err.response?.data?.message || 'Erreur'); }
   };
@@ -182,7 +185,7 @@ export function PhaseChecklist({ projectId, phase, canManage, onUpdate }) {
               {item.texte}
             </span>
             {canManage && (
-              <button onClick={() => remove(item)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#CBD5E1', padding: 2 }} title="Supprimer">
+              <button onClick={() => setPendingDelete(item)} aria-label={`Supprimer la tâche ${item.texte}`} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#CBD5E1', padding: 2 }} title="Supprimer">
                 <Trash2 size={13} />
               </button>
             )}
@@ -219,6 +222,16 @@ export function PhaseChecklist({ projectId, phase, canManage, onUpdate }) {
           <Plus size={12} /> Ajouter une tâche
         </button>
       )}
+
+      <ConfirmDialog
+        open={!!pendingDelete}
+        title="Supprimer cette tâche ?"
+        message={pendingDelete ? `"${pendingDelete.texte}" sera supprimée définitivement.` : ''}
+        confirmLabel="Supprimer"
+        danger
+        onConfirm={confirmRemove}
+        onCancel={() => setPendingDelete(null)}
+      />
     </div>
   );
 }
@@ -229,6 +242,7 @@ export function IdeasPanel({ projectId, ideas = [], canManage, onUpdate }) {
   const [adding, setAdding] = useState(false);
   const [form, setForm] = useState({ titre: '', description: '', type: 'exercice', difficulte: 'moyen', estime: '' });
   const [saving, setSaving] = useState(false);
+  const [pendingDelete, setPendingDelete] = useState(null);
 
   const submit = async () => {
     if (!form.titre.trim()) return;
@@ -242,10 +256,11 @@ export function IdeasPanel({ projectId, ideas = [], canManage, onUpdate }) {
     finally { setSaving(false); }
   };
 
-  const remove = async (idea) => {
-    if (!confirm(`Supprimer l'idée "${idea.titre}" ?`)) return;
+  const confirmRemove = async () => {
+    if (!pendingDelete) return;
     try {
-      await api.delete(`/projects/${projectId}/ideas/${idea._id}`);
+      await api.delete(`/projects/${projectId}/ideas/${pendingDelete._id}`);
+      setPendingDelete(null);
       onUpdate();
     } catch (err) { alert(err.response?.data?.message || 'Erreur'); }
   };
@@ -311,10 +326,13 @@ export function IdeasPanel({ projectId, ideas = [], canManage, onUpdate }) {
                       <div style={{ fontSize: 12, color: '#64748B', lineHeight: 1.4 }}>{idea.description}</div>
                     )}
                     {canManage && (
-                      <button onClick={() => remove(idea)} style={{
-                        position: 'absolute', top: 8, right: 8, background: 'none',
-                        border: 'none', cursor: 'pointer', color: '#CBD5E1', padding: 2,
-                      }}>
+                      <button
+                        onClick={() => setPendingDelete(idea)}
+                        aria-label={`Supprimer l'idée ${idea.titre}`}
+                        style={{
+                          position: 'absolute', top: 8, right: 8, background: 'none',
+                          border: 'none', cursor: 'pointer', color: '#CBD5E1', padding: 2,
+                        }}>
                         <Trash2 size={12} />
                       </button>
                     )}
@@ -385,6 +403,16 @@ export function IdeasPanel({ projectId, ideas = [], canManage, onUpdate }) {
           )}
         </div>
       )}
+
+      <ConfirmDialog
+        open={!!pendingDelete}
+        title="Supprimer cette idée ?"
+        message={pendingDelete ? `"${pendingDelete.titre}" sera supprimée définitivement.` : ''}
+        confirmLabel="Supprimer"
+        danger
+        onConfirm={confirmRemove}
+        onCancel={() => setPendingDelete(null)}
+      />
     </div>
   );
 }

@@ -39,6 +39,7 @@ import NotificationsPage    from './pages/NotificationsPage.jsx';
 import ProfessorTracking    from './pages/ProfessorTracking.jsx';
 import ModuleAssistant      from './pages/ModuleAssistant.jsx';
 import Rewards              from './pages/Rewards.jsx';
+import MyFeedback           from './pages/MyFeedback.jsx';
 
 /* ── Pages d'erreur ────────────────────────────────────────────────────────── */
 function ErrorPage({ code, title, description }) {
@@ -122,6 +123,7 @@ export default function App() {
             <Route path="/leaderboard/:courseId"  element={<Leaderboard />} />
             <Route path="/quiz-battle"            element={<QuizBattle />} />
             <Route path="/rewards"                element={<Rewards />} />
+            <Route path="/my-feedback"            element={<MyFeedback />} />
           </Route>
 
           {/* Professeur + Admin only */}

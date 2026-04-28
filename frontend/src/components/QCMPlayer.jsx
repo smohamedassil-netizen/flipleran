@@ -361,22 +361,28 @@ export default function QCMPlayer({ qcm, onFinish }) {
           })}
         </div>
 
-        <button
-          className="btn btn-secondary"
-          style={{ alignSelf: 'center' }}
-          onClick={() => {
-            setPhase('playing');
-            setQuestionIndex(0);
-            setAnswers([]);
-            setSelected(null);
-            setMultiSelected([]);
-            setTimeLeft(TIMER_TOTAL);
-            setAnimKey((k) => k + 1);
-            setResult(null);
-          }}
-        >
-          <RotateCcw size={14} /> Recommencer
-        </button>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, marginTop: 8 }}>
+          <button
+            className="btn btn-secondary"
+            onClick={() => {
+              setPhase('playing');
+              setQuestionIndex(0);
+              setAnswers([]);
+              setSelected(null);
+              setMultiSelected([]);
+              setTimeLeft(TIMER_TOTAL);
+              setAnimKey((k) => k + 1);
+              setResult(null);
+            }}
+            title="Refaire le QCM en mode entraînement (le score ne sera pas comptabilisé une 2e fois)"
+          >
+            <RotateCcw size={14} /> S'entraîner sur ces questions
+          </button>
+          <p style={{ fontSize: 11, color: 'var(--color-text-disabled)', textAlign: 'center', maxWidth: 380, margin: 0 }}>
+            Seul votre <strong>premier essai</strong> compte pour les points et le classement.
+            Refaire le QCM permet juste de réviser.
+          </p>
+        </div>
       </div>
     );
   }

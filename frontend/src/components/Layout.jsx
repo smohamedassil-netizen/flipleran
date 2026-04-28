@@ -35,6 +35,7 @@ import {
   Sparkles,
   Bot,
   Video,
+  MessageCircle,
 } from 'lucide-react';
 
 /* ─── Nav config per role ───────────────────────────────────────────────────── */
@@ -57,6 +58,7 @@ const NAV = {
         { label: 'Quiz Battle',     icon: Swords,          to: '/quiz-battle' },
         { label: 'Récompenses',     icon: Gift,            to: '/rewards' },
         { label: 'Messages',        icon: MessageSquare,   to: '/chat' },
+        { label: 'Mes retours',     icon: MessageCircle,   to: '/my-feedback' },
       ],
     },
     {

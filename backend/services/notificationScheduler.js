@@ -6,6 +6,23 @@ import Course from '../models/Course.js';
 import User from '../models/User.js';
 import Progress from '../models/Progress.js';
 import { pushNotification } from './notificationService.js';
+import { sendNotificationEmail } from './emailService.js';
+
+/**
+ * Envoie un email de rappel uniquement les jours critiques (J-1 et J-0).
+ * Les rappels J-7 et J-3 restent in-app uniquement pour ne pas spammer.
+ */
+async function sendDeadlineEmail(userId, subject, body, days) {
+  if (days > 1) return; // Email seulement pour J-0 et J-1
+  try {
+    const user = await User.findById(userId).select('email prenom');
+    if (user?.email) {
+      await sendNotificationEmail(user.email, subject, body);
+    }
+  } catch (err) {
+    console.error('[email deadline]', err.message);
+  }
+}
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -68,6 +85,12 @@ export async function checkQCMDeadlines(io) {
         relatedId: qcm._id,
         dedupKey: dk,
       });
+      await sendDeadlineEmail(
+        userId,
+        `QCM "${qcm.titre}" — à faire ${when}`,
+        `Le QCM <strong>"${qcm.titre}"</strong> du cours <strong>${qcm.videoId.titre}</strong> expire ${when}. Connecte-toi à FlipLearn pour le faire avant la deadline.`,
+        days,
+      );
     }
   }
 }
@@ -107,6 +130,12 @@ export async function checkVideoDeadlines(io) {
         relatedId: video._id,
         dedupKey: dk,
       });
+      await sendDeadlineEmail(
+        userId,
+        `Vidéo "${video.titre}" — à regarder ${when}`,
+        `La vidéo <strong>"${video.titre}"</strong> doit être vue ${when}. Ouvre FlipLearn pour la visionner avant la deadline.`,
+        days,
+      );
     }
   }
 }
@@ -149,6 +178,12 @@ export async function checkProjectDeadlines(io) {
             relatedId: project._id,
             dedupKey: `project_${project._id}_final_d${days}`,
           });
+          await sendDeadlineEmail(
+            userId,
+            `Projet "${project.titre}" — à rendre ${when}`,
+            `Le projet <strong>"${project.titre}"</strong> doit être rendu ${when}. Pense à déposer ton livrable et finaliser les phases.`,
+            days,
+          );
         }
       }
     }

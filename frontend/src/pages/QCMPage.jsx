@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout.jsx';
 import QCMPlayer from '../components/QCMPlayer.jsx';
 import api from '../utils/api.js';
-import { ArrowLeft, AlertCircle, BookOpen } from 'lucide-react';
+import { ArrowLeft, AlertCircle, BookOpen, Clock } from 'lucide-react';
 import { useGamification } from '../context/GamificationContext.jsx';
 
 export default function QCMPage() {
@@ -11,14 +11,18 @@ export default function QCMPage() {
   const navigate    = useNavigate();
   const { notify }  = useGamification();
 
-  const [qcm,     setQCM]     = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error,   setError]   = useState('');
+  const [qcm,        setQCM]        = useState(null);
+  const [loading,    setLoading]    = useState(true);
+  const [error,      setError]      = useState('');
+  const [errorCode,  setErrorCode]  = useState(null);
 
   useEffect(() => {
     api.get(`/qcm/video/${videoId}`)
       .then(({ data }) => setQCM(data))
-      .catch((err) => setError(err.response?.data?.message ?? 'QCM introuvable.'))
+      .catch((err) => {
+        setErrorCode(err.response?.status);
+        setError(err.response?.data?.message ?? 'Erreur de chargement du QCM.');
+      })
       .finally(() => setLoading(false));
   }, [videoId]);
 
@@ -32,15 +36,34 @@ export default function QCMPage() {
   if (loading) return <Layout title="QCM"><p className="text-small">Chargement...</p></Layout>;
 
   if (error) {
+    // 404 = pas de QCM cree pour cette video : message specifique, pas alarmiste
+    const isNotCreated = errorCode === 404;
     return (
       <Layout title="QCM">
-        <div className="alert alert-error" style={{ marginBottom: 20 }}>
-          <AlertCircle size={14} />
-          <span>{error}</span>
+        <div style={{ maxWidth: 520, margin: '40px auto 0', textAlign: 'center' }}>
+          <div style={{
+            width: 64, height: 64, borderRadius: 16, margin: '0 auto 16px',
+            background: isNotCreated ? 'var(--color-primary-light)' : 'var(--color-error-bg)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>
+            {isNotCreated
+              ? <Clock size={28} color="var(--color-primary)" />
+              : <AlertCircle size={28} color="var(--color-error)" />}
+          </div>
+          <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--color-text)', margin: 0 }}>
+            {isNotCreated
+              ? "Pas encore de QCM pour cette vidéo"
+              : "Impossible de charger le QCM"}
+          </h2>
+          <p style={{ fontSize: 14, color: 'var(--color-text-secondary)', margin: '8px 0 20px', lineHeight: 1.5 }}>
+            {isNotCreated
+              ? "Votre professeur n'a pas encore créé de QCM associé. Continuez avec la vidéo suivante ou revenez plus tard."
+              : error}
+          </p>
+          <button className="btn btn-secondary" onClick={() => navigate(-1)} aria-label="Retour à la page précédente">
+            <ArrowLeft size={14} /> Retour
+          </button>
         </div>
-        <button className="btn btn-secondary btn-sm" onClick={() => navigate(-1)}>
-          <ArrowLeft size={14} /> Retour
-        </button>
       </Layout>
     );
   }

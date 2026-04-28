@@ -4,9 +4,10 @@ import Layout from '../components/Layout.jsx';
 import { io } from 'socket.io-client';
 import {
   ArrowLeft, Swords, Users, Clock, Trophy, Plus, RefreshCw, Zap, CheckCircle,
-  XCircle, Flame, Snowflake, Sparkles, Target, Award, Crown, Clock3,
+  XCircle, Flame, Snowflake, Sparkles, Target, Award, Crown, Clock3, BookOpen,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext.jsx';
+import api from '../utils/api.js';
 
 const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || (import.meta.env.PROD ? '' : 'http://localhost:5000');
 const STORAGE_KEY = 'fliplearn_user';
@@ -54,6 +55,18 @@ export default function QuizBattle() {
 
   const myScore = scores.find(s => s.name === `${user?.prenom} ${user?.nom}`) || {};
   const myStreak = myScore.streak || 0;
+
+  // Pre-requis pedagogique : avoir complete au moins 1 video a 80%+ avant de defier
+  const [eligible, setEligible]       = useState(null); // null = loading, true/false = checked
+  const [completedVideos, setCompletedVideos] = useState(0);
+  useEffect(() => {
+    api.get('/progress').then(({ data }) => {
+      const arr = Array.isArray(data) ? data : [];
+      const total = arr.reduce((s, p) => s + (p.videosCompleted?.length ?? 0), 0);
+      setCompletedVideos(total);
+      setEligible(total >= 1);
+    }).catch(() => setEligible(true)); // en cas d'erreur API on n'empeche pas (UX bienveillante)
+  }, []);
 
   useEffect(() => {
     const token = getToken();
@@ -147,6 +160,10 @@ export default function QuizBattle() {
   useEffect(() => { if (phase === 'lobby') refreshRooms(); }, [phase, refreshRooms]);
 
   const createRoom = () => {
+    if (eligible === false) {
+      setError('Tu dois avoir complété au moins 1 vidéo à 80% pour participer.');
+      return;
+    }
     if (!socketRef.current?.connected) {
       setError('Connexion au serveur en cours… Réessayez.');
       return;
@@ -164,6 +181,10 @@ export default function QuizBattle() {
   };
 
   const joinRoom = (rid) => {
+    if (eligible === false) {
+      setError('Tu dois avoir complété au moins 1 vidéo à 80% pour rejoindre une battle.');
+      return;
+    }
     socketRef.current?.emit('battle:join', {
       roomId: rid,
       name: `${user.prenom} ${user.nom}`,
@@ -266,6 +287,39 @@ export default function QuizBattle() {
               <p style={{ color: '#64748b', marginTop: 6 }}>Défie un autre étudiant en duel temps réel avec power-ups et combos</p>
             </div>
 
+            {/* Encart pedagogique : prerequis */}
+            {eligible === false && (
+              <div style={{
+                padding: '16px 18px', marginBottom: 24, borderRadius: 12,
+                background: 'linear-gradient(135deg, #FEF3C7, #FFFBEB)',
+                border: '1px solid #FCD34D',
+                display: 'flex', alignItems: 'flex-start', gap: 12,
+              }}>
+                <div style={{ width: 36, height: 36, borderRadius: 10, background: '#D97706', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <BookOpen size={18} color="white" />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <p style={{ fontWeight: 700, fontSize: 14, color: '#92400E', margin: 0 }}>
+                    Avant de défier tes camarades, regarde au moins une vidéo en entier
+                  </p>
+                  <p style={{ fontSize: 12, color: '#78350F', margin: '4px 0 8px', lineHeight: 1.5 }}>
+                    Le Quiz Battle est un complément à l'apprentissage, pas un raccourci. Tu dois avoir complété
+                    au moins <strong>1 vidéo à 80%</strong> dans tes cours pour participer.
+                  </p>
+                  <button
+                    onClick={() => navigate('/courses')}
+                    style={{
+                      padding: '7px 14px', borderRadius: 8, background: '#D97706',
+                      color: 'white', border: 'none', fontWeight: 600, fontSize: 12,
+                      cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 5,
+                    }}
+                  >
+                    <BookOpen size={13} /> Aller à mes cours
+                  </button>
+                </div>
+              </div>
+            )}
+
             {/* Règles / features */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 10, marginBottom: 24 }}>
               <div style={{ padding: 14, background: '#FEF3C7', borderRadius: 10, border: '1px solid #FDE68A' }}>
@@ -288,13 +342,19 @@ export default function QuizBattle() {
               </div>
             </div>
 
-            <button onClick={createRoom} style={{
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
-              width: '100%', padding: '16px', borderRadius: 12,
-              background: 'linear-gradient(135deg, #1B4F72, #2874A6)',
-              color: 'white', border: 'none', fontSize: 16, fontWeight: 700, cursor: 'pointer',
-              marginBottom: 24, boxShadow: '0 4px 14px rgba(27,79,114,.3)',
-            }}>
+            <button
+              onClick={createRoom}
+              disabled={eligible === false}
+              aria-label="Créer une nouvelle salle de Quiz Battle"
+              style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
+                width: '100%', padding: '16px', borderRadius: 12,
+                background: eligible === false ? '#94A3B8' : 'linear-gradient(135deg, #1B4F72, #2874A6)',
+                color: 'white', border: 'none', fontSize: 16, fontWeight: 700,
+                cursor: eligible === false ? 'not-allowed' : 'pointer',
+                marginBottom: 24, boxShadow: '0 4px 14px rgba(27,79,114,.3)',
+                opacity: eligible === false ? 0.6 : 1,
+              }}>
               <Plus size={20} /> Créer une salle
             </button>
 
