@@ -23,8 +23,8 @@ router.post('/generate-ai', requireRole('professeur', 'admin'), generateQCMWithA
 // QCM d'une vidéo (accessible à tous les rôles connectés)
 router.get('/video/:videoId', getQCMByVideo);
 
-// Soumission (étudiant)
-router.post('/submit', submitQCM);
+// Soumission (etudiant uniquement — un prof n'a pas a passer le QCM qu'il a cree)
+router.post('/submit', requireRole('etudiant'), submitQCM);
 
 // Stats (professeur / admin)
 router.get('/:id/stats', requireRole('professeur', 'admin'), getQCMStats);

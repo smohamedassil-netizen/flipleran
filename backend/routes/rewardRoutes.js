@@ -15,13 +15,13 @@ import {
 const router = express.Router();
 router.use(authMiddleware);
 
-// Catalogue
+// Catalogue (consultation : tous, mais seul l'etudiant peut reclamer)
 router.get('/', listRewards);
-router.get('/mine', myClaims);
+router.get('/mine', requireRole('etudiant'), myClaims);
 router.get('/claims', requireRole('admin'), listAllClaims);
 
 router.post('/', requireRole('admin'), createReward);
-router.post('/:id/claim', claimReward);
+router.post('/:id/claim', requireRole('etudiant'), claimReward);
 
 router.put('/:id', requireRole('admin'), updateReward);
 router.put('/claims/:id', requireRole('admin'), processClaim);

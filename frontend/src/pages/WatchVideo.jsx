@@ -100,6 +100,7 @@ export default function WatchVideo() {
             nextVideoPath={nextVideoPath}
             qcmPath={qcmPath}
             courseId={courseId}
+            userRole={user?.role}
             onPointsEarned={handlePointsEarned}
           />
 

@@ -16,17 +16,20 @@ const fmt = (s) => {
   return `${m}:${sec}`;
 };
 
-/* ─── Hook : déclenche la modale QCM la 1ère fois que THRESHOLD est atteint ─ */
-function useQcmPrompt(videoId, watchedPercent, qcmPath) {
+/* ─── Hook : déclenche la modale QCM la 1ère fois que THRESHOLD est atteint ─
+   Réservé aux étudiants — un prof qui prévisualise sa vidéo ne doit pas être
+   invité à passer le QCM (il l'a créé). */
+function useQcmPrompt(videoId, watchedPercent, qcmPath, userRole) {
   const [showPrompt, setShowPrompt] = useState(false);
   useEffect(() => {
+    if (userRole !== 'etudiant') return;
     if (!qcmPath || !videoId) return;
     if (watchedPercent < THRESHOLD) return;
     const key = `fliplearn_qcm_prompt_${videoId}`;
     if (typeof window !== 'undefined' && window.sessionStorage?.getItem(key)) return;
     if (typeof window !== 'undefined') window.sessionStorage?.setItem(key, '1');
     setShowPrompt(true);
-  }, [videoId, watchedPercent, qcmPath]);
+  }, [videoId, watchedPercent, qcmPath, userRole]);
   return [showPrompt, () => setShowPrompt(false)];
 }
 
@@ -82,9 +85,10 @@ function QcmPromptModal({ qcmPath, onClose }) {
  */
 /* ─── Player YouTube (iframe) avec tracking manuel ─────────────────────── */
 function YouTubeEmbedPlayer({
-  videoId, youtubeId, initialPercent, nextVideoPath, qcmPath, courseId, titre, onPointsEarned,
+  videoId, youtubeId, initialPercent, nextVideoPath, qcmPath, courseId, titre, userRole, onPointsEarned,
 }) {
   const navigate = useNavigate();
+  const isStudent = userRole === 'etudiant';
   const { watchedPercent, completed, onTimeUpdate, sendProgress } =
     useVideoProgress(videoId, initialPercent, { onPointsEarned });
 
@@ -120,7 +124,7 @@ function YouTubeEmbedPlayer({
   };
 
   const thresholdReached = watchedPercent >= 80;
-  const [showQcmPrompt, closeQcmPrompt] = useQcmPrompt(videoId, watchedPercent, qcmPath);
+  const [showQcmPrompt, closeQcmPrompt] = useQcmPrompt(videoId, watchedPercent, qcmPath, userRole);
 
   return (
     <div>
@@ -160,7 +164,12 @@ function YouTubeEmbedPlayer({
 
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', fontSize: 12, color: '#64748B' }}>
           <span>⏱ Temps passé : {fmt(elapsedSec)}</span>
-          {!completed && (
+          {!isStudent && (
+            <span style={{ padding: '3px 10px', background: '#FEF3C7', color: '#92400E', borderRadius: 6, fontSize: 11, fontWeight: 700, marginLeft: 8 }}>
+              Mode prévisualisation prof
+            </span>
+          )}
+          {isStudent && !completed && (
             <button
               onClick={markAsWatched}
               style={{
@@ -174,7 +183,7 @@ function YouTubeEmbedPlayer({
               <CheckCircle size={12} /> J'ai terminé la vidéo
             </button>
           )}
-          {completed && (
+          {(isStudent && completed) && (
             <div style={{ display: 'flex', gap: 8, marginLeft: 'auto' }}>
               {qcmPath && (
                 <button onClick={() => navigate(qcmPath)} style={{ padding: '7px 14px', background: 'linear-gradient(135deg, #D97706, #F59E0B)', color: 'white', border: 'none', borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
@@ -187,6 +196,11 @@ function YouTubeEmbedPlayer({
                 </button>
               )}
             </div>
+          )}
+          {!isStudent && qcmPath && (
+            <button onClick={() => navigate(`/professor/videos/${videoId}/qcm`)} style={{ padding: '7px 14px', background: 'white', color: '#1B4F72', border: '1.5px solid #1B4F72', borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 4, marginLeft: 'auto' }}>
+              ⚙ Gérer le QCM
+            </button>
           )}
         </div>
       </div>
@@ -205,8 +219,11 @@ export default function VideoPlayer({
   nextVideoPath,
   qcmPath,
   courseId,
+  userRole,
   onPointsEarned,
 }) {
+  const isStudent = userRole === 'etudiant';
+
   // Route vers player YouTube si provider = youtube
   if (provider === 'youtube' && youtubeId) {
     return (
@@ -218,6 +235,7 @@ export default function VideoPlayer({
         nextVideoPath={nextVideoPath}
         qcmPath={qcmPath}
         courseId={courseId}
+        userRole={userRole}
         onPointsEarned={onPointsEarned}
       />
     );
@@ -239,7 +257,7 @@ export default function VideoPlayer({
   const { watchedPercent, completed, onTimeUpdate, sendProgress } =
     useVideoProgress(videoId, initialPercent, { onPointsEarned });
 
-  const [showQcmPrompt, closeQcmPrompt] = useQcmPrompt(videoId, watchedPercent, qcmPath);
+  const [showQcmPrompt, closeQcmPrompt] = useQcmPrompt(videoId, watchedPercent, qcmPath, userRole);
 
   /* ── auto-hide controls ─────────────────────────────────────────────────── */
   const resetHideTimer = () => {
@@ -450,9 +468,14 @@ export default function VideoPlayer({
           </p>
         </div>
 
-        {/* Boutons — débloqués après 80% */}
-        <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
-          {qcmPath && (
+        {/* Boutons — étudiant : débloqués après 80% / prof : gérer le QCM */}
+        <div style={{ display: 'flex', gap: 8, flexShrink: 0, alignItems: 'center' }}>
+          {!isStudent && (
+            <span style={{ padding: '4px 10px', background: '#FEF3C7', color: '#92400E', borderRadius: 6, fontSize: 11, fontWeight: 700 }}>
+              Mode prévisualisation prof
+            </span>
+          )}
+          {isStudent && qcmPath && (
             <button
               disabled={!completed}
               onClick={() => navigate(qcmPath)}
@@ -464,7 +487,16 @@ export default function VideoPlayer({
               {completed ? 'Faire le QCM' : `QCM (${watchedPercent}%)`}
             </button>
           )}
-          {nextVideoPath && completed && (
+          {!isStudent && qcmPath && (
+            <button
+              onClick={() => navigate(`/professor/videos/${videoId}/qcm`)}
+              className="btn btn-secondary"
+              title="Modifier le QCM associé à cette vidéo"
+            >
+              ⚙ Gérer le QCM
+            </button>
+          )}
+          {nextVideoPath && (isStudent ? completed : true) && (
             <button
               onClick={() => navigate(nextVideoPath)}
               className="btn btn-secondary"

@@ -92,33 +92,37 @@ export default function App() {
           <Route path="/register"     element={<Register />} />
           <Route path="/unauthorized" element={<Unauthorized />} />
 
-          {/* All authenticated users */}
+          {/* Routes communes à tous les rôles authentifiés (consultation, navigation, communication) */}
           <Route element={<ProtectedRoute />}>
-            <Route path="/"                        element={<DashboardRouter />} />
-            <Route path="/courses"                 element={<CoursesPage />} />
-            <Route path="/decks"                   element={<Decks />} />
-            <Route path="/study/:deckId"           element={<Study />} />
-            <Route path="/courses/:courseId"        element={<StudentCourse />} />
-            <Route path="/watch/:videoId"          element={<WatchVideo />} />
-            <Route path="/qcm/:videoId"            element={<QCMPage />} />
-            <Route path="/profile"                 element={<StudentProfile />} />
-            <Route path="/leaderboard"             element={<Leaderboard />} />
-            <Route path="/leaderboard/:courseId"   element={<Leaderboard />} />
-            <Route path="/chat"                            element={<ChatContacts />} />
-            <Route path="/chat/course/:courseId"        element={<ChatPage roomType="course" />} />
-            <Route path="/chat/private/:userId"         element={<ChatPage roomType="private" />} />
-            <Route path="/chat/bot"                     element={<ChatPage roomType="bot" />} />
-            <Route path="/courses/:courseId/resources"  element={<ResourceLibrary />} />
-            <Route path="/quiz-battle"                  element={<QuizBattle />} />
+            <Route path="/"                            element={<DashboardRouter />} />
+            <Route path="/courses"                     element={<CoursesPage />} />
+            <Route path="/courses/:courseId"           element={<StudentCourse />} />
+            <Route path="/watch/:videoId"              element={<WatchVideo />} />
+            <Route path="/profile"                     element={<StudentProfile />} />
+            <Route path="/chat"                        element={<ChatContacts />} />
+            <Route path="/chat/course/:courseId"       element={<ChatPage roomType="course" />} />
+            <Route path="/chat/private/:userId"        element={<ChatPage roomType="private" />} />
+            <Route path="/chat/bot"                    element={<ChatPage roomType="bot" />} />
+            <Route path="/courses/:courseId/resources" element={<ResourceLibrary />} />
             <Route path="/settings"                    element={<Settings />} />
             <Route path="/resources"                   element={<ResourcesHub />} />
-            <Route path="/support"                    element={<Support />} />
-            <Route path="/projects"                  element={<ProjectList />} />
-            <Route path="/projects/:projectId"       element={<ProjectDetail />} />
-            <Route path="/notifications"             element={<NotificationsPage />} />
-            <Route path="/my-tickets"                element={<Navigate to="/support" replace />} />
+            <Route path="/support"                     element={<Support />} />
+            <Route path="/projects"                    element={<ProjectList />} />
+            <Route path="/projects/:projectId"         element={<ProjectDetail />} />
+            <Route path="/notifications"               element={<NotificationsPage />} />
+            <Route path="/my-tickets"                  element={<Navigate to="/support" replace />} />
             <Route path="/courses/:courseId/assistant" element={<ModuleAssistant />} />
-            <Route path="/rewards"                   element={<Rewards />} />
+          </Route>
+
+          {/* Étudiant uniquement — apprentissage actif & gamification */}
+          <Route element={<ProtectedRoute roles={['etudiant']} />}>
+            <Route path="/decks"                  element={<Decks />} />
+            <Route path="/study/:deckId"          element={<Study />} />
+            <Route path="/qcm/:videoId"           element={<QCMPage />} />
+            <Route path="/leaderboard"            element={<Leaderboard />} />
+            <Route path="/leaderboard/:courseId"  element={<Leaderboard />} />
+            <Route path="/quiz-battle"            element={<QuizBattle />} />
+            <Route path="/rewards"                element={<Rewards />} />
           </Route>
 
           {/* Professeur + Admin only */}
