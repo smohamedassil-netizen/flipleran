@@ -7,7 +7,7 @@ import { ArrowLeft, AlertCircle, BookOpen, Home, ListOrdered } from 'lucide-reac
 import Breadcrumb from '../components/Breadcrumb.jsx';
 import VideoAnalysis from '../components/VideoAnalysis.jsx';
 import { useGamification } from '../context/GamificationContext.jsx';
-import { useAuth } from '../hooks/useAuth.js';
+import { useAuth } from '../context/AuthContext.jsx';
 
 export default function WatchVideo() {
   const { videoId } = useParams();

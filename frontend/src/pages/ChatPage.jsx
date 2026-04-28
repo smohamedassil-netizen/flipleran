@@ -4,7 +4,7 @@ import { MessageSquare, BookOpen, User, Bot, ArrowLeft } from 'lucide-react';
 import Layout  from '../components/Layout.jsx';
 import ChatBox from '../components/ChatBox.jsx';
 import api     from '../utils/api.js';
-import { useAuth } from '../hooks/useAuth.js';
+import { useAuth } from '../context/AuthContext.jsx';
 
 /* ─── Construit le roomId selon le type de salle ─────────────────────────── */
 function buildRoomId(type, { courseId, userId, myId }) {

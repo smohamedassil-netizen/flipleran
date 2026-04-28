@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { Send, Users, Wifi, WifiOff, Bot } from 'lucide-react';
 import { useChat } from '../hooks/useChat.js';
-import { useAuth } from '../hooks/useAuth.js';
+import { useAuth } from '../context/AuthContext.jsx';
 
 /* ─── Suggestions de questions rapides pour le chatbot ──────────────────── */
 const QUICK_SUGGESTIONS = [

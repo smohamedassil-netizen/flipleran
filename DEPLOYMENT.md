@@ -65,9 +65,9 @@ git init
 git branch -M main
 git remote add origin https://github.com/<ton-user>/fliplearn.git
 
-# Ajouter + committer les nouveaux fichiers (README, DEPLOYMENT, tests, swagger, etc.)
+# Ajouter + committer les fichiers de configuration et de documentation
 git add .
-git commit -m "chore: add README, Swagger, tests and deployment config"
+git commit -m "chore: add README and deployment config"
 
 # Puis push
 git push -u origin main
@@ -79,10 +79,7 @@ Si le repo existe déjà ailleurs, copie simplement les fichiers modifiés / cr�
 - `DEPLOYMENT.md`
 - `backend/.env.example`
 - `backend/package.json`
-- `backend/render.yaml`
 - `backend/server.js`
-- `backend/docs/swagger.js` *(nouveau)*
-- `backend/tests/*.test.js` *(nouveau)*
 - `frontend/.env.example`
 
 Puis `git add` + `commit` + `push`.
@@ -134,8 +131,8 @@ https://fliplearn-api.onrender.com
 ### 3.d — Vérifier le backend
 
 Teste dans ton navigateur :
-- `https://fliplearn-api.onrender.com/api/health` → doit renvoyer `{"status":"ok",...}`
-- `https://fliplearn-api.onrender.com/api-docs` → doit afficher Swagger UI
+- `https://fliplearn-5lsz.onrender.com/` → doit afficher la page de connexion FlipLearn (le frontend buildé)
+- `https://fliplearn-5lsz.onrender.com/api/courses` → doit renvoyer 401 (auth requise) — preuve que l'API tourne
 
 > ⚠️ Le plan gratuit Render **met le service en veille** au bout de 15 min d'inactivité. La 1re requête après veille prend ~30 s. Pour une démo de soutenance : fais une requête 1 min avant de présenter.
 
@@ -188,13 +185,12 @@ Sans cette étape, le frontend ne pourra pas appeler l'API (CORS bloque).
 
 ## Étape 6 — Tests post-déploiement
 
-- [ ] `https://fliplearn.vercel.app/welcome` s'ouvre sans erreur.
+- [ ] `https://fliplearn-5lsz.onrender.com/welcome` s'ouvre sans erreur.
 - [ ] Register → un compte est créé, statut `pending`.
 - [ ] Login admin → dashboard admin accessible.
-- [ ] `https://fliplearn-api.onrender.com/api-docs` affiche bien Swagger UI.
 - [ ] Le chat fonctionne (ouvre la console : connexion Socket.io réussie).
 - [ ] Upload d'une vidéo (compte prof) → upload Cloudinary OK.
-- [ ] Chatbot → réponses générées par Groq.
+- [ ] Module Assistant IA → réponses générées par Groq (Llama 3.3).
 
 ---
 

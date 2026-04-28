@@ -8,7 +8,7 @@ import {
 import Layout from '../components/Layout.jsx';
 import Breadcrumb from '../components/Breadcrumb.jsx';
 import api    from '../utils/api.js';
-import { useAuth } from '../hooks/useAuth.js';
+import { useAuth } from '../context/AuthContext.jsx';
 
 /* ─── Helpers ────────────────────────────────────────────────────────────── */
 const TYPE_META = {

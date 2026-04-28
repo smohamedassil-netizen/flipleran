@@ -72,13 +72,15 @@ Deployed on Render.com at `https://fliplearn-5lsz.onrender.com`. Single web serv
 
 GitHub repo: `https://github.com/smohamedassil-netizen/flipleran` (note: typo in repo name is intentional)
 
-## Test Accounts (from seed.js)
+## Test Accounts (from backend/services/usersSeed.js)
 
 | Role | Email | Password |
 |------|-------|----------|
 | Admin | admin@fliplearn.dz | admin1234 |
-| Prof | karim.prof@fliplearn.dz | prof1234 |
-| Student | amine@fliplearn.dz | etudiant123 |
+| Prof (ISIL L3) | omar.isil.l3@fliplearn.dz | test1234 |
+| Student (ISIL L3) | assil.isil.l3@fliplearn.dz | test1234 |
+
+The seed creates 9 professors and 9 students covering ISIL / Management / Finance × L1 / L2 / L3 (e.g., `karim.isil.l1@`, `amine.isil.l1@`, `leila.isil.l2@`, etc.). Common password for everyone except admin is `test1234`.
 
 ## Language
 

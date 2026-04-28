@@ -56,10 +56,9 @@ FlipLearn est une plateforme d'apprentissage collaboratif basée sur la pédagog
 | **Backend** | Node.js, Express 4, Mongoose 8, Socket.io 4, JWT, Bcrypt, Multer, node-cron |
 | **Base de données** | MongoDB (Atlas en production) |
 | **Stockage média** | Cloudinary (vidéos & images) |
-| **IA** | Groq SDK (Llama), OpenAI SDK |
-| **Email** | Nodemailer (SMTP) |
-| **Déploiement** | Backend : Render.com — Frontend : Vercel |
-| **Documentation API** | Swagger / OpenAPI 3 (disponible sur `/api-docs`) |
+| **IA** | Groq SDK (Llama 3.3 70B), OpenAI SDK (Whisper + GPT-4o) |
+| **Email** | Brevo + Resend (HTTP API, fallback) |
+| **Déploiement** | Render.com (service unifié front + back) |
 
 ---
 
@@ -158,7 +157,6 @@ Le frontend communique par défaut avec `http://localhost:5000` (modifiable via 
 |----------|-------------|
 | `npm run dev` | Démarrage avec nodemon (hot reload) |
 | `npm start` | Démarrage en production |
-| `npm test` | Lance la suite de tests (Jest + supertest) |
 
 ### Frontend
 
@@ -172,11 +170,7 @@ Le frontend communique par défaut avec `http://localhost:5000` (modifiable via 
 
 ## API
 
-La documentation interactive (Swagger UI) est exposée à l'adresse :
-
-```
-http://localhost:5000/api-docs
-```
+L'API REST est exposée sous le préfixe `/api`. Le détail des endpoints (paramètres, codes de retour, exemples de payload) est documenté dans le **chapitre 4 du mémoire PFE**.
 
 ### Endpoints principaux
 
@@ -248,23 +242,6 @@ En mode `NODE_ENV=production`, le backend sert automatiquement le build React de
 
 ---
 
-## Tests
-
-Suite de tests **Jest + supertest** côté backend :
-
-```bash
-cd backend
-npm test
-```
-
-Couverture actuelle (démonstrative) :
-- Authentification (`auth.test.js`)
-- Gestion des decks (`decks.test.js`)
-
-À enrichir selon les besoins du jury / de l'équipe.
-
----
-
 ## Structure du projet
 
 ```
@@ -277,25 +254,20 @@ fliplearn/
 │   ├── routes/              # routes Express
 │   ├── services/            # services transverses (IA, email, seeds, scheduler)
 │   ├── public/videos/       # vidéos locales (dev)
-│   ├── tests/               # tests Jest
-│   ├── docs/
-│   │   └── swagger.js       # configuration OpenAPI
 │   ├── server.js            # point d'entrée
-│   ├── render.yaml          # config déploiement Render
 │   └── .env.example
 │
 └── frontend/
     ├── src/
-    │   ├── components/      # composants réutilisables (Navbar, BadgeCard, …)
+    │   ├── components/      # composants réutilisables (Layout, BadgeCard, …)
     │   ├── context/         # providers (Auth, Theme, Toast, Notification, Gamification)
-    │   ├── hooks/           # hooks personnalisés (useAuth, useDecks, useVideoProgress)
-    │   ├── pages/           # pages / écrans (Dashboard, Study, QCM, ChatPage, …)
+    │   ├── hooks/           # hooks personnalisés (useChat, useVideoProgress)
+    │   ├── pages/           # pages / écrans (Dashboard, StudentCourse, QCM, …)
     │   ├── main.jsx
     │   └── App.jsx          # routage
     ├── tailwind.config.js
     ├── postcss.config.js
     ├── vite.config.js
-    ├── vercel.json
     └── .env.example
 ```
 

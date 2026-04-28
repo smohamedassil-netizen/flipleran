@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Award, BookOpen, CheckCircle, Zap, BarChart2, Clock, ArrowLeft, Edit2, Lock, Users, ClipboardList, Video, Camera } from 'lucide-react';
 import Layout from '../components/Layout.jsx';
 import api from '../utils/api.js';
-import { useAuth } from '../hooks/useAuth.js';
+import { useAuth } from '../context/AuthContext.jsx';
 import BadgeCard from '../components/BadgeCard.jsx';
 
 /* ─── All possible badges (for "locked" display) ─────────────────────────── */

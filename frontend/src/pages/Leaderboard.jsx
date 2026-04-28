@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Crown, Medal, Trophy, Users, Zap } from 'lucide-react';
 import Layout from '../components/Layout.jsx';
 import api from '../utils/api.js';
-import { useAuth } from '../hooks/useAuth.js';
+import { useAuth } from '../context/AuthContext.jsx';
 
 /* ─── Medal colours for top 3 ─────────────────────────────────────────────── */
 const PODIUM = [
