@@ -32,6 +32,9 @@ import {
   HelpCircle,
   Award,
   Gift,
+  Sparkles,
+  Bot,
+  Video,
 } from 'lucide-react';
 
 /* ─── Nav config per role ───────────────────────────────────────────────────── */
@@ -73,6 +76,16 @@ const NAV = {
         { label: 'Ressources',      icon: FolderOpen,      to: '/resources' },
         { label: 'Gérer les QCM',   icon: ClipboardList,   to: '/professor/qcm' },
         { label: 'Projets',         icon: FolderKanban,    to: '/projects' },
+      ],
+    },
+    {
+      section: 'Outils IA',
+      items: [
+        { label: 'Générer un QCM par IA', icon: Sparkles,  to: '/professor/qcm/create', badge: 'IA' },
+        { label: 'Analyse vidéo IA',       icon: Video,    to: '/courses', badge: 'IA',
+          tooltip: 'Ouvre une vidéo et clique « Analyser cette vidéo » pour générer transcript + résumé + concepts clés.' },
+        { label: 'Assistant Module',       icon: Bot,      to: '/courses', badge: 'IA',
+          tooltip: 'Chaque cours expose un Assistant IA personnalisable (persona) : pédagogue, strict, fun, expert.' },
       ],
     },
     {
@@ -222,18 +235,29 @@ function Sidebar({ collapsed, onToggle, role, user, mobileOpen, setMobileOpen })
             {!collapsed && (
               <div className="nav-section-label">{section.section}</div>
             )}
-            {section.items.map(({ label, icon: Icon, to }) => (
+            {section.items.map(({ label, icon: Icon, to, badge, tooltip }) => (
               <NavLink
-                key={to}
+                key={`${section.section}-${label}`}
                 to={to}
                 end={to === '/'}
                 className={() => `nav-item${isNavItemActive(to) ? ' active' : ''}`}
-                title={collapsed ? label : undefined}
+                title={tooltip || (collapsed ? label : undefined)}
                 style={{ justifyContent: collapsed ? 'center' : undefined }}
                 onClick={handleNavClick}
               >
                 <Icon size={17} style={{ flexShrink: 0 }} />
-                {!collapsed && <span>{label}</span>}
+                {!collapsed && (
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, flex: 1 }}>
+                    {label}
+                    {badge && (
+                      <span style={{
+                        marginLeft: 'auto', padding: '1px 6px', fontSize: 9, fontWeight: 800,
+                        background: 'linear-gradient(135deg, #9333EA, #C084FC)',
+                        color: 'white', borderRadius: 999, letterSpacing: 0.3,
+                      }}>{badge}</span>
+                    )}
+                  </span>
+                )}
               </NavLink>
             ))}
           </div>

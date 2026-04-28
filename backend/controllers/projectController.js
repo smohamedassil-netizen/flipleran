@@ -3,6 +3,7 @@ import User from '../models/User.js';
 import { uploadBuffer } from '../config/cloudinary.js';
 import Groq from 'groq-sdk';
 import { pushNotification } from '../services/notificationService.js';
+import { triggerAutoBadge } from '../services/points.js';
 
 /**
  * Ajoute une entrée d'activité + notifie les membres via Socket.io.
@@ -60,40 +61,43 @@ export const createProject = async (req, res) => {
       return res.status(403).json({ message: 'Seul un professeur peut créer un projet.' });
     }
 
-    const { titre, description, type, courseId, modules = [], enonce, motsCles, dateDebut, dateFin, dateSoutenance } = req.body;
+    const { titre, description, type, courseId, modules = [], enonce, motsCles, dateDebut, dateFin, dateSoutenance, phases } = req.body;
     if (!titre || !type) {
       return res.status(400).json({ message: 'titre et type sont requis.' });
     }
+    if (!['mono', 'groupe'].includes(type)) {
+      return res.status(400).json({ message: 'type doit être "mono" ou "groupe".' });
+    }
+    if (type === 'mono' && !courseId) {
+      return res.status(400).json({ message: 'Un projet mono-module doit être rattaché à un cours.' });
+    }
+    if (type === 'groupe' && (!Array.isArray(modules) || modules.length < 2)) {
+      return res.status(400).json({ message: 'Un projet groupé doit être rattaché à au moins deux modules.' });
+    }
+
+    // Phases par défaut (communes à mono et groupé)
+    const defaultPhases = [
+      { titre: 'Lancement' },
+      { titre: 'Recherche' },
+      { titre: 'Développement' },
+      { titre: 'Livrable' },
+      { titre: 'Soutenance' },
+    ];
 
     const data = {
       titre,
       description: description ?? '',
       type,
-      courseId: courseId || undefined,
-      modules: Array.isArray(modules) ? modules : [],
+      courseId: type === 'mono' ? courseId : (courseId || undefined),
+      modules: type === 'groupe' ? modules : [],
+      enonce: enonce ?? '',
+      motsCles: motsCles ?? [],
+      dateDebut,
+      dateFin,
+      dateSoutenance,
+      phases: Array.isArray(phases) && phases.length ? phases : defaultPhases,
       createdBy: req.user.id,
     };
-
-    if (type === 'prosit') {
-      data.enonce = enonce ?? '';
-      data.motsCles = motsCles ?? [];
-      data.phases = [
-        { titre: 'Prosit Aller' },
-        { titre: 'Recherche individuelle' },
-        { titre: 'Prosit Retour' },
-      ];
-    } else if (type === 'projet') {
-      data.dateDebut = dateDebut;
-      data.dateFin = dateFin;
-      data.dateSoutenance = dateSoutenance;
-      data.phases = [
-        { titre: 'Lancement' },
-        { titre: 'Recherche' },
-        { titre: 'Développement' },
-        { titre: 'Préparation soutenance' },
-        { titre: 'Soutenance' },
-      ];
-    }
 
     const project = await Project.create(data);
     await project.populate('createdBy', 'nom prenom');
@@ -212,9 +216,22 @@ export const updateProject = async (req, res) => {
       return res.status(403).json({ message: 'Seul le créateur peut modifier ce projet.' });
     }
 
+    const previousStatus = project.status;
     Object.assign(project, req.body);
     await project.save();
     await project.populate('createdBy', 'nom prenom');
+
+    // Auto-attribution du badge "Projet bouclé" pour chaque membre étudiant
+    // lorsqu'un projet passe en statut "termine" (1ère fois).
+    if (previousStatus !== 'termine' && project.status === 'termine') {
+      const memberIds = new Set();
+      project.groupes.forEach(g => g.membres.forEach(m => memberIds.add(m.userId.toString())));
+      for (const uid of memberIds) {
+        try { await triggerAutoBadge(uid, 'project_completed'); }
+        catch (e) { console.error('[project_completed badge]', e.message); }
+      }
+    }
+
     res.json(project);
   } catch (err) {
     res.status(500).json({ message: err.message });

@@ -48,16 +48,16 @@ const FEATURES = [
   { Icon: Video,        title: 'Vidéos courtes découpées',   desc: 'Chapitres de 5-10 min, tu apprends à ton rythme.', color: '#7C3AED' },
   { Icon: Bot,          title: 'IA spécialisée par module',  desc: 'Un assistant dédié par cours qui connaît ton contenu.', color: '#1B4F72' },
   { Icon: FileText,     title: 'QCM auto-corrigés',          desc: 'Teste tes connaissances et débloque des badges.', color: '#059669' },
-  { Icon: Users,        title: 'Projets collaboratifs',      desc: 'Prosits CESI, groupes avec rôles, livrables.', color: '#D97706' },
+  { Icon: Users,        title: 'Projets collaboratifs',      desc: 'Projets mono-module ou groupés, équipes avec rôles, livrables.', color: '#D97706' },
   { Icon: MessageSquare,title: 'Chat temps réel',           desc: 'Discute avec ta promo et tes profs.', color: '#6366F1' },
-  { Icon: Gift,         title: 'Récompenses réelles',        desc: 'Certifs, réductions, cadeaux — pas juste des points.', color: '#EC4899' },
+  { Icon: Gift,         title: 'Abonnement FlipLearn',       desc: 'Échange tes points contre des mois d\'accès premium.', color: '#EC4899' },
 ];
 
 const STEPS = [
   { num: '01', title: 'Regarde la vidéo', desc: 'Chez toi, à ton rythme, chapitres courts et transcrit par IA.', Icon: Video },
   { num: '02', title: 'Teste-toi (QCM)',  desc: 'Auto-évaluation instantanée, gagne des points.', Icon: FileText },
-  { num: '03', title: 'En cours/prosit',  desc: 'Tu arrives préparé, le prof anime, tu pratiques en projet.', Icon: Users },
-  { num: '04', title: 'Échange tes points', desc: 'Contre des certifs, des réductions, des cadeaux réels.', Icon: Gift },
+  { num: '03', title: 'En cours / projet', desc: 'Tu arrives préparé, le prof anime, tu pratiques en projet.', Icon: Users },
+  { num: '04', title: 'Échange tes points', desc: 'Contre des mois d\'abonnement FlipLearn premium.', Icon: Gift },
 ];
 
 const TESTIMONIALS = [

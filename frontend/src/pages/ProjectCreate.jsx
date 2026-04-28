@@ -5,73 +5,52 @@ import { useAuth } from '../context/AuthContext.jsx';
 import api from '../utils/api.js';
 import {
   ArrowLeft, Plus, Trash2, Save, AlertCircle, X,
-  FolderKanban, FileText, Calendar,
+  FolderKanban, BookOpen, Layers,
 } from 'lucide-react';
 
-/* ─── Default phases per type ────────────────────────────────────────────── */
-const DEFAULT_PHASES_PROSIT = [
-  'Lecture et compr\u00e9hension',
-  'Identification des mots-cl\u00e9s',
-  'Brainstorming',
-  'Recherche individuelle',
-  'Mise en commun',
-  'Synth\u00e8se',
-  'Restitution',
-];
-
-const DEFAULT_PHASES_PROJET = [
-  'Analyse du sujet',
-  'Planification',
-  'R\u00e9alisation',
-  'Tests et validation',
-  'R\u00e9daction du rapport',
+/* Phases par défaut (communes mono/groupé, modifiables) */
+const DEFAULT_PHASES = [
+  'Lancement',
+  'Recherche',
+  'Développement',
+  'Livrable',
   'Soutenance',
 ];
 
-/* ═══════════════════════════════════════════════════════════════════════════
-   ProjectCreate
-═══════════════════════════════════════════════════════════════════════════ */
 export default function ProjectCreate() {
   const navigate = useNavigate();
   const { user } = useAuth();
 
-  const [type, setType]               = useState('prosit');
+  const [type, setType]               = useState('mono'); // 'mono' | 'groupe'
   const [titre, setTitre]             = useState('');
   const [description, setDescription] = useState('');
-  const [coursId, setCoursId]         = useState('');
+  const [courseId, setCourseId]       = useState('');         // pour mono
+  const [moduleIds, setModuleIds]     = useState([]);          // pour groupé
   const [courses, setCourses]         = useState([]);
 
-  /* Prosit fields */
   const [enonce, setEnonce]         = useState('');
   const [motsCles, setMotsCles]     = useState([]);
   const [motCleInput, setMotCleInput] = useState('');
 
-  /* Projet fields */
   const [dateDebut, setDateDebut]           = useState('');
   const [dateFin, setDateFin]               = useState('');
   const [dateSoutenance, setDateSoutenance] = useState('');
 
-  /* Phases */
-  const [phases, setPhases] = useState(DEFAULT_PHASES_PROSIT.map(t => ({ titre: t })));
+  const [phases, setPhases] = useState(DEFAULT_PHASES.map(t => ({ titre: t })));
 
   const [saving, setSaving] = useState(false);
   const [error, setError]   = useState('');
 
-  /* Fetch prof's courses */
   useEffect(() => {
     api.get('/courses')
       .then(({ data }) => setCourses(data))
       .catch(console.error);
   }, []);
 
-  /* Update phases when type changes */
-  const handleTypeChange = (newType) => {
-    setType(newType);
-    const defaults = newType === 'prosit' ? DEFAULT_PHASES_PROSIT : DEFAULT_PHASES_PROJET;
-    setPhases(defaults.map(t => ({ titre: t })));
+  const toggleModule = (id) => {
+    setModuleIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
   };
 
-  /* Mots-clés */
   const addMotCle = () => {
     const mc = motCleInput.trim();
     if (mc && !motsCles.includes(mc)) {
@@ -83,7 +62,6 @@ export default function ProjectCreate() {
     setMotsCles(prev => prev.filter((_, i) => i !== index));
   };
 
-  /* Phases */
   const addPhase = () => {
     setPhases(prev => [...prev, { titre: '' }]);
   };
@@ -98,13 +76,17 @@ export default function ProjectCreate() {
     });
   };
 
-  /* Submit */
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
 
     if (!titre.trim()) return setError('Le titre est obligatoire.');
-    if (!coursId) return setError('Veuillez s\u00e9lectionner un cours.');
+    if (type === 'mono' && !courseId) {
+      return setError('Sélectionnez le module rattaché au projet.');
+    }
+    if (type === 'groupe' && moduleIds.length < 2) {
+      return setError('Un projet groupé doit être rattaché à au moins deux modules.');
+    }
     if (phases.length === 0) return setError('Ajoutez au moins une phase.');
     if (phases.some(p => !p.titre.trim())) return setError('Toutes les phases doivent avoir un titre.');
 
@@ -114,23 +96,24 @@ export default function ProjectCreate() {
         type,
         titre: titre.trim(),
         description: description.trim(),
-        coursId,
+        enonce: enonce.trim(),
+        motsCles,
         phases: phases.map(p => ({ titre: p.titre.trim(), statut: 'a_faire' })),
       };
 
-      if (type === 'prosit') {
-        payload.enonce = enonce;
-        payload.motsCles = motsCles;
+      if (type === 'mono') {
+        payload.courseId = courseId;
       } else {
-        if (dateDebut) payload.dateDebut = dateDebut;
-        if (dateFin) payload.dateFin = dateFin;
-        if (dateSoutenance) payload.dateSoutenance = dateSoutenance;
+        payload.modules = moduleIds;
       }
+      if (dateDebut) payload.dateDebut = dateDebut;
+      if (dateFin) payload.dateFin = dateFin;
+      if (dateSoutenance) payload.dateSoutenance = dateSoutenance;
 
       const { data } = await api.post('/projects', payload);
       navigate(`/projects/${data._id}`);
     } catch (err) {
-      setError(err.response?.data?.message ?? 'Erreur lors de la cr\u00e9ation du projet.');
+      setError(err.response?.data?.message ?? 'Erreur lors de la création du projet.');
     } finally {
       setSaving(false);
     }
@@ -139,7 +122,6 @@ export default function ProjectCreate() {
   return (
     <Layout title="Nouveau projet">
       <div style={{ maxWidth: 720, margin: '0 auto' }}>
-        {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
           <button className="btn btn-ghost btn-sm" onClick={() => navigate(-1)}>
             <ArrowLeft size={15} />
@@ -147,16 +129,16 @@ export default function ProjectCreate() {
           <h1 className="page-title">Créer un nouveau projet</h1>
         </div>
 
-        {/* Type toggle */}
+        {/* Type toggle mono / groupé */}
         <div style={{ display: 'flex', gap: 12, marginBottom: 24 }}>
           {[
-            { key: 'prosit', label: 'Prosit', desc: 'Apprentissage par probl\u00e8me', color: '#1B4F72', bg: '#EBF3FA' },
-            { key: 'projet', label: 'Projet', desc: 'Projet de groupe', color: '#2E7D32', bg: '#E8F5E9' },
-          ].map(({ key, label, desc, color, bg }) => (
+            { key: 'mono',   label: 'Projet mono-module',   desc: 'Un projet rattaché à un seul cours.',                 Icon: BookOpen, color: '#1B4F72', bg: '#EBF3FA' },
+            { key: 'groupe', label: 'Projet groupé',          desc: 'Un projet transverse rattaché à plusieurs modules.', Icon: Layers,   color: '#2E7D32', bg: '#E8F5E9' },
+          ].map(({ key, label, desc, Icon, color, bg }) => (
             <button
               key={key}
               type="button"
-              onClick={() => handleTypeChange(key)}
+              onClick={() => setType(key)}
               style={{
                 flex: 1, padding: '16px 20px',
                 borderRadius: 'var(--radius-lg)',
@@ -167,7 +149,7 @@ export default function ProjectCreate() {
               }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
-                <FolderKanban size={20} color={type === key ? color : 'var(--color-text-secondary)'} />
+                <Icon size={20} color={type === key ? color : 'var(--color-text-secondary)'} />
                 <span style={{ fontWeight: 700, fontSize: 'var(--font-size-md)', color: type === key ? color : 'var(--color-text)' }}>
                   {label}
                 </span>
@@ -218,130 +200,138 @@ export default function ProjectCreate() {
               />
             </div>
 
-            <div>
-              <label className="form-label">
-                Cours <span style={{ color: 'var(--color-error)' }}>*</span>
-              </label>
-              <select
+            {type === 'mono' ? (
+              <div>
+                <label className="form-label">
+                  Module rattaché <span style={{ color: 'var(--color-error)' }}>*</span>
+                </label>
+                <select
+                  className="form-input"
+                  style={{ width: '100%' }}
+                  value={courseId}
+                  onChange={(e) => setCourseId(e.target.value)}
+                  required
+                >
+                  <option value="">Sélectionner un module</option>
+                  {courses.map((c) => (
+                    <option key={c._id} value={c._id}>{c.titre}</option>
+                  ))}
+                </select>
+              </div>
+            ) : (
+              <div>
+                <label className="form-label">
+                  Modules rattachés <span style={{ color: 'var(--color-error)' }}>* (min. 2)</span>
+                </label>
+                <div style={{
+                  border: '1px solid var(--color-border)', borderRadius: 8,
+                  maxHeight: 220, overflowY: 'auto', padding: 4,
+                }}>
+                  {courses.length === 0 && (
+                    <p style={{ padding: 12, color: 'var(--color-text-secondary)', fontSize: 13, margin: 0 }}>Aucun cours disponible.</p>
+                  )}
+                  {courses.map((c) => {
+                    const checked = moduleIds.includes(c._id);
+                    return (
+                      <label key={c._id} style={{
+                        display: 'flex', alignItems: 'center', gap: 8,
+                        padding: '8px 10px', borderRadius: 6,
+                        background: checked ? '#E8F5E9' : 'transparent',
+                        cursor: 'pointer',
+                      }}>
+                        <input type="checkbox" checked={checked} onChange={() => toggleModule(c._id)} />
+                        <span style={{ fontSize: 13, color: 'var(--color-text)' }}>
+                          {c.titre} <span style={{ color: 'var(--color-text-secondary)', fontSize: 11 }}>({c.filiere || '?'})</span>
+                        </span>
+                      </label>
+                    );
+                  })}
+                </div>
+                {moduleIds.length > 0 && (
+                  <p style={{ marginTop: 6, fontSize: 12, color: '#2E7D32' }}>
+                    {moduleIds.length} module{moduleIds.length > 1 ? 's' : ''} sélectionné{moduleIds.length > 1 ? 's' : ''}.
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Énoncé + mots-clés (commun à mono et groupé) */}
+          <div className="card" style={{ padding: 20, marginBottom: 16 }}>
+            <p style={{ fontSize: 'var(--font-size-xs)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--color-text-secondary)', marginBottom: 14 }}>
+              Énoncé et mots-clés
+            </p>
+
+            <div style={{ marginBottom: 14 }}>
+              <label className="form-label">Énoncé / contexte</label>
+              <textarea
                 className="form-input"
-                style={{ width: '100%' }}
-                value={coursId}
-                onChange={(e) => setCoursId(e.target.value)}
-                required
-              >
-                <option value="">Sélectionner un cours</option>
-                {courses.map((c) => (
-                  <option key={c._id} value={c._id}>{c.titre}</option>
-                ))}
-              </select>
+                style={{ width: '100%', minHeight: 100, resize: 'vertical' }}
+                placeholder="Décrivez le sujet, le contexte ou la situation problème..."
+                value={enonce}
+                onChange={(e) => setEnonce(e.target.value)}
+              />
+            </div>
+
+            <div>
+              <label className="form-label">Mots-clés</label>
+              <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+                <input
+                  className="form-input"
+                  style={{ flex: 1 }}
+                  placeholder="Ajouter un mot-clé..."
+                  value={motCleInput}
+                  onChange={(e) => setMotCleInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      addMotCle();
+                    }
+                  }}
+                />
+                <button type="button" className="btn btn-secondary btn-sm" onClick={addMotCle}>
+                  <Plus size={14} /> Ajouter
+                </button>
+              </div>
+              {motsCles.length > 0 && (
+                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                  {motsCles.map((mc, i) => (
+                    <span key={i} style={{
+                      display: 'inline-flex', alignItems: 'center', gap: 4,
+                      padding: '3px 10px', fontSize: 12, fontWeight: 600,
+                      borderRadius: 20, backgroundColor: '#EBF3FA', color: '#1B4F72',
+                    }}>
+                      {mc}
+                      <button type="button" onClick={() => removeMotCle(i)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex', color: '#1B4F72' }}>
+                        <X size={12} />
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 
-          {/* Prosit-specific fields */}
-          {type === 'prosit' && (
-            <div className="card" style={{ padding: 20, marginBottom: 16 }}>
-              <p style={{ fontSize: 'var(--font-size-xs)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--color-text-secondary)', marginBottom: 14 }}>
-                Énoncé du prosit
-              </p>
-
-              <div style={{ marginBottom: 14 }}>
-                <label className="form-label">Énoncé</label>
-                <textarea
-                  className="form-input"
-                  style={{ width: '100%', minHeight: 120, resize: 'vertical' }}
-                  placeholder="Décrivez la situation problème..."
-                  value={enonce}
-                  onChange={(e) => setEnonce(e.target.value)}
-                />
-              </div>
-
+          {/* Calendrier */}
+          <div className="card" style={{ padding: 20, marginBottom: 16 }}>
+            <p style={{ fontSize: 'var(--font-size-xs)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--color-text-secondary)', marginBottom: 14 }}>
+              Calendrier (optionnel)
+            </p>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
               <div>
-                <label className="form-label">Mots-clés</label>
-                <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
-                  <input
-                    className="form-input"
-                    style={{ flex: 1 }}
-                    placeholder="Ajouter un mot-clé..."
-                    value={motCleInput}
-                    onChange={(e) => setMotCleInput(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault();
-                        addMotCle();
-                      }
-                    }}
-                  />
-                  <button type="button" className="btn btn-secondary btn-sm" onClick={addMotCle}>
-                    <Plus size={14} /> Ajouter
-                  </button>
-                </div>
-                {motsCles.length > 0 && (
-                  <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                    {motsCles.map((mc, i) => (
-                      <span
-                        key={i}
-                        style={{
-                          display: 'inline-flex', alignItems: 'center', gap: 4,
-                          padding: '3px 10px', fontSize: 12, fontWeight: 600,
-                          borderRadius: 20, backgroundColor: '#EBF3FA', color: '#1B4F72',
-                        }}
-                      >
-                        {mc}
-                        <button
-                          type="button"
-                          onClick={() => removeMotCle(i)}
-                          style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex', color: '#1B4F72' }}
-                        >
-                          <X size={12} />
-                        </button>
-                      </span>
-                    ))}
-                  </div>
-                )}
+                <label className="form-label">Date début</label>
+                <input type="date" className="form-input" style={{ width: '100%' }} value={dateDebut} onChange={(e) => setDateDebut(e.target.value)} />
+              </div>
+              <div>
+                <label className="form-label">Date fin</label>
+                <input type="date" className="form-input" style={{ width: '100%' }} value={dateFin} onChange={(e) => setDateFin(e.target.value)} />
+              </div>
+              <div>
+                <label className="form-label">Date soutenance</label>
+                <input type="date" className="form-input" style={{ width: '100%' }} value={dateSoutenance} onChange={(e) => setDateSoutenance(e.target.value)} />
               </div>
             </div>
-          )}
-
-          {/* Projet-specific fields */}
-          {type === 'projet' && (
-            <div className="card" style={{ padding: 20, marginBottom: 16 }}>
-              <p style={{ fontSize: 'var(--font-size-xs)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--color-text-secondary)', marginBottom: 14 }}>
-                Dates du projet
-              </p>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
-                <div>
-                  <label className="form-label">Date début</label>
-                  <input
-                    type="date"
-                    className="form-input"
-                    style={{ width: '100%' }}
-                    value={dateDebut}
-                    onChange={(e) => setDateDebut(e.target.value)}
-                  />
-                </div>
-                <div>
-                  <label className="form-label">Date fin</label>
-                  <input
-                    type="date"
-                    className="form-input"
-                    style={{ width: '100%' }}
-                    value={dateFin}
-                    onChange={(e) => setDateFin(e.target.value)}
-                  />
-                </div>
-                <div>
-                  <label className="form-label">Date soutenance</label>
-                  <input
-                    type="date"
-                    className="form-input"
-                    style={{ width: '100%' }}
-                    value={dateSoutenance}
-                    onChange={(e) => setDateSoutenance(e.target.value)}
-                  />
-                </div>
-              </div>
-            </div>
-          )}
+          </div>
 
           {/* Phases */}
           <div className="card" style={{ padding: 20, marginBottom: 20 }}>
@@ -374,13 +364,7 @@ export default function ProjectCreate() {
                     value={phase.titre}
                     onChange={(e) => updatePhase(i, e.target.value)}
                   />
-                  <button
-                    type="button"
-                    className="btn btn-ghost btn-sm"
-                    onClick={() => removePhase(i)}
-                    style={{ color: '#e74c3c', padding: '4px 8px' }}
-                    disabled={phases.length <= 1}
-                  >
+                  <button type="button" className="btn btn-ghost btn-sm" onClick={() => removePhase(i)} style={{ color: '#e74c3c', padding: '4px 8px' }} disabled={phases.length <= 1}>
                     <Trash2 size={14} />
                   </button>
                 </div>
@@ -388,14 +372,13 @@ export default function ProjectCreate() {
             </div>
           </div>
 
-          {/* Submit */}
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
             <button type="button" className="btn btn-ghost" onClick={() => navigate(-1)}>
               Annuler
             </button>
             <button type="submit" className="btn btn-primary" disabled={saving}>
               <Save size={15} />
-              {saving ? 'Cr\u00e9ation...' : 'Cr\u00e9er le projet'}
+              {saving ? 'Création...' : 'Créer le projet'}
             </button>
           </div>
         </form>

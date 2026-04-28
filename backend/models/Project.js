@@ -92,10 +92,14 @@ const activitySchema = new mongoose.Schema({
 const projectSchema = new mongoose.Schema({
   titre: { type: String, required: true },
   description: String,
+  // Type d'organisation du projet :
+  //   'mono'   = rattaché à un seul module (courseId)
+  //   'groupe' = rattaché à plusieurs modules (modules[]), travail transverse
   type: {
     type: String,
-    enum: ['prosit', 'projet'],
-    required: true
+    enum: ['mono', 'groupe'],
+    required: true,
+    default: 'mono',
   },
   courseId: { type: mongoose.Schema.Types.ObjectId, ref: 'Course' },
   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
@@ -105,16 +109,16 @@ const projectSchema = new mongoose.Schema({
     default: 'brouillon'
   },
 
-  // Prosit
+  // Énoncé pédagogique (commun à mono et groupé)
   enonce: String,
   motsCles: [String],
 
-  // Projet
+  // Calendrier
   dateDebut: Date,
   dateFin: Date,
   dateSoutenance: Date,
 
-  // Modules associés (multi-modules pour projets collaboratifs transverses)
+  // Modules associés (utilisé pour les projets de type 'groupe')
   modules: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Course' }],
 
   // Structure

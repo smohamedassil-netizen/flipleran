@@ -426,10 +426,23 @@ export default function ProfessorDashboard() {
   );
 
   return (
-    <Layout title="Tableau de bord">
+    <Layout title="Synthèse de classe">
       <button onClick={() => navigate(-1)} style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'none', border: 'none', color: '#1B4F72', cursor: 'pointer', fontSize: 15, fontWeight: 500, padding: '8px 0', marginBottom: 12 }}>
         <ArrowLeft size={18} /> Retour
       </button>
+      {/* ── Bandeau explicatif distinguant Synthèse / Suivi individuel ── */}
+      <div style={{
+        padding: '10px 14px', marginBottom: 16, borderRadius: 10,
+        background: 'linear-gradient(135deg, #EBF3FA, #F8FAFC)',
+        borderLeft: '3px solid #1B4F72', fontSize: 13, color: '#1E293B',
+      }}>
+        <strong style={{ color: '#1B4F72' }}>📊 Synthèse de classe</strong> — vue d'ensemble par cours :
+        statistiques agrégées, alertes, classement.
+        <Link to="/professor/tracking" style={{ marginLeft: 8, color: '#1B4F72', fontWeight: 600, textDecoration: 'underline' }}>
+          Voir le suivi individuel par étudiant →
+        </Link>
+      </div>
+
       {/* ── Header ────────────────────────────────────────── */}
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 24, gap: 16, flexWrap: 'wrap' }}>
         <div>

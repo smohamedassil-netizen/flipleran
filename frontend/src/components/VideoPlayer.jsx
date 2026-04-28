@@ -16,6 +16,60 @@ const fmt = (s) => {
   return `${m}:${sec}`;
 };
 
+/* ─── Hook : déclenche la modale QCM la 1ère fois que THRESHOLD est atteint ─ */
+function useQcmPrompt(videoId, watchedPercent, qcmPath) {
+  const [showPrompt, setShowPrompt] = useState(false);
+  useEffect(() => {
+    if (!qcmPath || !videoId) return;
+    if (watchedPercent < THRESHOLD) return;
+    const key = `fliplearn_qcm_prompt_${videoId}`;
+    if (typeof window !== 'undefined' && window.sessionStorage?.getItem(key)) return;
+    if (typeof window !== 'undefined') window.sessionStorage?.setItem(key, '1');
+    setShowPrompt(true);
+  }, [videoId, watchedPercent, qcmPath]);
+  return [showPrompt, () => setShowPrompt(false)];
+}
+
+/* ─── Modale "QCM disponible !" ─────────────────────────────────────────── */
+function QcmPromptModal({ qcmPath, onClose }) {
+  const navigate = useNavigate();
+  if (!qcmPath) return null;
+  return (
+    <div onClick={onClose} style={{
+      position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      padding: 16, zIndex: 9999,
+    }}>
+      <div onClick={(e) => e.stopPropagation()} style={{
+        background: 'white', borderRadius: 14, padding: 28,
+        maxWidth: 440, width: '100%',
+        boxShadow: '0 20px 50px rgba(0,0,0,.25)',
+      }}>
+        <div style={{ fontSize: 44, marginBottom: 12, textAlign: 'center' }}>📝</div>
+        <h3 style={{ fontSize: 20, fontWeight: 700, color: '#1B4F72', textAlign: 'center', marginBottom: 8 }}>
+          QCM disponible !
+        </h3>
+        <p style={{ fontSize: 14, color: '#475569', textAlign: 'center', marginBottom: 20, lineHeight: 1.5 }}>
+          Tu as visionné suffisamment de la vidéo pour débloquer le QCM associé. Veux-tu le passer maintenant pour gagner des points ?
+        </p>
+        <div style={{ display: 'flex', gap: 10, justifyContent: 'center' }}>
+          <button onClick={onClose} style={{
+            padding: '10px 18px', borderRadius: 8,
+            border: '1px solid #E5E7EB', background: 'white',
+            fontSize: 13, fontWeight: 600, cursor: 'pointer', color: '#475569',
+          }}>Plus tard</button>
+          <button onClick={() => { onClose(); navigate(qcmPath); }} style={{
+            padding: '10px 18px', borderRadius: 8, border: 'none',
+            background: 'linear-gradient(135deg, #D97706, #F59E0B)',
+            color: 'white', fontSize: 13, fontWeight: 700, cursor: 'pointer',
+            display: 'inline-flex', alignItems: 'center', gap: 6,
+          }}>📝 Lancer le QCM</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /**
  * VideoPlayer
  * @param {string}  videoId        ID MongoDB de la vidéo
@@ -66,6 +120,7 @@ function YouTubeEmbedPlayer({
   };
 
   const thresholdReached = watchedPercent >= 80;
+  const [showQcmPrompt, closeQcmPrompt] = useQcmPrompt(videoId, watchedPercent, qcmPath);
 
   return (
     <div>
@@ -135,6 +190,7 @@ function YouTubeEmbedPlayer({
           )}
         </div>
       </div>
+      {showQcmPrompt && <QcmPromptModal qcmPath={qcmPath} onClose={closeQcmPrompt} />}
     </div>
   );
 }
@@ -182,6 +238,8 @@ export default function VideoPlayer({
 
   const { watchedPercent, completed, onTimeUpdate, sendProgress } =
     useVideoProgress(videoId, initialPercent, { onPointsEarned });
+
+  const [showQcmPrompt, closeQcmPrompt] = useQcmPrompt(videoId, watchedPercent, qcmPath);
 
   /* ── auto-hide controls ─────────────────────────────────────────────────── */
   const resetHideTimer = () => {
@@ -440,6 +498,8 @@ export default function VideoPlayer({
 
       {/* Spin keyframe */}
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+
+      {showQcmPrompt && <QcmPromptModal qcmPath={qcmPath} onClose={closeQcmPrompt} />}
     </div>
   );
 }

@@ -3,18 +3,20 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import Layout from '../components/Layout.jsx';
 import api from '../utils/api.js';
 import {
-  ArrowLeft, Gift, Star, Lock, Check, Award, Zap, Ticket, ShoppingBag,
-  Trophy, Crown, X, Loader2, Clock, AlertCircle, Sparkles, Package,
+  ArrowLeft, Gift, Star, Lock, Check, Crown, X, Loader2,
+  Clock, Sparkles, Package, Trophy, Award, ShoppingBag,
 } from 'lucide-react';
 
 const TYPE_META = {
-  certificat: { label: 'Certificat',  Icon: Award,       color: '#1B4F72', bg: '#DBEAFE' },
-  reduction:  { label: 'Réduction',   Icon: Ticket,      color: '#D97706', bg: '#FEF3C7' },
-  premium:    { label: 'Premium',     Icon: Crown,       color: '#9333EA', bg: '#F5F3FF' },
-  formation:  { label: 'Formation',   Icon: Zap,         color: '#059669', bg: '#D1FAE5' },
-  cadeau:     { label: 'Cadeau',      Icon: Package,     color: '#EC4899', bg: '#FCE7F3' },
-  autre:      { label: 'Bonus',       Icon: Sparkles,    color: '#64748B', bg: '#F1F5F9' },
+  abonnement_fliplearn: {
+    label: 'Abonnement FlipLearn',
+    Icon: Crown,
+    color: '#9333EA',
+    bg: '#F5F3FF',
+  },
 };
+
+const DEFAULT_META = TYPE_META.abonnement_fliplearn;
 
 const CLAIM_STATUS = {
   pending:   { label: 'En attente', color: '#D97706', bg: '#FEF3C7', Icon: Clock },
@@ -24,7 +26,7 @@ const CLAIM_STATUS = {
 };
 
 function RewardCard({ reward, userPoints, onClaim, claiming }) {
-  const meta = TYPE_META[reward.type] || TYPE_META.autre;
+  const meta = TYPE_META[reward.type] || DEFAULT_META;
   const TypeIcon = meta.Icon;
   const canAfford = userPoints >= reward.pointsRequired;
   const outOfStock = reward.stock !== -1 && reward.claimed >= reward.stock;
@@ -66,9 +68,9 @@ function RewardCard({ reward, userPoints, onClaim, claiming }) {
 
       <div style={{ fontSize: 13, color: '#64748B', lineHeight: 1.5, flex: 1 }}>{reward.description}</div>
 
-      {reward.sponsor && (
-        <div style={{ fontSize: 11, color: '#94A3B8', fontStyle: 'italic' }}>
-          Offert par <strong>{reward.sponsor}</strong>
+      {reward.dureeMois && (
+        <div style={{ fontSize: 11, color: meta.color, fontWeight: 600 }}>
+          ⏱ {reward.dureeMois} mois d'accès offert
         </div>
       )}
 
@@ -108,7 +110,7 @@ function RewardCard({ reward, userPoints, onClaim, claiming }) {
 
 function ClaimConfirmModal({ reward, onClose, onConfirm, confirming }) {
   const [message, setMessage] = useState('');
-  const meta = TYPE_META[reward.type] || TYPE_META.autre;
+  const meta = TYPE_META[reward.type] || DEFAULT_META;
   return (
     <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16, zIndex: 1000 }}>
       <div onClick={(e) => e.stopPropagation()} style={{ background: 'white', borderRadius: 14, padding: 24, width: '100%', maxWidth: 440, boxShadow: '0 20px 50px rgba(0,0,0,.2)' }}>
@@ -134,7 +136,7 @@ function ClaimConfirmModal({ reward, onClose, onConfirm, confirming }) {
         <textarea
           value={message}
           onChange={(e) => setMessage(e.target.value)}
-          placeholder="Ex: taille XL pour le t-shirt, livraison Alger..."
+          placeholder="Ex: e-mail de contact, période d'activation souhaitée..."
           rows={3}
           style={{ width: '100%', padding: 10, border: '1px solid #E5E7EB', borderRadius: 8, fontSize: 13, fontFamily: 'inherit', resize: 'vertical', marginBottom: 14 }}
         />
@@ -207,16 +209,15 @@ export default function Rewards() {
   };
 
   const filtered = useMemo(() => {
-    if (filter === 'all') return rewards;
     if (filter === 'affordable') return rewards.filter(r => userPoints >= r.pointsRequired);
-    return rewards.filter(r => r.type === filter);
+    return rewards;
   }, [rewards, filter, userPoints]);
 
   const nextGoal = rewards.filter(r => r.pointsRequired > userPoints).sort((a, b) => a.pointsRequired - b.pointsRequired)[0];
   const progressToNext = nextGoal ? Math.min(100, (userPoints / nextGoal.pointsRequired) * 100) : 100;
 
   return (
-    <Layout title="Boutique récompenses">
+    <Layout title="Abonnement FlipLearn">
       <div style={{ maxWidth: 1150, margin: '0 auto' }}>
         <button onClick={() => navigate(-1)} style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'none', border: 'none', color: '#1B4F72', cursor: 'pointer', fontSize: 15, fontWeight: 500, padding: '8px 0', marginBottom: 12 }}>
           <ArrowLeft size={18} /> Retour
@@ -226,10 +227,10 @@ export default function Rewards() {
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14, flexWrap: 'wrap', gap: 10 }}>
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 4 }}>
-              <Gift size={28} color="#1B4F72" />
-              <h1 style={{ fontSize: '1.5rem', fontWeight: 700, color: '#1B4F72', margin: 0 }}>Boutique récompenses</h1>
+              <Crown size={28} color="#9333EA" />
+              <h1 style={{ fontSize: '1.5rem', fontWeight: 700, color: '#1B4F72', margin: 0 }}>Abonnement FlipLearn</h1>
             </div>
-            <p style={{ color: '#64748b', margin: 0 }}>Échange tes points contre de vraies récompenses : certificats, réductions, cadeaux !</p>
+            <p style={{ color: '#64748b', margin: 0 }}>Échange tes points contre des mois d'abonnement FlipLearn pour profiter des fonctionnalités IA premium.</p>
           </div>
           <div style={{
             display: 'flex', alignItems: 'center', gap: 10,
@@ -299,11 +300,6 @@ export default function Rewards() {
               {[
                 { id: 'all',        label: 'Toutes' },
                 { id: 'affordable', label: '✅ Accessibles' },
-                { id: 'certificat', label: '🎓 Certificats' },
-                { id: 'reduction',  label: '🎟️ Réductions' },
-                { id: 'premium',    label: '⭐ Premium' },
-                { id: 'formation',  label: '🚀 Formations' },
-                { id: 'cadeau',     label: '🎁 Cadeaux' },
               ].map(f => (
                 <button key={f.id} onClick={() => setFilter(f.id)} style={{
                   padding: '7px 14px', borderRadius: 999,
@@ -347,7 +343,7 @@ export default function Rewards() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                 {myClaims.map(claim => {
                   if (!claim.rewardId) return null;
-                  const meta = TYPE_META[claim.rewardId.type] || TYPE_META.autre;
+                  const meta = TYPE_META[claim.rewardId.type] || DEFAULT_META;
                   const st = CLAIM_STATUS[claim.status] || CLAIM_STATUS.pending;
                   const StIcon = st.Icon;
                   return (

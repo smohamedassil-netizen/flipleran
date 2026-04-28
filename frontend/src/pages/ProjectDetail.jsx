@@ -14,8 +14,8 @@ import {
 
 /* ─── Helpers ────────────────────────────────────────────────────────────── */
 const TYPE_BADGE = {
-  prosit: { label: 'Prosit', bg: '#EBF3FA', color: '#1B4F72' },
-  projet: { label: 'Projet', bg: '#E8F5E9', color: '#2E7D32' },
+  mono:   { label: 'Mono-module', bg: '#EBF3FA', color: '#1B4F72', icon: '\u{1F4D8}' },
+  groupe: { label: 'Groupé',      bg: '#E8F5E9', color: '#2E7D32', icon: '\u{1F310}' },
 };
 const STATUS_BADGE = {
   brouillon: { label: 'Brouillon', bg: '#F1F5F9', color: '#64748B' },
@@ -444,11 +444,11 @@ export default function ProjectDetail() {
         </div>
       </div>
 
-      {/* ── Prosit: Énoncé & Mots-clés ──────────────────────────────────── */}
-      {project.type === 'prosit' && project.enonce && (
+      {/* ── Énoncé & Mots-clés (mono ou groupé) ──────────────────────────── */}
+      {project.enonce && (
         <div className="card" style={{ marginBottom: 20, padding: 20 }}>
           <h3 style={{ fontSize: 'var(--font-size-md)', fontWeight: 700, marginBottom: 12, color: 'var(--color-text)' }}>
-            Énoncé du prosit
+            Énoncé / contexte
           </h3>
           <p style={{ fontSize: 'var(--font-size-sm)', color: 'var(--color-text-secondary)', lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>
             {project.enonce}

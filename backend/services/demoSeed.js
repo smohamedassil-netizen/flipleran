@@ -906,8 +906,9 @@ export async function seedDemoData() {
 
     const course = def.courseTitre ? await Course.findOne({ titre: def.courseTitre, filiere: def.filiere }) : null;
 
+    // Les anciens prosits deviennent des projets mono-module rattachés à un seul cours
     await Project.create({
-      type: 'prosit',
+      type: 'mono',
       titre: def.titre,
       description: def.description,
       enonce: def.enonce,
@@ -943,8 +944,10 @@ export async function seedDemoData() {
       courseId = modulesIds[0]; // cours principal
     }
 
+    // Mono-module si pas de modules multiples ; groupé sinon
+    const projectType = (modulesIds.length >= 2) ? 'groupe' : 'mono';
     await Project.create({
-      type: 'projet',
+      type: projectType,
       titre: def.titre,
       description: def.description,
       courseId,

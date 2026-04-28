@@ -9,13 +9,14 @@ const rewardSchema = new mongoose.Schema({
   description: { type: String, default: '' },
   type: {
     type: String,
-    enum: ['certificat', 'reduction', 'premium', 'cadeau', 'formation', 'autre'],
-    default: 'autre',
+    enum: ['abonnement_fliplearn'],
+    default: 'abonnement_fliplearn',
   },
+  // Durée de l'abonnement débloqué (en mois)
+  dureeMois:   { type: Number, default: 1, min: 1 },
   pointsRequired: { type: Number, required: true, min: 0 },
   imageUrl:    { type: String, default: '' },
-  emoji:       { type: String, default: '🎁' },
-  sponsor:     { type: String, default: '' },
+  emoji:       { type: String, default: '⭐' },
   stock:       { type: Number, default: -1 },   // -1 = illimité
   claimed:     { type: Number, default: 0 },    // compteur total
   active:      { type: Boolean, default: true },

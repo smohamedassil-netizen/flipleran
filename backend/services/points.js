@@ -60,6 +60,24 @@ export const BADGE_DEFS = [
     rarity:      'rare',
     condition:   '100% à un QCM',
   },
+  {
+    key:         'ai_explorer',
+    nom:         'Explorateur IA',
+    description: 'Première interaction avec un assistant IA d\'un module',
+    icon:        'Sparkles',
+    color:       '#9333EA',
+    rarity:      'common',
+    condition:   '1 message envoyé à un Assistant IA de cours',
+  },
+  {
+    key:         'project_completed',
+    nom:         'Projet bouclé',
+    description: 'Terminer un projet (mono ou groupé)',
+    icon:        'FolderCheck',
+    color:       '#0EA5E9',
+    rarity:      'rare',
+    condition:   '1 projet passé en statut "termine"',
+  },
 ];
 
 /* ─── Seed badges into DB (call once on server start) ───────────────────────── */
@@ -174,6 +192,25 @@ export async function addPoints(userId, amount, reason) {
     newPoints: user.points,
     newBadges,
   };
+}
+
+/* ─── Auto-trigger badges hors flux points (chatbot IA, projet, etc.) ─── */
+/**
+ * À appeler depuis n'importe quel controller pour attribuer un badge automatiquement
+ * en réaction à une action utilisateur (1ère interaction IA, projet terminé, etc.).
+ * @param {string} userId
+ * @param {'ai_explorer'|'project_completed'|string} badgeKey
+ * @returns {Promise<{ badge: Badge|null, isNew: boolean }>}
+ */
+export async function triggerAutoBadge(userId, badgeKey) {
+  const user = await User.findById(userId);
+  if (!user || user.role !== 'etudiant') return { badge: null, isNew: false };
+
+  const badge = await awardBadge(user, badgeKey);
+  if (!badge) return { badge: null, isNew: false };
+
+  await user.save();
+  return { badge, isNew: true };
 }
 
 /* ─── Check champion badge for a course ────────────────────────────────────── */

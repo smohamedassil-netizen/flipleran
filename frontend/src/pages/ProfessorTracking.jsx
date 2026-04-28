@@ -118,18 +118,31 @@ export default function ProfessorTracking() {
   };
 
   return (
-    <Layout title="Suivi des étudiants">
+    <Layout title="Suivi individuel">
       <div style={{ maxWidth: 1200, margin: '0 auto' }}>
         <button onClick={() => navigate(-1)} style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'none', border: 'none', color: '#1B4F72', cursor: 'pointer', fontSize: 15, fontWeight: 500, padding: '8px 0', marginBottom: 12 }}>
           <ArrowLeft size={18} /> Retour
         </button>
 
+        {/* ── Bandeau explicatif distinguant Suivi individuel / Synthèse ── */}
+        <div style={{
+          padding: '10px 14px', marginBottom: 16, borderRadius: 10,
+          background: 'linear-gradient(135deg, #FEF3C7, #FFFBEB)',
+          borderLeft: '3px solid #D97706', fontSize: 13, color: '#1E293B',
+        }}>
+          <strong style={{ color: '#D97706' }}>👤 Suivi individuel</strong> — détail par étudiant :
+          progression vidéo, scores QCM, rappels ciblés.
+          <span style={{ marginLeft: 8, color: '#64748B' }}>
+            Pour la vue d'ensemble par cours, ouvre la <strong>Synthèse de classe</strong> depuis le tableau de bord.
+          </span>
+        </div>
+
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
           <BarChart3 size={28} color="#1B4F72" />
-          <h1 style={{ fontSize: '1.5rem', fontWeight: 700, color: '#1B4F72', margin: 0 }}>Suivi des étudiants</h1>
+          <h1 style={{ fontSize: '1.5rem', fontWeight: 700, color: '#1B4F72', margin: 0 }}>Suivi individuel des étudiants</h1>
         </div>
         <p style={{ color: '#64748b', marginBottom: 24 }}>
-          Visualisez la progression de vos étudiants et envoyez des rappels ciblés.
+          Visualisez la progression de chaque étudiant et envoyez des rappels ciblés.
         </p>
 
         {/* Sélecteur de cours */}

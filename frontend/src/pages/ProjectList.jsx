@@ -4,14 +4,14 @@ import Layout from '../components/Layout.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
 import api from '../utils/api.js';
 import {
-  FolderKanban, Plus, Search, Users, Calendar, Clock,
+  FolderKanban, Plus, Search, Users, Calendar, BookOpen,
   ChevronRight, Layers,
 } from 'lucide-react';
 
 /* ─── Type & status config ────────────────────────────────────────────────── */
 const TYPE_BADGE = {
-  prosit: { label: 'Prosit', bg: '#EBF3FA', color: '#1B4F72' },
-  projet: { label: 'Projet', bg: '#E8F5E9', color: '#2E7D32' },
+  mono:   { label: 'Mono-module', bg: '#EBF3FA', color: '#1B4F72', icon: '📘' },
+  groupe: { label: 'Groupé',      bg: '#E8F5E9', color: '#2E7D32', icon: '🌐' },
 };
 
 const STATUS_BADGE = {
@@ -22,7 +22,7 @@ const STATUS_BADGE = {
 
 /* ─── Project card ────────────────────────────────────────────────────────── */
 function ProjectCard({ project, onClick }) {
-  const typeCfg   = TYPE_BADGE[project.type] ?? TYPE_BADGE.projet;
+  const typeCfg   = TYPE_BADGE[project.type] ?? TYPE_BADGE.mono;
   const statusCfg = STATUS_BADGE[project.statut] ?? STATUS_BADGE.brouillon;
 
   const groupCount = project.groupes?.length ?? 0;
@@ -41,7 +41,7 @@ function ProjectCard({ project, onClick }) {
           style={{
             width: 44, height: 44, flexShrink: 0,
             borderRadius: 'var(--radius-md)',
-            background: project.type === 'prosit'
+            background: project.type === 'mono'
               ? 'linear-gradient(135deg, #1B4F72 0%, #2874A6 100%)'
               : 'linear-gradient(135deg, #2E7D32 0%, #43A047 100%)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -73,11 +73,13 @@ function ProjectCard({ project, onClick }) {
 
       {/* Badges */}
       <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 12 }}>
-        <span style={{
+        <span title={project.type === 'groupe' ? project.modules?.map(m => m.titre).join(' • ') : ''} style={{
           fontSize: 11, fontWeight: 700, padding: '2px 10px',
           borderRadius: 'var(--radius-sm)', backgroundColor: typeCfg.bg, color: typeCfg.color,
+          display: 'inline-flex', alignItems: 'center', gap: 4,
         }}>
-          {typeCfg.label}
+          {typeCfg.icon} {typeCfg.label}
+          {project.type === 'groupe' && project.modules?.length > 0 && ` (${project.modules.length})`}
         </span>
         <span style={{
           fontSize: 11, fontWeight: 700, padding: '2px 10px',
@@ -85,24 +87,8 @@ function ProjectCard({ project, onClick }) {
         }}>
           {statusCfg.label}
         </span>
-        {project.isMultiModule ? (
-          <span title={project.modules?.map(m => m.titre).join(' • ')} style={{
-            fontSize: 11, fontWeight: 700, padding: '2px 10px',
-            borderRadius: 'var(--radius-sm)', backgroundColor: '#fef3c7', color: '#92400e',
-            display: 'inline-flex', alignItems: 'center', gap: 4,
-          }}>
-            🌐 Multi-modules ({project.modules?.length || 0})
-          </span>
-        ) : (
-          <span style={{
-            fontSize: 11, fontWeight: 700, padding: '2px 10px',
-            borderRadius: 'var(--radius-sm)', backgroundColor: '#e0e7ff', color: '#3730a3',
-          }}>
-            📘 Mono-module
-          </span>
-        )}
-        {project.coursId?.titre && (
-          <span className="badge">{project.coursId.titre}</span>
+        {project.type === 'mono' && project.courseId?.titre && (
+          <span className="badge">{project.courseId.titre}</span>
         )}
       </div>
 
@@ -116,7 +102,7 @@ function ProjectCard({ project, onClick }) {
           <Layers size={12} />
           {phaseCount} phase{phaseCount !== 1 ? 's' : ''}
         </span>
-        {project.type === 'projet' && project.dateSoutenance && (
+        {project.dateSoutenance && (
           <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
             <Calendar size={12} />
             Soutenance : {new Date(project.dateSoutenance).toLocaleDateString('fr-FR')}
@@ -139,8 +125,8 @@ export default function ProjectList() {
   const [projects, setProjects] = useState([]);
   const [loading, setLoading]   = useState(true);
   const [search, setSearch]     = useState('');
-  const [filter, setFilter]     = useState('tous'); // tous | prosit | projet | mono | multi
-  const [showPrositInfo, setShowPrositInfo] = useState(false);
+  const [filter, setFilter]     = useState('tous'); // tous | mono | groupe
+  const [showInfo, setShowInfo] = useState(false);
 
   const courseId = searchParams.get('courseId');
 
@@ -154,25 +140,21 @@ export default function ProjectList() {
 
   /* ── Filter & search ──────────────────────────────────────────────────── */
   const filtered = projects.filter((p) => {
-    if (filter === 'prosit'    && p.type !== 'prosit') return false;
-    if (filter === 'projet'    && p.type !== 'projet') return false;
-    if (filter === 'mono'      && p.isMultiModule)     return false;
-    if (filter === 'multi'     && !p.isMultiModule)    return false;
+    if (filter === 'mono'   && p.type !== 'mono')   return false;
+    if (filter === 'groupe' && p.type !== 'groupe') return false;
     if (!search.trim()) return true;
     const s = search.toLowerCase();
     return (
       p.titre?.toLowerCase().includes(s) ||
       p.description?.toLowerCase().includes(s) ||
-      p.coursId?.titre?.toLowerCase().includes(s)
+      p.courseId?.titre?.toLowerCase().includes(s)
     );
   });
 
   const TABS = [
     { key: 'tous',   label: 'Tous' },
-    { key: 'prosit', label: 'Prosits' },
-    { key: 'projet', label: 'Projets' },
     { key: 'mono',   label: '📘 Mono-module' },
-    { key: 'multi',  label: '🌐 Collaboratifs' },
+    { key: 'groupe', label: '🌐 Groupé' },
   ];
 
 
@@ -185,8 +167,8 @@ export default function ProjectList() {
             <h1 className="page-title">Projets</h1>
             <p className="page-subtitle">
               {role === 'professeur'
-                ? 'G\u00e9rez vos prosits et projets de groupe.'
-                : 'D\u00e9couvrez et participez aux prosits et projets.'}
+                ? 'G\u00e9rez vos projets mono-module ou group\u00e9s.'
+                : 'D\u00e9couvrez et participez aux projets de votre fili\u00e8re.'}
             </p>
           </div>
           {(role === 'professeur' || role === 'admin') && (
@@ -200,14 +182,14 @@ export default function ProjectList() {
           )}
         </div>
 
-        {/* Encart explicatif Prosit vs Projet */}
+        {/* Encart explicatif mono vs groupé */}
         <div style={{
           marginBottom: 20, padding: 16, borderRadius: 12,
           background: 'linear-gradient(135deg, #EBF3FA, #F0F9FF)',
           border: '1px solid #BFDBFE', position: 'relative',
         }}>
           <button
-            onClick={() => setShowPrositInfo(v => !v)}
+            onClick={() => setShowInfo(v => !v)}
             style={{
               display: 'flex', alignItems: 'center', gap: 8, width: '100%',
               background: 'none', border: 'none', cursor: 'pointer',
@@ -219,40 +201,34 @@ export default function ProjectList() {
             </div>
             <div style={{ flex: 1 }}>
               <div style={{ fontSize: 14, fontWeight: 700, color: '#1B4F72' }}>
-                Qu'est-ce qu'un Prosit ? Quelle différence avec un Projet ?
+                Mono-module vs Groupé : quelle différence ?
               </div>
               <div style={{ fontSize: 12, color: '#64748B', marginTop: 2 }}>
-                {showPrositInfo ? 'Cliquer pour replier' : 'Cliquer pour voir la méthodologie pédagogique'}
+                {showInfo ? 'Cliquer pour replier' : 'Cliquer pour voir l\'explication'}
               </div>
             </div>
-            <span style={{ fontSize: 18, color: '#1B4F72', transform: showPrositInfo ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform .2s' }}>⌄</span>
+            <span style={{ fontSize: 18, color: '#1B4F72', transform: showInfo ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform .2s' }}>⌄</span>
           </button>
 
-          {showPrositInfo && (
+          {showInfo && (
             <div style={{ marginTop: 14, paddingTop: 14, borderTop: '1px solid #BFDBFE', fontSize: 13, color: '#1E293B', lineHeight: 1.6 }}>
-              <p style={{ margin: 0, marginBottom: 10 }}>
-                <strong>Prosit</strong> (PROblème SITuation) est une méthode pédagogique issue du PBL (apprentissage par problème). Tu apprends en résolvant un problème concret, en 3 phases :
-              </p>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 10, marginBottom: 10 }}>
-                <div style={{ padding: 10, background: 'white', borderRadius: 8, borderLeft: '3px solid #1B4F72' }}>
-                  <div style={{ fontWeight: 700, fontSize: 12, color: '#1B4F72', marginBottom: 3 }}>① Prosit Aller</div>
-                  <div style={{ fontSize: 12, color: '#475569' }}>Découverte du problème, mots-clés, questions.</div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 12 }}>
+                <div style={{ padding: 12, background: 'white', borderRadius: 8, borderLeft: '3px solid #1B4F72' }}>
+                  <div style={{ fontWeight: 700, fontSize: 13, color: '#1B4F72', marginBottom: 4 }}>📘 Projet mono-module</div>
+                  <div style={{ fontSize: 12, color: '#475569' }}>
+                    Rattaché à un seul module / cours. À utiliser pour un projet spécifique à une matière (ex : projet Java en cours de POO).
+                  </div>
                 </div>
-                <div style={{ padding: 10, background: 'white', borderRadius: 8, borderLeft: '3px solid #D97706' }}>
-                  <div style={{ fontWeight: 700, fontSize: 12, color: '#D97706', marginBottom: 3 }}>② Recherche</div>
-                  <div style={{ fontSize: 12, color: '#475569' }}>Travail individuel, documentation, réflexion.</div>
-                </div>
-                <div style={{ padding: 10, background: 'white', borderRadius: 8, borderLeft: '3px solid #059669' }}>
-                  <div style={{ fontWeight: 700, fontSize: 12, color: '#059669', marginBottom: 3 }}>③ Prosit Retour</div>
-                  <div style={{ fontSize: 12, color: '#475569' }}>Mise en commun, synthèse, livrable.</div>
+                <div style={{ padding: 12, background: 'white', borderRadius: 8, borderLeft: '3px solid #2E7D32' }}>
+                  <div style={{ fontWeight: 700, fontSize: 13, color: '#2E7D32', marginBottom: 4 }}>🌐 Projet groupé</div>
+                  <div style={{ fontSize: 12, color: '#475569' }}>
+                    Rattaché à plusieurs modules. Idéal pour un travail transverse qui mobilise plusieurs matières (ex : projet Marketing × Finance × Dev).
+                  </div>
                 </div>
               </div>
-              <p style={{ margin: 0, marginBottom: 8 }}>
-                <strong>Projet</strong> = travail plus long (plusieurs semaines/mois) avec des phases personnalisées, groupes avec rôles (chef de projet, scribe, animateur, chrono, analyste), livrables, soutenance.
+              <p style={{ margin: '12px 0 0', fontSize: 12, color: '#64748B' }}>
+                Dans les deux cas, le projet contient des phases personnalisables, des groupes avec rôles (chef de projet, scribe, animateur, chrono, analyste), des livrables, des évaluations et une aide IA.
               </p>
-              <div style={{ marginTop: 10, padding: 10, background: '#FFFBEB', borderRadius: 8, fontSize: 12, color: '#92400E' }}>
-                📘 <strong>Mono-module</strong> : lié à un seul cours · 🌐 <strong>Collaboratif multi-modules</strong> : plusieurs filières/cours travaillent ensemble (ex: projet Marketing×Finance×Dev).
-              </div>
             </div>
           )}
         </div>

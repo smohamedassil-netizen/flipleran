@@ -1,6 +1,7 @@
 import Message   from '../models/Message.js';
 import { askBot } from '../services/chatbot.js';
 import { askModuleBot, getModulePersona } from '../services/moduleAI.js';
+import { triggerAutoBadge } from '../services/points.js';
 
 /* ─── Objet expéditeur virtuel du bot ────────────────────────────────────── */
 export const BOT_SENDER = {
@@ -117,10 +118,20 @@ export const handleModuleMessage = async (req, res) => {
       senderName: 'Assistant Module',
     });
 
+    // Auto-attribution du badge "Explorateur IA" à la 1ère interaction Module Assistant
+    let newBadge = null;
+    try {
+      const result = await triggerAutoBadge(req.user.id, 'ai_explorer');
+      if (result.isNew) newBadge = result.badge;
+    } catch (e) {
+      console.error('[ai_explorer badge]', e.message);
+    }
+
     res.json({
       response: aiResponse,
       messageId: botMsg._id,
       sender: BOT_SENDER,
+      newBadge,
     });
   } catch (err) {
     console.error('[handleModuleMessage]', err);
