@@ -213,7 +213,7 @@ export default function ProjectDetail() {
     g.membres?.some(m => (m.userId?._id ?? m.userId) === user?._id)
   );
   const myMember = myGroup?.membres?.find(m => (m.userId?._id ?? m.userId) === user?._id);
-  const typeCfg = TYPE_BADGE[project?.type] ?? TYPE_BADGE.projet;
+  const typeCfg = TYPE_BADGE[project?.type] ?? TYPE_BADGE.mono;
   const statusCfg = STATUS_BADGE[project?.status] ?? STATUS_BADGE.brouillon;
 
   const soutenancePhase = project?.phases?.find(p => p.titre?.toLowerCase().includes('soutenance'));
