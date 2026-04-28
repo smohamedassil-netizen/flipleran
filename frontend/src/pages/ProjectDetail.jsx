@@ -189,6 +189,11 @@ export default function ProjectDetail() {
   const [editing, setEditing] = useState(false);
   const [editForm, setEditForm] = useState({});
 
+  /* Prof: delete project */
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState('');
+
   const refreshProject = () => {
     api.get(`/projects/${projectId}`)
       .then(({ data }) => setProject(data))
@@ -324,6 +329,28 @@ export default function ProjectDetail() {
     }
   };
 
+  const handleDeleteProject = async () => {
+    setDeleting(true);
+    setDeleteError('');
+    try {
+      await api.delete(`/projects/${projectId}`);
+      navigate('/projects');
+    } catch (err) {
+      // Message clair, sans jargon technique
+      const msg = err.response?.data?.message;
+      const status = err.response?.status;
+      if (status === 403) {
+        setDeleteError("Vous n'êtes pas autorisé à supprimer ce projet — seul le professeur qui l'a créé peut le faire.");
+      } else if (status === 404) {
+        setDeleteError("Ce projet n'existe plus (peut-être déjà supprimé).");
+      } else {
+        setDeleteError(msg || "La suppression a échoué. Vérifiez votre connexion et réessayez.");
+      }
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   /* ── Rating component ──────────────────────────────────────────────────── */
   function StarRating({ value, onChange }) {
     return (
@@ -438,6 +465,14 @@ export default function ProjectDetail() {
               </button>
               <button className="btn btn-ghost btn-sm" onClick={handleFetchAllEvals}>
                 <Star size={14} /> Évaluations
+              </button>
+              <button
+                className="btn btn-ghost btn-sm"
+                onClick={() => { setDeleteError(''); setShowDeleteConfirm(true); }}
+                style={{ color: '#DC2626' }}
+                title="Supprimer définitivement ce projet"
+              >
+                <Trash2 size={14} /> Supprimer
               </button>
             </div>
           )}
@@ -1123,6 +1158,85 @@ export default function ProjectDetail() {
                 ))}
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* ── Delete project confirm modal (prof) ──────────────────────────── */}
+      {showDeleteConfirm && (
+        <div
+          style={{
+            position: 'fixed', inset: 0, zIndex: 1000,
+            background: 'rgba(0,0,0,0.5)', display: 'flex',
+            alignItems: 'center', justifyContent: 'center', padding: 16,
+          }}
+          onClick={() => !deleting && setShowDeleteConfirm(false)}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="card"
+            style={{ width: 480, padding: 28 }}
+          >
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 14, marginBottom: 14 }}>
+              <div style={{
+                width: 44, height: 44, borderRadius: 12, flexShrink: 0,
+                background: '#FEE2E2', display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}>
+                <Trash2 size={22} color="#DC2626" />
+              </div>
+              <div>
+                <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: '#1E293B' }}>
+                  Supprimer ce projet&nbsp;?
+                </h2>
+                <p style={{ margin: '6px 0 0', fontSize: 13, color: '#475569', lineHeight: 1.5 }}>
+                  Cette action est <strong>irréversible</strong>. Les groupes, livrables, évaluations
+                  et l'historique d'activité seront perdus.
+                </p>
+              </div>
+            </div>
+
+            <div style={{
+              padding: '10px 14px', borderRadius: 8,
+              background: '#FFFBEB', border: '1px solid #FCD34D',
+              fontSize: 13, color: '#78350F', marginBottom: 14,
+            }}>
+              <strong>Projet à supprimer :</strong> {project.titre}
+              <br />
+              <span style={{ fontSize: 12, color: '#92400E' }}>
+                {project.groupes?.length ?? 0} groupe(s) · {project.livrables?.length ?? 0} livrable(s) · {project.phases?.length ?? 0} phase(s)
+              </span>
+            </div>
+
+            {deleteError && (
+              <div className="alert alert-error" style={{ marginBottom: 14 }}>
+                <AlertCircle size={14} style={{ flexShrink: 0 }} />
+                <span>{deleteError}</span>
+              </div>
+            )}
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
+              <button
+                className="btn btn-ghost"
+                onClick={() => setShowDeleteConfirm(false)}
+                disabled={deleting}
+              >
+                Annuler
+              </button>
+              <button
+                onClick={handleDeleteProject}
+                disabled={deleting}
+                style={{
+                  padding: '8px 16px', borderRadius: 8, border: 'none',
+                  background: deleting ? '#FCA5A5' : '#DC2626',
+                  color: 'white', fontWeight: 600, fontSize: 13,
+                  cursor: deleting ? 'not-allowed' : 'pointer',
+                  display: 'inline-flex', alignItems: 'center', gap: 6,
+                }}
+              >
+                <Trash2 size={14} />
+                {deleting ? 'Suppression…' : 'Supprimer définitivement'}
+              </button>
+            </div>
           </div>
         </div>
       )}

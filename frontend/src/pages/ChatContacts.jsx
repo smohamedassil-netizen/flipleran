@@ -4,7 +4,7 @@ import Layout from '../components/Layout.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
 import api from '../utils/api.js';
 import {
-  Search, MessageSquare, Bot, User, Users,
+  Search, MessageSquare, User, Users,
   BookOpen, GraduationCap, ChevronRight,
   ArrowLeft,
 } from 'lucide-react';
@@ -133,46 +133,8 @@ export default function ChatContacts() {
         </button>
         <div className="page-header">
           <h1 className="page-title">Messages</h1>
-          <p className="page-subtitle">Discutez avec vos camarades, professeurs ou l'assistant IA.</p>
+          <p className="page-subtitle">Discutez avec vos camarades et professeurs. Pour une aide IA spécifique à un cours, ouvrez le cours et utilisez son Assistant Module.</p>
         </div>
-
-        {/* ── Bot card (always shown) ─────────────────────────────────── */}
-        <button
-          onClick={() => navigate('/chat/bot')}
-          style={{
-            width: '100%',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 14,
-            padding: '16px 20px',
-            marginBottom: 20,
-            background: 'linear-gradient(135deg, #1B4F72 0%, #2874A6 100%)',
-            border: 'none',
-            borderRadius: 'var(--radius-lg)',
-            cursor: 'pointer',
-            textAlign: 'left',
-            color: '#fff',
-            transition: 'transform 120ms, box-shadow 120ms',
-          }}
-          onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = 'var(--shadow-md)'; }}
-          onMouseLeave={(e) => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = 'none'; }}
-        >
-          <div style={{
-            width: 48, height: 48, borderRadius: '50%',
-            backgroundColor: 'rgba(255,255,255,0.2)',
-            border: '2px solid rgba(255,255,255,0.4)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-          }}>
-            <Bot size={24} />
-          </div>
-          <div style={{ flex: 1 }}>
-            <p style={{ fontWeight: 700, fontSize: 15, margin: 0 }}>Assistant FlipLearn</p>
-            <p style={{ fontSize: 12, opacity: 0.8, margin: '2px 0 0' }}>
-              Posez vos questions, demandez des explications ou des exercices.
-            </p>
-          </div>
-          <ChevronRight size={18} style={{ opacity: 0.6 }} />
-        </button>
 
         {/* ── Search + filters ────────────────────────────────────────── */}
         <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>

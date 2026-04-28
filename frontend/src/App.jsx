@@ -102,7 +102,6 @@ export default function App() {
             <Route path="/chat"                        element={<ChatContacts />} />
             <Route path="/chat/course/:courseId"       element={<ChatPage roomType="course" />} />
             <Route path="/chat/private/:userId"        element={<ChatPage roomType="private" />} />
-            <Route path="/chat/bot"                    element={<ChatPage roomType="bot" />} />
             <Route path="/courses/:courseId/resources" element={<ResourceLibrary />} />
             <Route path="/settings"                    element={<Settings />} />
             <Route path="/resources"                   element={<ResourcesHub />} />

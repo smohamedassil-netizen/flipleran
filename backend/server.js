@@ -56,8 +56,6 @@ async function migrateUserStatus() {
     console.error('[migration] userStatus:', err.message);
   }
 }
-import { askBot }       from './services/chatbot.js';
-import { BOT_SENDER }   from './controllers/chatbotController.js';
 import { startNotificationScheduler } from './services/notificationScheduler.js';
 
 const app = express();
@@ -344,49 +342,10 @@ io.on('connection', (socket) => {
         }
       }
 
-      // 2. Si salle bot → déclencher l'IA
-      if (roomId.startsWith('bot_')) {
-        // Indicateur "le bot réfléchit"
-        io.to(roomId).emit('bot_thinking', true);
-
-        // Charger l'historique pour le contexte
-        const history = await Message.find({ roomId })
-          .sort({ createdAt: 1 })
-          .limit(12)
-          .select('content type');
-
-        // Appel Groq (non-bloquant pour les autres connexions)
-        const aiText = await askBot(content.trim(), history);
-
-        // Sauvegarder la réponse du bot
-        const botMsg = await Message.create({
-          roomId,
-          content:    aiText,
-          type:       'bot',
-          senderName: 'Assistant FlipLearn',
-        });
-
-        io.to(roomId).emit('bot_thinking', false);
-
-        // Diffuser avec un sender virtuel
-        io.to(roomId).emit('receive_message', {
-          ...botMsg.toObject(),
-          senderId: BOT_SENDER,
-        });
-      }
+      // (Le chatbot general askBot a ete supprime — seul l'Assistant Module
+      //  par cours subsiste, accessible via /api/chatbot/module/:courseId.)
     } catch (err) {
       console.error('[send_message]', err.message);
-      if (roomId?.startsWith('bot_')) {
-        io.to(roomId).emit('bot_thinking', false);
-        io.to(roomId).emit('receive_message', {
-          _id:      Date.now().toString(),
-          roomId,
-          content:  "Je rencontre un problème technique. Veuillez réessayer. 🙏",
-          type:     'bot',
-          senderId: BOT_SENDER,
-          createdAt: new Date().toISOString(),
-        });
-      }
     }
   });
 

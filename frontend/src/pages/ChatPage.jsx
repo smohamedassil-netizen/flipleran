@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
-import { MessageSquare, BookOpen, User, Bot, ArrowLeft } from 'lucide-react';
+import { MessageSquare, BookOpen, User, ArrowLeft } from 'lucide-react';
 import Layout  from '../components/Layout.jsx';
 import ChatBox from '../components/ChatBox.jsx';
 import api     from '../utils/api.js';
@@ -10,7 +10,6 @@ import { useAuth } from '../context/AuthContext.jsx';
 function buildRoomId(type, { courseId, userId, myId }) {
   if (type === 'course')  return `course_${courseId}`;
   if (type === 'private') return `private_${[myId, userId].sort().join('_')}`;
-  if (type === 'bot')     return `bot_${myId}`;
   return null;
 }
 
@@ -55,23 +54,16 @@ export default function ChatPage({ roomType = 'course' }) {
       }
       return;
     }
-
-    if (roomType === 'bot') {
-      setRoomLabel('Assistant IA');
-      return;
-    }
   }, [roomId, roomType, courseId, userId, location.state]);
 
   /* ── Icône selon le type ──────────────────────────────────────────── */
   const Icon = roomType === 'course'  ? BookOpen
              : roomType === 'private' ? User
-             : roomType === 'bot'     ? Bot
              : MessageSquare;
 
   /* ── Titre de la page ─────────────────────────────────────────────── */
   const pageTitle = roomType === 'course'  ? 'Chat du cours'
                   : roomType === 'private' ? 'Message privé'
-                  : roomType === 'bot'     ? 'Assistant IA'
                   : 'Chat';
 
   if (!roomId || !myId) {

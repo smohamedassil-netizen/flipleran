@@ -107,6 +107,11 @@ Retourne UNIQUEMENT un JSON valide avec cette structure :
 Inclus au moins 1 question de type "multiple" (plusieurs bonnes réponses) avec correctAnswers contenant plusieurs lettres.
 Assure-toi que chaque question est pertinente, claire et de niveau licence informatique.`;
 
+  if (!process.env.GROQ_API_KEY) {
+    console.error('[QCM Generator] GROQ_API_KEY manquante dans les variables d\'environnement.');
+    throw new Error("Le service IA n'est pas configuré sur le serveur (clé GROQ manquante). Contactez l'administrateur.");
+  }
+
   try {
     const completion = await getGroq().chat.completions.create({
       model:       'llama-3.3-70b-versatile',
@@ -127,11 +132,17 @@ Assure-toi que chaque question est pertinente, claire et de niveau licence infor
     const jsonMatch = raw.match(/\{[\s\S]*\}/);
     if (jsonMatch) jsonStr = jsonMatch[0];
 
-    const parsed = JSON.parse(jsonStr);
+    let parsed;
+    try {
+      parsed = JSON.parse(jsonStr);
+    } catch (parseErr) {
+      console.error('[QCM Generator] JSON parse failed. Raw response:', raw.slice(0, 500));
+      throw new Error("L'IA a renvoyé une réponse incorrecte. Réessayez ou réduisez le nombre de questions.");
+    }
     const questions = parsed.questions ?? parsed;
 
     if (!Array.isArray(questions) || questions.length === 0) {
-      throw new Error('Format de réponse invalide');
+      throw new Error("L'IA n'a pas généré de questions exploitables. Réessayez.");
     }
 
     // Valider et nettoyer chaque question
@@ -149,7 +160,22 @@ Assure-toi que chaque question est pertinente, claire et de niveau licence infor
       explanation:    q.explanation || '',
     }));
   } catch (err) {
+    // Si c'est deja une erreur "metier" lisible, on la repropage telle quelle
+    if (err.message && (
+      err.message.includes('IA') ||
+      err.message.includes('GROQ') ||
+      err.message.includes('clé')
+    )) {
+      throw err;
+    }
+    // Erreur reseau / SDK / quota
     console.error('[QCM Generator] Error:', err.message);
-    throw new Error('Impossible de générer le QCM. Veuillez réessayer.');
+    if (err.status === 401 || err.message?.includes('Unauthorized')) {
+      throw new Error("Clé GROQ invalide ou expirée. Contactez l'administrateur.");
+    }
+    if (err.status === 429 || err.message?.includes('rate')) {
+      throw new Error('Quota IA dépassé pour le moment. Réessayez dans quelques minutes.');
+    }
+    throw new Error("Service IA indisponible. Vérifiez votre connexion ou réessayez plus tard.");
   }
 }
