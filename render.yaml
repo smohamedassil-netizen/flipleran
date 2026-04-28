@@ -1,14 +1,14 @@
-# Blueprint Render — décrit le service backend FlipLearn
-# Docs : https://render.com/docs/blueprint-spec
+# Blueprint Render — déploiement monolithique
+# Le backend Express sert ÉGALEMENT le frontend buildé en production
+# (cf. backend/server.js : if NODE_ENV === 'production' → serve frontend/dist)
 
 services:
   - type: web
     name: fliplearn-api
     runtime: node
     plan: free
-    rootDir: backend
-    buildCommand: npm install
-    startCommand: node server.js
+    buildCommand: npm install --prefix backend && npm install --prefix frontend && npm run build --prefix frontend
+    startCommand: cd backend && node server.js
     healthCheckPath: /
     autoDeploy: true
     envVars:
