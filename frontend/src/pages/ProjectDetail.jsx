@@ -14,8 +14,8 @@ import {
 
 /* ─── Helpers ────────────────────────────────────────────────────────────── */
 const TYPE_BADGE = {
-  mono:   { label: 'Mono-module', bg: '#EBF3FA', color: '#1B4F72', icon: '\u{1F4D8}' },
-  groupe: { label: 'Groupé',      bg: '#E8F5E9', color: '#2E7D32', icon: '\u{1F310}' },
+  mono:   { label: 'Mono-module',     bg: '#F1F5F9', color: '#475569' },
+  groupe: { label: 'Multi-modules',   bg: '#F1F5F9', color: '#475569' },
 };
 const STATUS_BADGE = {
   brouillon: { label: 'Brouillon', bg: '#F1F5F9', color: '#64748B' },
@@ -442,6 +442,20 @@ export default function ProjectDetail() {
             </div>
           )}
         </div>
+      </div>
+
+      {/* ── Encart "À propos" : qu'est-ce qu'un projet, pour qui ─────────── */}
+      <div style={{
+        marginBottom: 20, padding: '12px 16px', borderRadius: 10,
+        background: '#F8FAFC',
+        borderLeft: '3px solid #1B4F72',
+        fontSize: 13, color: '#1E293B', lineHeight: 1.5,
+      }}>
+        <strong style={{ color: '#1B4F72' }}>À propos de ce projet&nbsp;:</strong>
+        {' '}c'est un travail en groupe pour les étudiants — exercice approfondi qui mobilise
+        {project.type === 'groupe' ? ' plusieurs modules.' : ' un module.'}
+        {' '}Chaque membre a un rôle (chef de projet, scribe, animateur, chrono, analyste — voir la légende à droite).
+        Le travail s'organise par phases avec une checklist, des livrables et une auto-évaluation entre pairs en fin de projet.
       </div>
 
       {/* ── Énoncé & Mots-clés (mono ou groupé) ──────────────────────────── */}

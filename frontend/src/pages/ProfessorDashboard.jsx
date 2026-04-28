@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import Layout from '../components/Layout.jsx';
 import api from '../utils/api.js';
@@ -8,9 +8,8 @@ import {
 } from 'recharts';
 import {
   Users, Video, CheckCircle, BarChart2,
-  AlertTriangle, ChevronUp, ChevronDown,
-  ChevronsUpDown, Search, RefreshCw, Upload,
-  BookOpen, Clock, ArrowLeft,
+  AlertTriangle, ChevronUp, RefreshCw, Upload,
+  BookOpen, ArrowLeft,
 } from 'lucide-react';
 
 /* ══════════════════════════════════════════════════════════
@@ -33,13 +32,6 @@ const completionBg = (rate) => {
   if (rate >= 80) return '#F0FFF4';
   if (rate >= 40) return '#FFFBEB';
   return '#FFF5F5';
-};
-
-const fmt = (date) => {
-  if (!date) return '—';
-  return new Intl.DateTimeFormat('fr-FR', {
-    day: '2-digit', month: 'short', year: 'numeric',
-  }).format(new Date(date));
 };
 
 /* ══════════════════════════════════════════════════════════
@@ -167,185 +159,7 @@ const QCMTooltip = ({ active, payload }) => {
   );
 };
 
-/* ── Student table ──────────────────────────────────────── */
-const SORT_FIELDS = {
-  nom:            (s) => s.nom.toLowerCase(),
-  videosDone:     (s) => s.videosDone,
-  avgVideoPercent:(s) => s.avgVideoPercent,
-  avgQCMScore:    (s) => s.avgQCMScore ?? -1,
-  lastActivity:   (s) => new Date(s.lastActivity ?? 0).getTime(),
-};
-
-function SortIcon({ field, sort }) {
-  if (sort.field !== field) return <ChevronsUpDown size={13} color="var(--color-text-disabled)" />;
-  return sort.dir === 'asc'
-    ? <ChevronUp   size={13} color={C_PRIMARY} />
-    : <ChevronDown size={13} color={C_PRIMARY} />;
-}
-
-function StudentTable({ students }) {
-  const [search, setSearch] = useState('');
-  const [sort,   setSort]   = useState({ field: 'nom', dir: 'asc' });
-
-  const toggleSort = (field) =>
-    setSort((s) => s.field === field
-      ? { field, dir: s.dir === 'asc' ? 'desc' : 'asc' }
-      : { field, dir: 'asc' }
-    );
-
-  const rows = useMemo(() => {
-    const q = search.toLowerCase();
-    const filtered = students.filter((s) =>
-      `${s.nom} ${s.prenom} ${s.email}`.toLowerCase().includes(q)
-    );
-    const getter = SORT_FIELDS[sort.field];
-    filtered.sort((a, b) => {
-      const va = getter(a), vb = getter(b);
-      return sort.dir === 'asc'
-        ? (typeof va === 'string' ? va.localeCompare(vb) : va - vb)
-        : (typeof va === 'string' ? vb.localeCompare(va) : vb - va);
-    });
-    return filtered;
-  }, [students, search, sort]);
-
-  const Th = ({ label, field }) => (
-    <th
-      onClick={() => toggleSort(field)}
-      style={{
-        padding: '10px 14px', textAlign: 'left',
-        cursor: 'pointer', userSelect: 'none',
-        whiteSpace: 'nowrap',
-      }}
-    >
-      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 'var(--font-size-xs)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--color-text-secondary)' }}>
-        {label} <SortIcon field={field} sort={sort} />
-      </span>
-    </th>
-  );
-
-  return (
-    <div>
-      {/* Search */}
-      <div style={{ position: 'relative', marginBottom: 14, maxWidth: 300 }}>
-        <Search size={14} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--color-text-disabled)', pointerEvents: 'none' }} />
-        <input
-          className="form-input"
-          style={{ paddingLeft: 32, fontSize: 'var(--font-size-sm)' }}
-          placeholder="Rechercher un étudiant..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
-      </div>
-
-      <div className="table-wrapper">
-        <table className="table">
-          <thead>
-            <tr>
-              <Th label="Nom"        field="nom" />
-              <th style={{ padding: '10px 14px', fontSize: 'var(--font-size-xs)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--color-text-secondary)' }}>
-                Filière / Promo
-              </th>
-              <Th label="Vidéos vues"   field="videosDone" />
-              <Th label="Moy. vidéo"    field="avgVideoPercent" />
-              <Th label="Score QCM"     field="avgQCMScore" />
-              <Th label="Dernière activité" field="lastActivity" />
-            </tr>
-          </thead>
-          <tbody>
-            {rows.length === 0 ? (
-              <tr>
-                <td colSpan={6} style={{ textAlign: 'center', padding: '32px', color: 'var(--color-text-secondary)', fontSize: 'var(--font-size-sm)' }}>
-                  Aucun étudiant trouvé.
-                </td>
-              </tr>
-            ) : rows.map((s) => {
-              const videoRatio = `${s.videosDone}/${s.totalVideos}`;
-              const videoPct   = s.totalVideos > 0
-                ? Math.round((s.videosDone / s.totalVideos) * 100) : 0;
-              const qcmColor   = s.avgQCMScore === null ? 'var(--color-text-disabled)'
-                : s.avgQCMScore >= 70 ? C_SUCCESS
-                : s.avgQCMScore >= 50 ? C_WARNING
-                : C_ERROR;
-
-              return (
-                <tr key={s._id}>
-                  {/* Nom + prénom */}
-                  <td style={{ padding: '12px 14px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                      <div className="avatar" style={{ fontSize: 'var(--font-size-xs)' }}>
-                        {s.nom[0]?.toUpperCase()}{s.prenom[0]?.toUpperCase()}
-                      </div>
-                      <div>
-                        <p style={{ fontWeight: 600, fontSize: 'var(--font-size-sm)', color: 'var(--color-text)' }}>
-                          {s.nom} {s.prenom}
-                        </p>
-                        <p style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-secondary)' }}>
-                          {s.email}
-                        </p>
-                      </div>
-                    </div>
-                  </td>
-
-                  {/* Filière */}
-                  <td style={{ padding: '12px 14px' }}>
-                    <p style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text)' }}>{s.filiere || '—'}</p>
-                    <p style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-secondary)' }}>{s.promotion || ''}</p>
-                  </td>
-
-                  {/* Vidéos vues */}
-                  <td style={{ padding: '12px 14px' }}>
-                    <p style={{ fontSize: 'var(--font-size-sm)', fontWeight: 600, color: 'var(--color-text)', marginBottom: 4 }}>
-                      {videoRatio}
-                      <span style={{ fontSize: 'var(--font-size-xs)', fontWeight: 400, color: 'var(--color-text-secondary)', marginLeft: 6 }}>
-                        ({videoPct}%)
-                      </span>
-                    </p>
-                    <div style={{ height: 4, backgroundColor: C_BORDER, borderRadius: 2, width: 80, overflow: 'hidden' }}>
-                      <div style={{ height: '100%', width: `${videoPct}%`, backgroundColor: completionColor(videoPct), borderRadius: 2 }} />
-                    </div>
-                  </td>
-
-                  {/* Moy. vidéo */}
-                  <td style={{ padding: '12px 14px', textAlign: 'center' }}>
-                    <span style={{ fontSize: 'var(--font-size-sm)', fontWeight: 700, color: completionColor(s.avgVideoPercent) }}>
-                      {s.avgVideoPercent}%
-                    </span>
-                  </td>
-
-                  {/* Score QCM */}
-                  <td style={{ padding: '12px 14px', textAlign: 'center' }}>
-                    {s.avgQCMScore === null ? (
-                      <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-disabled)' }}>Non tenté</span>
-                    ) : (
-                      <div>
-                        <span style={{ fontSize: 'var(--font-size-sm)', fontWeight: 700, color: qcmColor }}>
-                          {s.avgQCMScore}%
-                        </span>
-                        <p style={{ fontSize: 10, color: 'var(--color-text-disabled)' }}>
-                          {s.qcmAttempts} tentative{s.qcmAttempts > 1 ? 's' : ''}
-                        </p>
-                      </div>
-                    )}
-                  </td>
-
-                  {/* Dernière activité */}
-                  <td style={{ padding: '12px 14px' }}>
-                    <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-secondary)' }}>
-                      {fmt(s.lastActivity)}
-                    </span>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
-      <p style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-disabled)', marginTop: 8 }}>
-        {rows.length} étudiant{rows.length > 1 ? 's' : ''} affiché{rows.length > 1 ? 's' : ''}
-      </p>
-    </div>
-  );
-}
+/* La liste détaillée des étudiants est désormais sur /professor/tracking (Suivi individuel). */
 
 /* ══════════════════════════════════════════════════════════
    PAGE PRINCIPALE
@@ -416,7 +230,7 @@ export default function ProfessorDashboard() {
 
   if (!data) return null;
 
-  const { course, globalStats, videoStats, qcmAnalysis, students } = data;
+  const { course, globalStats, videoStats, qcmAnalysis } = data;
 
   /* ── Weak questions (tous QCMs confondus) ──────────────── */
   const weakQuestions = qcmAnalysis.flatMap((qcm) =>
@@ -709,41 +523,38 @@ export default function ProfessorDashboard() {
       </div>
 
       {/* ══════════════════════════════════════════════════════
-          SECTION 4 — LISTE ÉTUDIANTS
+          SECTION 4 — CTA vers Suivi individuel
       ══════════════════════════════════════════════════════ */}
-      <div className="card" style={{ marginBottom: 24 }}>
-        <div className="card-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div>
-            <span className="card-title">Étudiants inscrits</span>
-            <p style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-secondary)', marginTop: 2 }}>
-              {globalStats.totalStudents} étudiant{globalStats.totalStudents > 1 ? 's' : ''}
-            </p>
-          </div>
-          <div style={{ display: 'flex', gap: 6 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-              <div style={{ width: 10, height: 10, borderRadius: 2, backgroundColor: C_SUCCESS }} />
-              <span style={{ fontSize: 10, color: 'var(--color-text-secondary)' }}>≥70%</span>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-              <div style={{ width: 10, height: 10, borderRadius: 2, backgroundColor: C_WARNING }} />
-              <span style={{ fontSize: 10, color: 'var(--color-text-secondary)' }}>50-70%</span>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-              <div style={{ width: 10, height: 10, borderRadius: 2, backgroundColor: C_ERROR }} />
-              <span style={{ fontSize: 10, color: 'var(--color-text-secondary)' }}>&lt;50%</span>
-            </div>
-          </div>
+      <div
+        style={{
+          marginBottom: 24, padding: '20px 24px', borderRadius: 12,
+          background: 'linear-gradient(135deg, #FEF3C7 0%, #FFFBEB 100%)',
+          border: '1px solid #F59E0B33',
+          display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap',
+        }}
+      >
+        <div style={{
+          width: 44, height: 44, borderRadius: 10,
+          background: 'linear-gradient(135deg, #D97706, #F59E0B)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+        }}>
+          <Users size={22} color="#fff" />
         </div>
-
-        {students.length === 0 ? (
-          <div className="empty-state">
-            <Users size={28} className="empty-state-icon" />
-            <p className="empty-state-title">Aucun étudiant inscrit</p>
-            <p className="empty-state-desc">Les étudiants apparaissent ici dès qu'ils commencent le cours.</p>
-          </div>
-        ) : (
-          <StudentTable students={students} />
-        )}
+        <div style={{ flex: 1, minWidth: 240 }}>
+          <p style={{ fontSize: 'var(--font-size-md)', fontWeight: 700, color: '#92400E', margin: 0 }}>
+            Suivi individuel des {globalStats.totalStudents} étudiant{globalStats.totalStudents > 1 ? 's' : ''}
+          </p>
+          <p style={{ fontSize: 'var(--font-size-xs)', color: '#78350F', margin: '4px 0 0' }}>
+            Voir le détail par étudiant (vidéos manquantes, QCM non passés, dernière activité) et envoyer des rappels ciblés.
+          </p>
+        </div>
+        <Link
+          to={`/professor/tracking/${courseId}`}
+          className="btn btn-primary btn-sm"
+          style={{ flexShrink: 0 }}
+        >
+          Ouvrir le suivi <ChevronUp size={14} style={{ transform: 'rotate(90deg)' }} />
+        </Link>
       </div>
     </Layout>
   );

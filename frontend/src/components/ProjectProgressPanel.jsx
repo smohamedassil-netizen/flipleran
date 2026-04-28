@@ -30,7 +30,17 @@ function computeProgress(project) {
   const itemsDone = allItems.filter(i => i.done).length;
   const checklistPct = allItems.length ? (itemsDone / allItems.length) * 100 : (phasesDone > 0 ? 100 : 0);
 
-  const livrablesPct = (project.livrables?.length || 0) > 0 ? 100 : 0;
+  // Livrables : proportion des groupes ayant déposé au moins un livrable.
+  // Si pas de groupes : on retombe sur l'ancien comportement (≥1 livrable = 100 %).
+  const livrables = project.livrables || [];
+  const groupesCount = project.groupes?.length || 0;
+  let livrablesPct;
+  if (groupesCount > 0) {
+    const groupesAvecLivrable = new Set(livrables.map(l => l.groupeIndex)).size;
+    livrablesPct = (groupesAvecLivrable / groupesCount) * 100;
+  } else {
+    livrablesPct = livrables.length > 0 ? 100 : 0;
+  }
 
   // Moyenne pondérée : phases 40%, checklist 40%, livrables 20%
   const weighted = phasesPct * 0.4 + checklistPct * 0.4 + livrablesPct * 0.2;
@@ -44,6 +54,8 @@ function computeProgress(project) {
       phasesDone,
       itemsCount: allItems.length,
       itemsDone,
+      livrablesCount: livrables.length,
+      groupesCount,
     },
   };
 }
@@ -86,7 +98,11 @@ export function ProjectProgressWidget({ project }) {
         <div>
           <div style={{ color: '#94A3B8', fontWeight: 600, marginBottom: 4 }}>LIVRABLES</div>
           <ProgressBar percent={details.livrables} color="#D97706" height={6} />
-          <div style={{ fontSize: 11, color: '#64748B', marginTop: 4 }}>{project.livrables?.length || 0}</div>
+          <div style={{ fontSize: 11, color: '#64748B', marginTop: 4 }}>
+            {details.groupesCount > 0
+              ? `${details.livrables}% des groupes`
+              : `${details.livrablesCount} déposé${details.livrablesCount > 1 ? 's' : ''}`}
+          </div>
         </div>
       </div>
     </div>

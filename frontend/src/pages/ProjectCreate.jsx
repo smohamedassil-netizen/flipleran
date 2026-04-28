@@ -5,7 +5,6 @@ import { useAuth } from '../context/AuthContext.jsx';
 import api from '../utils/api.js';
 import {
   ArrowLeft, Plus, Trash2, Save, AlertCircle, X,
-  FolderKanban, BookOpen, Layers,
 } from 'lucide-react';
 
 /* Phases par défaut (communes mono/groupé, modifiables) */
@@ -129,38 +128,6 @@ export default function ProjectCreate() {
           <h1 className="page-title">Créer un nouveau projet</h1>
         </div>
 
-        {/* Type toggle mono / groupé */}
-        <div style={{ display: 'flex', gap: 12, marginBottom: 24 }}>
-          {[
-            { key: 'mono',   label: 'Projet mono-module',   desc: 'Un projet rattaché à un seul cours.',                 Icon: BookOpen, color: '#1B4F72', bg: '#EBF3FA' },
-            { key: 'groupe', label: 'Projet groupé',          desc: 'Un projet transverse rattaché à plusieurs modules.', Icon: Layers,   color: '#2E7D32', bg: '#E8F5E9' },
-          ].map(({ key, label, desc, Icon, color, bg }) => (
-            <button
-              key={key}
-              type="button"
-              onClick={() => setType(key)}
-              style={{
-                flex: 1, padding: '16px 20px',
-                borderRadius: 'var(--radius-lg)',
-                border: `2px solid ${type === key ? color : 'var(--color-border)'}`,
-                backgroundColor: type === key ? bg : 'var(--color-surface)',
-                cursor: 'pointer', textAlign: 'left',
-                transition: 'all 150ms',
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
-                <Icon size={20} color={type === key ? color : 'var(--color-text-secondary)'} />
-                <span style={{ fontWeight: 700, fontSize: 'var(--font-size-md)', color: type === key ? color : 'var(--color-text)' }}>
-                  {label}
-                </span>
-              </div>
-              <p style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-secondary)', margin: 0 }}>
-                {desc}
-              </p>
-            </button>
-          ))}
-        </div>
-
         <form onSubmit={handleSubmit}>
           {error && (
             <div className="alert alert-error" style={{ marginBottom: 16 }}>
@@ -200,11 +167,40 @@ export default function ProjectCreate() {
               />
             </div>
 
-            {type === 'mono' ? (
-              <div>
-                <label className="form-label">
-                  Module rattaché <span style={{ color: 'var(--color-error)' }}>*</span>
-                </label>
+            {/* Rattachement : 1 module ou plusieurs */}
+            <div>
+              <label className="form-label">
+                Rattachement <span style={{ color: 'var(--color-error)' }}>*</span>
+              </label>
+
+              {/* Toggle compact en ligne */}
+              <div style={{ display: 'inline-flex', gap: 0, marginBottom: 10, padding: 2, border: '1px solid var(--color-border)', borderRadius: 8, background: '#F8FAFC' }}>
+                {[
+                  { key: 'mono',   label: '1 seul module' },
+                  { key: 'groupe', label: 'Plusieurs modules' },
+                ].map(({ key, label }) => (
+                  <button
+                    key={key}
+                    type="button"
+                    onClick={() => setType(key)}
+                    style={{
+                      padding: '6px 14px',
+                      borderRadius: 6,
+                      border: 'none',
+                      background: type === key ? 'var(--color-primary)' : 'transparent',
+                      color: type === key ? '#fff' : 'var(--color-text-secondary)',
+                      fontSize: 13,
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      transition: 'all 150ms',
+                    }}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+
+              {type === 'mono' ? (
                 <select
                   className="form-input"
                   style={{ width: '100%' }}
@@ -217,43 +213,43 @@ export default function ProjectCreate() {
                     <option key={c._id} value={c._id}>{c.titre}</option>
                   ))}
                 </select>
-              </div>
-            ) : (
-              <div>
-                <label className="form-label">
-                  Modules rattachés <span style={{ color: 'var(--color-error)' }}>* (min. 2)</span>
-                </label>
-                <div style={{
-                  border: '1px solid var(--color-border)', borderRadius: 8,
-                  maxHeight: 220, overflowY: 'auto', padding: 4,
-                }}>
-                  {courses.length === 0 && (
-                    <p style={{ padding: 12, color: 'var(--color-text-secondary)', fontSize: 13, margin: 0 }}>Aucun cours disponible.</p>
-                  )}
-                  {courses.map((c) => {
-                    const checked = moduleIds.includes(c._id);
-                    return (
-                      <label key={c._id} style={{
-                        display: 'flex', alignItems: 'center', gap: 8,
-                        padding: '8px 10px', borderRadius: 6,
-                        background: checked ? '#E8F5E9' : 'transparent',
-                        cursor: 'pointer',
-                      }}>
-                        <input type="checkbox" checked={checked} onChange={() => toggleModule(c._id)} />
-                        <span style={{ fontSize: 13, color: 'var(--color-text)' }}>
-                          {c.titre} <span style={{ color: 'var(--color-text-secondary)', fontSize: 11 }}>({c.filiere || '?'})</span>
-                        </span>
-                      </label>
-                    );
-                  })}
-                </div>
-                {moduleIds.length > 0 && (
-                  <p style={{ marginTop: 6, fontSize: 12, color: '#2E7D32' }}>
-                    {moduleIds.length} module{moduleIds.length > 1 ? 's' : ''} sélectionné{moduleIds.length > 1 ? 's' : ''}.
+              ) : (
+                <>
+                  <p style={{ fontSize: 12, color: 'var(--color-text-secondary)', margin: '0 0 6px' }}>
+                    Sélectionner au moins 2 modules. Le projet sera transverse.
                   </p>
-                )}
-              </div>
-            )}
+                  <div style={{
+                    border: '1px solid var(--color-border)', borderRadius: 8,
+                    maxHeight: 220, overflowY: 'auto', padding: 4,
+                  }}>
+                    {courses.length === 0 && (
+                      <p style={{ padding: 12, color: 'var(--color-text-secondary)', fontSize: 13, margin: 0 }}>Aucun cours disponible.</p>
+                    )}
+                    {courses.map((c) => {
+                      const checked = moduleIds.includes(c._id);
+                      return (
+                        <label key={c._id} style={{
+                          display: 'flex', alignItems: 'center', gap: 8,
+                          padding: '8px 10px', borderRadius: 6,
+                          background: checked ? '#EBF3FA' : 'transparent',
+                          cursor: 'pointer',
+                        }}>
+                          <input type="checkbox" checked={checked} onChange={() => toggleModule(c._id)} />
+                          <span style={{ fontSize: 13, color: 'var(--color-text)' }}>
+                            {c.titre} <span style={{ color: 'var(--color-text-secondary)', fontSize: 11 }}>({c.filiere || '?'})</span>
+                          </span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                  {moduleIds.length > 0 && (
+                    <p style={{ marginTop: 6, fontSize: 12, color: '#1B4F72' }}>
+                      {moduleIds.length} module{moduleIds.length > 1 ? 's' : ''} sélectionné{moduleIds.length > 1 ? 's' : ''}.
+                    </p>
+                  )}
+                </>
+              )}
+            </div>
           </div>
 
           {/* Énoncé + mots-clés (commun à mono et groupé) */}

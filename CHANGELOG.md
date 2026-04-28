@@ -4,6 +4,34 @@ Historique des modifications par date de session.
 
 ---
 
+## 28 Avril 2026 — fin de journée (audit pré-soutenance — pivot UX)
+
+### Sidebar prof
+- Suppression des 2 fausses entrées "Outils IA" (Analyse vidéo IA, Assistant Module) qui pointaient vers `/courses` avec un simple tooltip — comportement trompeur.
+- Réorganisation en 4 sections claires : **Mon enseignement** (Tableau de bord, Suivi étudiants, Mes cours, Ressources, Projets), **Création** (QCM, Générer QCM IA, Badges), **Communication**, **Mon espace**.
+
+### Dashboard prof (`/professor/dashboard/:courseId`)
+- Retrait de la grosse liste étudiants triable (chevauchait la page `/professor/tracking`).
+- Suppression du composant `StudentTable` (~165 lignes) + helpers `SORT_FIELDS`, `SortIcon`, `fmt` devenus inutiles.
+- Ajout d'un CTA en bas qui pousse explicitement vers le Suivi individuel.
+
+### Module Projet — refonte UX
+- **ProjectList** : suppression de l'encart explicatif déplié "Mono-module vs Groupé" et des 3 onglets de filtre par type. Remplacé par un encart pédagogique sobre "Qu'est-ce qu'un projet ?". Sur les cards : disparition des emojis et gradients différenciés (📘/🌐), badges remplacés par statut + modules rattachés.
+- **ProjectCreate** : suppression des 2 gros boutons toggle Mono/Groupé en haut. Toggle compact "1 seul module / Plusieurs modules" intégré dans la section Rattachement.
+- **ProjectDetail** : ajout d'un encart "À propos de ce projet" qui explique en 3 lignes le concept (travail en groupe, rôles, phases, livrables, auto-évaluation).
+
+### Jauge progression livrables
+- Avant : binaire 0% si aucun livrable, 100% dès le 1er — peu importe le nombre de groupes.
+- Après : proportionnelle = `(groupes ayant déposé / total groupes) × 100`. Un projet à 5 groupes dont 1 a déposé affiche désormais 20% au lieu de 100%.
+- Affichage du label : `XX% des groupes` (au lieu de juste le nombre brut de livrables).
+
+### Vérifications faites (pas de modif)
+- **QCM** : le QCMPlayer affiche déjà un corrigé détaillé après soumission (bonne réponse en vert, réponse donnée incorrecte en rouge, explication pédagogique). Pas de modif.
+- **Badges** : 8 badges bien définis + page `/professor/badges` pour attribution manuelle. Pas de modif.
+- **Vidéos vs Ressources** : ResourceLibrary par cours a déjà 2 onglets séparés "Fichiers" / "Vidéos". ResourcesHub global ne mélange pas les 2. Cohérent.
+
+---
+
 ## 28 Avril 2026 (recentrage — retrait de l'IA prédictive TensorFlow)
 
 ### Décision pédagogique

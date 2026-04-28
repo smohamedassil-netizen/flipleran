@@ -69,30 +69,21 @@ const NAV = {
   ],
   professeur: [
     {
-      section: 'Enseignement',
+      section: 'Mon enseignement',
       items: [
         { label: 'Tableau de bord', icon: LayoutDashboard, to: '/professor/dashboard' },
+        { label: 'Suivi étudiants', icon: BarChart3,       to: '/professor/tracking' },
         { label: 'Mes cours',       icon: BookOpen,        to: '/courses' },
         { label: 'Ressources',      icon: FolderOpen,      to: '/resources' },
-        { label: 'Gérer les QCM',   icon: ClipboardList,   to: '/professor/qcm' },
         { label: 'Projets',         icon: FolderKanban,    to: '/projects' },
       ],
     },
     {
-      section: 'Outils IA',
+      section: 'Création',
       items: [
-        { label: 'Générer un QCM par IA', icon: Sparkles,  to: '/professor/qcm/create', badge: 'IA' },
-        { label: 'Analyse vidéo IA',       icon: Video,    to: '/courses', badge: 'IA',
-          tooltip: 'Ouvre une vidéo et clique « Analyser cette vidéo » pour générer transcript + résumé + concepts clés.' },
-        { label: 'Assistant Module',       icon: Bot,      to: '/courses', badge: 'IA',
-          tooltip: 'Chaque cours expose un Assistant IA personnalisable (persona) : pédagogue, strict, fun, expert.' },
-      ],
-    },
-    {
-      section: 'Gestion',
-      items: [
-        { label: 'Gérer les badges', icon: Award,          to: '/professor/badges' },
-        { label: 'Suivi étudiants',  icon: BarChart3,      to: '/professor/tracking' },
+        { label: 'Gérer les QCM',         icon: ClipboardList, to: '/professor/qcm' },
+        { label: 'Générer un QCM par IA', icon: Sparkles,      to: '/professor/qcm/create', badge: 'IA' },
+        { label: 'Gérer les badges',      icon: Award,         to: '/professor/badges' },
       ],
     },
     {
