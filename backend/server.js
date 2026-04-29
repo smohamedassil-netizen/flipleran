@@ -41,6 +41,7 @@ import { seedBadges }   from './services/points.js';
 import { seedRewards }  from './services/rewardsSeed.js';
 import { seedDemoContent } from './services/contentSeed.js';
 import { seedDemoData } from './services/demoSeed.js';
+import { seedProsits }  from './services/prositsSeed.js';
 import { seedUsers } from './services/usersSeed.js';
 import { migrateBrokenVideos } from './services/videoMigration.js';
 
@@ -91,6 +92,7 @@ connectDB().then(async () => {
       await seedUsers();
       await seedDemoContent();
       await seedDemoData();
+      await seedProsits();
     } catch (err) {
       console.error('[seed]', err.message);
     }

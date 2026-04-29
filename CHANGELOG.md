@@ -4,6 +4,49 @@ Historique des modifications par date de session.
 
 ---
 
+## 29 Avril 2026 — nuit (module Prosit complet — APP/CESI)
+
+Implémentation complète du module Prosit conformément à `_briefs/02_SPECS_PROSIT.md` et à la proposition `_briefs/03_PROPOSITION_ARCHITECTURE_PROSIT.md` validée par l'utilisateur. 13 étapes livrées en 5 commits intermédiaires (sécurité de rollback).
+
+### Backend (commit #1 — `6d16077`)
+- **`models/Prosit.js`** : modèle dédié, séparé de `Project`. 5 rôles CESI (animateur, secretaire, scribe, gestionnaire, membre), 6 statuts de workflow (brouillon → aller → recherche → retour → evalue → archive), espace collaboratif structuré, contributions individuelles, grille pondérée, 3 modes de formation des groupes (random / manual / student_choice).
+- **`models/User.js`** : 3 nouveaux champs pour la rotation obligatoire des rôles : `prositRolesCycle`, `prositRolesDoneInCycle`, `prositRolesHistory`.
+- **`controllers/prositController.js`** (~530 lignes) : CRUD prof, listing par filière/promo, visibilité conditionnelle (étudiant ne voit que son groupe pendant les phases en cours, tous après évalué), génération auto avec rotation obligatoire des rôles, composition manuelle, mode student_choice, transitions verrouillées, évaluation avec attribution +150 XP par membre + mise à jour rotation + déclenchement badges.
+- **`routes/prositRoutes.js`** + branchement `/api/prosits` dans `server.js`.
+- **`services/points.js`** : 3 nouveaux badges (`prosit_completed` rare, `prosit_animator` epic après 3 Prosits comme Animateur, `prosit_perfect` epic si note ≥ 18/20).
+- Bug fix : `socket.on('battle:answer', ...)` rendu async (régression du commit `5189849` non détectée par `vite build`).
+
+### Frontend (commits #2 et #3 — `2ed8044` et `95acdde`)
+- **Sidebar** (`components/Layout.jsx`) : nouvelle section **"Apprentissage par Problème"** pour étudiant et professeur, avec entrée Prosits (icône Lightbulb). Section conçue pour accueillir d'autres modules pédagogiques ultérieurement.
+- **`pages/PrositList.jsx`** : liste filtrée par rôle, panneau de progression rotation des rôles CESI pour l'étudiant (rôles faits/restants dans le cycle, total par rôle), filtres par statut, encart pédagogique sobre.
+- **`pages/PrositCreate.jsx`** : formulaire complet pour le prof (infos générales, contexte, calendrier, config groupes min/max + 3 modes au choix, grille d'évaluation pondérée éditable). Validation client : somme des poids = 100, dates cohérentes.
+- **`pages/PrositDetail.jsx`** (~430 lignes) : vue par phase. Espace collaboratif pour mon groupe (mots-clés, problématique, hypothèses, plan d'action en Aller ; contribution individuelle en Recherche ; solution finale en Retour). Panneau d'évaluation pour le prof en phase Retour (note 0-20 + commentaire → +150 XP par membre).
+- **Composants partagés** :
+  - `PrositRoleBadge.jsx` : badge visuel par rôle CESI (icône, couleur, tooltip descriptif).
+  - `PrositPhaseStepper.jsx` : barre de progression Aller → Recherche → Retour → Évalué.
+  - `PrositGroupCard.jsx` : carte de groupe avec membres + leurs rôles + note finale si évalué.
+- **Routes** ajoutées : `/prosits` (étudiant + prof), `/prosits/:id`, `/prosits/new` (prof + admin).
+
+### Notifications (commit #4 — `dc45ba2`)
+- **Rappels email J-1/J-0** : `services/notificationScheduler.js` étendu avec `checkPrositDeadlines()` qui couvre la phase Aller (séance 1) et la phase Retour (séance 2). Cron quotidien à 08:00.
+- **Notifications temps réel** : à chaque transition de phase, tous les membres reçoivent une notif Socket.io + DB ("Phase Aller ouverte / Recherche commencée / Retour ouverte / Évaluation publiée"). À l'évaluation, seuls les membres du groupe évalué reçoivent une notif "Prosit évalué : X/20, +150 XP".
+
+### Seed + mémoire (commit #5)
+- **`services/prositsSeed.js`** : 3 Prosits de démo (1 par filière) en phase Aller, avec groupes auto-formés via la fonction de mélange. Cas d'entreprises algériennes : startup e-commerce (ISIL), foodtech à Alger (Management), PME familiale matériaux de construction (Finance).
+- **Mémoire (`generate_memoire.py`)** : nouvelle section **4.13 Module Prosit (Apprentissage Par Problème)** avec 5 sous-sections (workflow 3 phases, rotation obligatoire des rôles CESI, 3 modes de formation des groupes, évaluation et attribution d'XP, visibilité conditionnelle entre groupes). Bilan 7.1 mis à jour. `Memoire_PFE_FlipLearn.docx` régénéré.
+
+### Décisions structurantes (validées par l'utilisateur)
+1. **XP par Prosit terminé** : 150 par membre du groupe quand le tuteur évalue.
+2. **Évaluation V1** : prof seul (auto-évaluation et pairs en perspective dans le mémoire).
+3. **Taille des groupes** : paramétrée par le prof (min/max).
+4. **Formation des groupes** : 3 modes au choix (random / manual / student_choice).
+5. **Rotation obligatoire des rôles CESI** : chaque étudiant doit passer par les 5 rôles avant que le cycle se réinitialise. Tracking dans le profil + indicateur visuel.
+6. **Visibilité entre groupes** : privée pendant les phases actives, publique après évalué.
+7. **Sidebar** : nouvelle section "Apprentissage par Problème" qui pourra accueillir d'autres modules.
+8. **Plan d'implémentation** : 13 étapes en 5 commits intermédiaires (rollback possible à chaque étape majeure).
+
+---
+
 ## 29 Avril 2026 — soir (audit briefs + Quiz Battle classement interne + sélection matière)
 
 ### Audit complet sur briefs `_briefs/00_CONTEXTE_PROJET.md`, `01_SPECS_QUIZ_BATTLE.md`, `02_SPECS_PROSIT.md`
