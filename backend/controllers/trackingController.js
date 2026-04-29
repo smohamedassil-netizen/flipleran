@@ -193,8 +193,8 @@ export const sendManualReminder = async (req, res) => {
 
 /**
  * GET /api/tracking/alerts
- * Retourne la liste des cours du prof où la complétion vidéo
- * est < 50 % (max 10 alertes, triées par criticité croissante).
+ * Retourne les ressources (vidéos + QCMs) où la complétion est < 50 %
+ * pour les cours du prof. Max 10 alertes, triées par criticité croissante.
  * Affiché en haut du dashboard, sans sélection préalable d'un cours.
  */
 export const getProfessorAlerts = async (req, res) => {
@@ -204,8 +204,11 @@ export const getProfessorAlerts = async (req, res) => {
     const alerts = [];
 
     for (const course of courses) {
-      const [videos, students] = await Promise.all([
+      const [videos, qcms, students] = await Promise.all([
         Video.find({ courseId: course._id }).select('titre watchedBy deadline'),
+        QCM.find({})
+          .populate({ path: 'videoId', match: { courseId: course._id }, select: 'courseId' })
+          .select('titre deadline resultats videoId'),
         User.countDocuments({
           role: 'etudiant',
           isActive: { $ne: false },
@@ -216,6 +219,7 @@ export const getProfessorAlerts = async (req, res) => {
 
       if (students === 0) continue;
 
+      // Alertes vidéo
       for (const video of videos) {
         const completed = video.watchedBy.filter(w => w.completed).length;
         const rate = Math.round((completed / students) * 100);
@@ -228,6 +232,25 @@ export const getProfessorAlerts = async (req, res) => {
             resourceTitre: video.titre,
             completionRate: rate,
             deadline: video.deadline,
+            link: `/professor/tracking/${course._id}`,
+          });
+        }
+      }
+
+      // Alertes QCM (filtre sur les QCMs liés à une vidéo de ce cours)
+      const courseQcms = qcms.filter(q => q.videoId);
+      for (const qcm of courseQcms) {
+        const completed = qcm.resultats.length;
+        const rate = Math.round((completed / students) * 100);
+        if (rate < 50) {
+          alerts.push({
+            type: 'qcm',
+            courseId: course._id,
+            courseTitre: course.titre,
+            resourceId: qcm._id,
+            resourceTitre: qcm.titre,
+            completionRate: rate,
+            deadline: qcm.deadline,
             link: `/professor/tracking/${course._id}`,
           });
         }
