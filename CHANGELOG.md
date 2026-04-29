@@ -4,6 +4,21 @@ Historique des modifications par date de session.
 
 ---
 
+## 29 Avril 2026 — soir (alertes urgentes prof sur dashboard)
+
+Bloc d'alertes immédiat sur le tableau de bord professeur, sans sélection préalable d'un cours.
+
+### Backend
+- **`controllers/trackingController.js`** : nouvelle fonction `getProfessorAlerts` — parcourt les cours du prof, calcule la complétion vidéo par étudiant inscrit (filière + promotion), remonte jusqu'à 10 alertes sous 50 % de complétion, triées par criticité croissante.
+- **`routes/trackingRoutes.js`** : nouvelle route `GET /api/tracking/alerts` (héritage du `authMiddleware` + `requireRole('professeur', 'admin')` déjà appliqué globalement).
+
+### Frontend
+- **`pages/ProfessorDashboard.jsx`** : appel `GET /tracking/alerts` au montage (parallèle au chargement du cours), bloc fond jaune pâle (#FFFBEB) en haut de page avec icône AlertTriangle, titre « ⚠️ Cours nécessitant votre attention ». Chaque alerte : nom du cours, nom de la vidéo, badge rouge X% de complétion, bouton « Voir le suivi → ». Bloc visible aussi en états loading et error pour rester immédiat. Si aucune alerte, le bloc n'est pas affiché.
+
+Commit : `feat: professor urgent alerts on dashboard without course selection` (`7c0a779`).
+
+---
+
 ## 29 Avril 2026 — nuit (module Prosit complet — APP/CESI)
 
 Implémentation complète du module Prosit conformément à `_briefs/02_SPECS_PROSIT.md` et à la proposition `_briefs/03_PROPOSITION_ARCHITECTURE_PROSIT.md` validée par l'utilisateur. 13 étapes livrées en 5 commits intermédiaires (sécurité de rollback).
