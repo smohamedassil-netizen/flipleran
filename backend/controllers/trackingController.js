@@ -192,6 +192,57 @@ export const sendManualReminder = async (req, res) => {
 };
 
 /**
+ * GET /api/tracking/alerts
+ * Retourne la liste des cours du prof où la complétion vidéo
+ * est < 50 % (max 10 alertes, triées par criticité croissante).
+ * Affiché en haut du dashboard, sans sélection préalable d'un cours.
+ */
+export const getProfessorAlerts = async (req, res) => {
+  try {
+    const filter = req.user.role === 'admin' ? {} : { professorId: req.user.id };
+    const courses = await Course.find(filter).select('_id titre filiere promotion');
+    const alerts = [];
+
+    for (const course of courses) {
+      const [videos, students] = await Promise.all([
+        Video.find({ courseId: course._id }).select('titre watchedBy deadline'),
+        User.countDocuments({
+          role: 'etudiant',
+          isActive: { $ne: false },
+          filiere: course.filiere,
+          promotion: course.promotion,
+        }),
+      ]);
+
+      if (students === 0) continue;
+
+      for (const video of videos) {
+        const completed = video.watchedBy.filter(w => w.completed).length;
+        const rate = Math.round((completed / students) * 100);
+        if (rate < 50) {
+          alerts.push({
+            type: 'video',
+            courseId: course._id,
+            courseTitre: course.titre,
+            resourceId: video._id,
+            resourceTitre: video.titre,
+            completionRate: rate,
+            deadline: video.deadline,
+            link: `/professor/tracking/${course._id}`,
+          });
+        }
+      }
+    }
+
+    alerts.sort((a, b) => a.completionRate - b.completionRate);
+    res.json(alerts.slice(0, 10));
+  } catch (err) {
+    console.error('[tracking.getProfessorAlerts]', err);
+    res.status(500).json({ message: err.message });
+  }
+};
+
+/**
  * GET /api/tracking/my-courses
  * Liste les cours du prof avec stats rapides (pour index dashboard).
  */

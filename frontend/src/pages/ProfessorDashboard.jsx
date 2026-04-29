@@ -173,11 +173,86 @@ export default function ProfessorDashboard() {
   const [loading,   setLoading]   = useState(true);
   const [refreshing,setRefreshing]= useState(false);
   const [error,     setError]     = useState('');
+  const [alerts,    setAlerts]    = useState([]);
 
   /* ── Load course list for selector ─────────────────── */
   useEffect(() => {
     api.get('/professor/courses').then(({ data }) => setCourses(data)).catch(() => {});
   }, []);
+
+  /* ── Load global alerts (independent of selected course) ── */
+  useEffect(() => {
+    api.get('/tracking/alerts').then(r => setAlerts(r.data ?? [])).catch(() => {});
+  }, []);
+
+  /* ── Bloc d'alertes urgentes (visible sur tous les états) ── */
+  const alertsBlock = alerts.length > 0 && (
+    <div style={{
+      backgroundColor: '#FFFBEB',
+      border: `1px solid ${C_WARNING}33`,
+      borderRadius: 12,
+      padding: '16px 20px',
+      marginBottom: 20,
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
+        <AlertTriangle size={18} color={C_WARNING} />
+        <span style={{ fontSize: 'var(--font-size-md)', fontWeight: 700, color: C_WARNING }}>
+          {'⚠️'} Cours nécessitant votre attention
+        </span>
+        <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-secondary)', marginLeft: 'auto' }}>
+          {alerts.length} alerte{alerts.length > 1 ? 's' : ''}
+        </span>
+      </div>
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        {alerts.map((alert, i) => (
+          <div
+            key={`${alert.courseId}-${alert.resourceId}-${i}`}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 12,
+              padding: '10px 14px',
+              backgroundColor: '#fff',
+              borderRadius: 8,
+              border: `1px solid ${C_BORDER}`,
+              flexWrap: 'wrap',
+            }}
+          >
+            <div style={{ flex: 1, minWidth: 220 }}>
+              <p style={{ fontSize: 'var(--font-size-sm)', fontWeight: 600, color: 'var(--color-text)', margin: 0 }}>
+                {alert.courseTitre}
+              </p>
+              <p style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-secondary)', margin: '2px 0 0' }}>
+                {alert.type === 'video' ? '🎥 ' : '📝 '}{alert.resourceTitre}
+              </p>
+            </div>
+
+            <span style={{
+              padding: '4px 10px',
+              borderRadius: 'var(--radius-sm)',
+              backgroundColor: '#FFF5F5',
+              border: `1px solid ${C_ERROR}33`,
+              fontSize: 'var(--font-size-xs)',
+              fontWeight: 700,
+              color: C_ERROR,
+              flexShrink: 0,
+            }}>
+              {alert.completionRate}% de complétion
+            </span>
+
+            <button
+              onClick={() => navigate(alert.link)}
+              className="btn btn-ghost btn-sm"
+              style={{ flexShrink: 0 }}
+            >
+              Voir le suivi →
+            </button>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 
   /* ── Load dashboard data ────────────────────────────── */
   const load = async (cid, isRefresh = false) => {
@@ -208,6 +283,7 @@ export default function ProfessorDashboard() {
   if (loading) {
     return (
       <Layout title="Tableau de bord professeur">
+        {alertsBlock}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 200, gap: 12 }}>
           <div style={{ width: 24, height: 24, border: `2px solid ${C_BORDER}`, borderTopColor: C_PRIMARY, borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
           <span className="text-small">Chargement...</span>
@@ -220,6 +296,7 @@ export default function ProfessorDashboard() {
   if (error) {
     return (
       <Layout title="Tableau de bord professeur">
+        {alertsBlock}
         <div className="alert alert-error" style={{ maxWidth: 480 }}>
           <AlertTriangle size={15} />
           <span>{error}</span>
@@ -256,6 +333,9 @@ export default function ProfessorDashboard() {
           Voir le suivi individuel par étudiant →
         </Link>
       </div>
+
+      {/* ── Alertes urgentes (visibles sans sélection de cours) ── */}
+      {alertsBlock}
 
       {/* ── Header ────────────────────────────────────────── */}
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 24, gap: 16, flexWrap: 'wrap' }}>
