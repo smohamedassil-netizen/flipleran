@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout.jsx';
 import QCMPlayer from '../components/QCMPlayer.jsx';
 import api from '../utils/api.js';
-import { ArrowLeft, AlertCircle, BookOpen, Clock } from 'lucide-react';
+import { ArrowLeft, AlertCircle, AlertTriangle, BookOpen, Clock, Play, X } from 'lucide-react';
 import { useGamification } from '../context/GamificationContext.jsx';
 
 export default function QCMPage() {
@@ -15,6 +15,7 @@ export default function QCMPage() {
   const [loading,    setLoading]    = useState(true);
   const [error,      setError]      = useState('');
   const [errorCode,  setErrorCode]  = useState(null);
+  const [videoWarningDismissed, setVideoWarningDismissed] = useState(false);
 
   useEffect(() => {
     api.get(`/qcm/video/${videoId}`)
@@ -68,6 +69,9 @@ export default function QCMPage() {
     );
   }
 
+  // Prérequis vidéo (classe inversée) : recommandation visible, dismissable
+  const showVideoWarning = qcm.videoWatched === false && !videoWarningDismissed;
+
   return (
     <Layout title={qcm.titre}>
       {/* Breadcrumb */}
@@ -80,6 +84,70 @@ export default function QCMPage() {
           {qcm.titre}
         </span>
       </div>
+
+      {/* Bandeau prérequis vidéo */}
+      {showVideoWarning && (
+        <div style={{
+          maxWidth: 640,
+          margin: '0 auto 16px',
+          padding: '14px 16px',
+          backgroundColor: '#FFFBEB',
+          border: '1px solid #D4952A55',
+          borderRadius: 12,
+          position: 'relative',
+        }}>
+          <button
+            type="button"
+            aria-label="Fermer l'avertissement"
+            onClick={() => setVideoWarningDismissed(true)}
+            style={{
+              position: 'absolute',
+              top: 8,
+              right: 8,
+              width: 24,
+              height: 24,
+              borderRadius: 6,
+              border: 'none',
+              background: 'transparent',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: '#92400E',
+            }}
+          >
+            <X size={14} />
+          </button>
+
+          <div style={{ display: 'flex', gap: 12, paddingRight: 24 }}>
+            <AlertTriangle size={18} color="#D4952A" style={{ flexShrink: 0, marginTop: 2 }} />
+            <div style={{ flex: 1 }}>
+              <p style={{ margin: 0, fontSize: 'var(--font-size-sm)', fontWeight: 700, color: '#92400E' }}>
+                Vous n'avez pas encore regardé cette vidéo.
+              </p>
+              <p style={{ margin: '4px 0 12px', fontSize: 'var(--font-size-xs)', color: '#78350F', lineHeight: 1.5 }}>
+                Pour une meilleure préparation, regardez la vidéo avant de commencer le QCM.
+              </p>
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                <button
+                  type="button"
+                  className="btn btn-primary btn-sm"
+                  onClick={() => navigate(`/watch/${videoId}`)}
+                >
+                  <Play size={13} /> Regarder la vidéo d'abord
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-ghost btn-sm"
+                  onClick={() => setVideoWarningDismissed(true)}
+                >
+                  Continuer quand même
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div style={{ maxWidth: 640, margin: '0 auto' }}>
         {/* Header card */}

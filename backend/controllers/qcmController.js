@@ -1,4 +1,5 @@
 import QCM      from '../models/QCM.js';
+import Video    from '../models/Video.js';
 import User     from '../models/User.js';
 import Progress from '../models/Progress.js';
 import { addPoints, checkChampionBadge } from '../services/points.js';
@@ -87,6 +88,15 @@ export const getQCMByVideo = async (req, res) => {
 
     const isStudent = req.user.role === 'etudiant';
     if (isStudent) {
+      // Prérequis vidéo (classe inversée) : recommandation, pas blocage.
+      // Seuil : 30 % visionné OU completed=true (>=80 % côté Video.watchedBy).
+      const video = await Video.findById(req.params.videoId).select('watchedBy');
+      let videoWatched = false;
+      if (video) {
+        const entry = video.watchedBy?.find(w => w.userId.toString() === req.user.id);
+        videoWatched = !!(entry && (entry.watchedPercent >= 30 || entry.completed));
+      }
+
       const sanitized = {
         _id:              qcm._id,
         videoId:          qcm.videoId,
@@ -99,6 +109,7 @@ export const getQCMByVideo = async (req, res) => {
           options:      q.options,
           questionType: q.questionType ?? 'single',
         })),
+        videoWatched,
       };
       return res.json(sanitized);
     }
