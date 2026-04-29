@@ -2,6 +2,27 @@ import mongoose from 'mongoose';
 import Prosit, { PROSIT_ROLES } from '../models/Prosit.js';
 import User from '../models/User.js';
 import Course from '../models/Course.js';
+import { pushNotification } from '../services/notificationService.js';
+
+/**
+ * Helper : envoie une notification temps réel (Socket.io + DB) à tous les
+ * membres des groupes d'un Prosit. L'instance io est récupérée depuis
+ * `req.app.get('io')` (set dans server.js).
+ */
+async function notifyPrositMembers(req, prosit, payload) {
+  const io = req.app.get('io');
+  if (!io) return;
+  const memberIds = new Set();
+  for (const g of prosit.groupes || []) {
+    for (const m of g.membres || []) {
+      memberIds.add(m.userId.toString());
+    }
+  }
+  await Promise.all([...memberIds].map(userId =>
+    pushNotification(io, { ...payload, userId, relatedType: 'prosit', relatedId: prosit._id })
+      .catch(err => console.error('[prosit notify]', err.message))
+  ));
+}
 
 /* ─────────────────────────────────────────────────────────────────────────
    HELPERS
@@ -477,6 +498,25 @@ export async function transitionPhase(req, res) {
 
     prosit.status = next;
     await prosit.save();
+
+    // Notification temps réel à tous les membres
+    const phaseLabels = {
+      aller:     'Phase Aller ouverte',
+      recherche: 'Phase Recherche commencée',
+      retour:    'Phase Retour ouverte',
+      evalue:    'Évaluation publiée',
+      archive:   'Prosit archivé',
+    };
+    if (phaseLabels[next]) {
+      await notifyPrositMembers(req, prosit, {
+        type: 'prosit_phase',
+        priority: 'normal',
+        title: `💡 ${phaseLabels[next]}`,
+        message: `Le Prosit "${prosit.titre}" est passé en ${next}.`,
+        link: `/prosits/${prosit._id}`,
+      });
+    }
+
     res.json(prosit);
   } catch (err) {
     console.error('[prosit] transition error:', err);
@@ -566,6 +606,24 @@ export async function evaluateGroupe(req, res) {
     }
 
     await prosit.save();
+
+    // Notification temps réel aux membres du groupe évalué
+    const io = req.app.get('io');
+    if (io) {
+      await Promise.all(groupe.membres.map(m =>
+        pushNotification(io, {
+          userId: m.userId.toString(),
+          type: 'prosit_evaluated',
+          priority: 'high',
+          title: `✅ Prosit évalué : ${noteGlobale}/20`,
+          message: `Le Prosit "${prosit.titre}" a été évalué par ton tuteur. +150 XP attribués !`,
+          link: `/prosits/${prosit._id}`,
+          relatedType: 'prosit',
+          relatedId: prosit._id,
+        }).catch(err => console.error('[prosit evaluate notify]', err.message))
+      ));
+    }
+
     res.json(groupe);
   } catch (err) {
     console.error('[prosit] evaluate error:', err);

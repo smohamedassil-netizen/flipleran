@@ -2,6 +2,7 @@ import cron from 'node-cron';
 import QCM from '../models/QCM.js';
 import Video from '../models/Video.js';
 import Project from '../models/Project.js';
+import Prosit from '../models/Prosit.js';
 import Course from '../models/Course.js';
 import User from '../models/User.js';
 import Progress from '../models/Progress.js';
@@ -213,12 +214,89 @@ export async function checkProjectDeadlines(io) {
   }
 }
 
+/* ─── Rappels Prosit ──────────────────────────────────────────────────── */
+export async function checkPrositDeadlines(io) {
+  const now = new Date();
+  const horizon = new Date(now.getTime() + 7 * DAY_MS);
+
+  const prosits = await Prosit.find({
+    status: { $in: ['aller', 'recherche', 'retour'] },
+    $or: [
+      { dateAller:  { $gte: now, $lte: horizon } },
+      { dateRetour: { $gte: now, $lte: horizon } },
+    ],
+  });
+
+  for (const prosit of prosits) {
+    // Membres de tous les groupes
+    const memberIds = new Set();
+    prosit.groupes.forEach(g => {
+      g.membres.forEach(m => memberIds.add(m.userId.toString()));
+    });
+
+    // Deadline phase Aller (séance 1)
+    if (prosit.status === 'aller' || prosit.status === 'brouillon') {
+      const days = daysUntil(prosit.dateAller);
+      if (days !== null && days >= 0 && [0, 1, 3].includes(days)) {
+        const when = days === 0 ? "aujourd'hui" : days === 1 ? 'demain' : `dans ${days} jours`;
+        const urgency = days <= 1 ? 'urgent' : 'high';
+        for (const userId of memberIds) {
+          await pushNotification(io, {
+            userId,
+            type: 'reminder_prosit',
+            priority: urgency,
+            title: '💡 Prosit — Phase Aller',
+            message: `La phase Aller du Prosit "${prosit.titre}" commence ${when}.`,
+            link: `/prosits/${prosit._id}`,
+            relatedType: 'prosit',
+            relatedId: prosit._id,
+            dedupKey: `prosit_${prosit._id}_aller_d${days}`,
+          });
+          await sendDeadlineEmail(
+            userId,
+            `Prosit "${prosit.titre}" — Phase Aller ${when}`,
+            `La phase Aller du Prosit <strong>"${prosit.titre}"</strong> commence ${when}. Prépare ton groupe : lecture de l'énoncé, identification des mots-clés, hypothèses initiales.`,
+            days,
+          );
+        }
+      }
+    }
+
+    // Deadline phase Retour (séance 2)
+    const daysRetour = daysUntil(prosit.dateRetour);
+    if (daysRetour !== null && daysRetour >= 0 && [0, 1, 3].includes(daysRetour)) {
+      const when = daysRetour === 0 ? "aujourd'hui" : daysRetour === 1 ? 'demain' : `dans ${daysRetour} jours`;
+      const urgency = daysRetour <= 1 ? 'urgent' : 'high';
+      for (const userId of memberIds) {
+        await pushNotification(io, {
+          userId,
+          type: 'reminder_prosit',
+          priority: urgency,
+          title: '💡 Prosit — Phase Retour',
+          message: `La présentation du Prosit "${prosit.titre}" a lieu ${when}.`,
+          link: `/prosits/${prosit._id}`,
+          relatedType: 'prosit',
+          relatedId: prosit._id,
+          dedupKey: `prosit_${prosit._id}_retour_d${daysRetour}`,
+        });
+        await sendDeadlineEmail(
+          userId,
+          `Prosit "${prosit.titre}" — Phase Retour ${when}`,
+          `La phase Retour du Prosit <strong>"${prosit.titre}"</strong> a lieu ${when}. Finalise ta contribution individuelle et prépare la présentation de groupe.`,
+          daysRetour,
+        );
+      }
+    }
+  }
+}
+
 /* ─── Lanceur complet ────────────────────────────────────────────────── */
 export async function runAllDeadlineChecks(io) {
   try {
     await checkQCMDeadlines(io);
     await checkVideoDeadlines(io);
     await checkProjectDeadlines(io);
+    await checkPrositDeadlines(io);
     console.log(`[Scheduler] Deadline checks completed at ${new Date().toISOString()}`);
   } catch (err) {
     console.error('[Scheduler] error:', err.message);
