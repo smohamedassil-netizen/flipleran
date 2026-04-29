@@ -3,10 +3,13 @@ import User from '../models/User.js';
 /**
  * Quotas mensuels du plan FREE.
  * Les utilisateurs PREMIUM (avec premiumUntil > now) bypassent ces limites.
+ *
+ * Note : `moduleBot` n'est volontairement pas listé ici. Le Module Assistant
+ * (chatbot par cours via Groq) reste illimité pour tous les plans car Groq
+ * est gratuit côté fournisseur — pas de raison de rationner.
  */
 export const QUOTA_LIMITS = {
   videoAnalysis:  3,
-  moduleBot:      30,
   qcmGeneration:  5,
   deckGeneration: 5,
 };

@@ -1,6 +1,5 @@
 import express from 'express';
 import authMiddleware from '../middleware/authMiddleware.js';
-import { checkAiQuota } from '../middleware/aiQuota.js';
 import {
   getModuleChatbot,
   handleModuleMessage,
@@ -10,9 +9,10 @@ const router = express.Router();
 
 router.use(authMiddleware);
 
-// Assistant Module — chat IA specialise par cours (seul agent IA conversationnel conserve)
+// Assistant Module — chat IA specialise par cours (seul agent IA conversationnel conserve).
+// Volontairement HORS quota : Groq est gratuit côté fournisseur, donc le Module Assistant
+// reste illimité pour tous les plans (free comme premium).
 router.get('/module/:courseId', getModuleChatbot);
-// Envoi d'un message — soumis au quota IA mensuel (FREE = 30 / mois).
-router.post('/module/:courseId/message', checkAiQuota('moduleBot'), handleModuleMessage);
+router.post('/module/:courseId/message', handleModuleMessage);
 
 export default router;
