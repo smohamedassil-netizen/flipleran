@@ -29,6 +29,13 @@ Commits :
 Commit :
 - `151ec71` — feat: display AI quota counter in QCM generation UI
 
+### Backend + Frontend — prérequis vidéo avant QCM
+- **`controllers/qcmController.js`** (`getQCMByVideo`) : pour les étudiants uniquement, calcul du flag `videoWatched` à partir de `Video.watchedBy` (true si `watchedPercent >= 30` OU `completed === true`). Le flag est ajouté à la réponse sanitisée (sans exposer `correctAnswer`/`explanation`).
+- **`pages/QCMPage.jsx`** : si `qcm.videoWatched === false`, bandeau jaune pâle (#FFFBEB) avec icône AlertTriangle, message « Vous n'avez pas encore regardé cette vidéo », bouton « Regarder la vidéo d'abord » (→ `/watch/:videoId`), bouton « Continuer quand même » et bouton X pour dismiss. **Pas de blocage** — recommandation pédagogique seulement.
+
+Commit :
+- `f7db191` — feat: soft video prerequisite check before QCM
+
 ---
 
 ## 29 Avril 2026 — nuit (module Prosit complet — APP/CESI)
