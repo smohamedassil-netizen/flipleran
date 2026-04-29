@@ -98,7 +98,6 @@ const NAV = {
       section: 'Création',
       items: [
         { label: 'Gérer les QCM',         icon: ClipboardList, to: '/professor/qcm' },
-        { label: 'Générer un QCM par IA', icon: Sparkles,      to: '/professor/qcm/create', badge: 'IA' },
         { label: 'Gérer les badges',      icon: Award,         to: '/professor/badges' },
       ],
     },

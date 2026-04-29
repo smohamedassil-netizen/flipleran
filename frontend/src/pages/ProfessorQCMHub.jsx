@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout.jsx';
 import api from '../utils/api.js';
-import { ArrowLeft, ClipboardList, Video, Plus, CheckCircle, ChevronRight, Edit, Trash2, AlertCircle } from 'lucide-react';
+import { ArrowLeft, ClipboardList, Video, Plus, CheckCircle, ChevronRight, Edit, Trash2, AlertCircle, Sparkles } from 'lucide-react';
 
 export default function ProfessorQCMHub() {
   const navigate = useNavigate();
@@ -80,7 +80,24 @@ export default function ProfessorQCMHub() {
           <ArrowLeft size={18} /> Retour
         </button>
 
-        <h1 style={{ fontSize: '1.5rem', fontWeight: 700, color: '#1B4F72', marginBottom: 4 }}>Gérer les QCM</h1>
+        {/* En-tête : titre + bouton Générer avec IA (sous-action de "Gérer les QCM").
+            L'entrée dédiée a été retirée de la sidebar pour éviter la redondance. */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, flexWrap: 'wrap', marginBottom: 4 }}>
+          <h1 style={{ fontSize: '1.5rem', fontWeight: 700, color: '#1B4F72', margin: 0 }}>Gérer les QCM</h1>
+          <button
+            onClick={() => navigate('/professor/qcm/create')}
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: 8,
+              padding: '9px 16px', borderRadius: 10,
+              background: 'linear-gradient(135deg, #9333EA, #7C3AED)',
+              color: 'white', border: 'none',
+              fontSize: 13, fontWeight: 700, cursor: 'pointer',
+              boxShadow: '0 4px 14px rgba(147,51,234,.25)',
+            }}
+          >
+            <Sparkles size={14} /> Générer avec IA
+          </button>
+        </div>
         <p style={{ color: '#64748b', marginBottom: 24 }}>Créez et modifiez les questionnaires associés à vos vidéos</p>
 
         {loading ? (
