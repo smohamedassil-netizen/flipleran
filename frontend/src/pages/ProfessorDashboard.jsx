@@ -9,7 +9,7 @@ import {
 import {
   Users, Video, CheckCircle, BarChart2,
   AlertTriangle, ChevronUp, RefreshCw, Upload,
-  BookOpen, ArrowLeft,
+  BookOpen, ArrowLeft, HelpCircle,
 } from 'lucide-react';
 
 /* ══════════════════════════════════════════════════════════
@@ -62,6 +62,7 @@ function StatCard({ label, value, sub, icon: Icon, accent }) {
 
 /* ── Video completion row ───────────────────────────────── */
 function VideoRow({ video }) {
+  const navigate = useNavigate();
   const rate  = video.completionRate;
   const color = completionColor(rate);
   const bg    = completionBg(rate);
@@ -69,7 +70,7 @@ function VideoRow({ video }) {
   return (
     <div style={{
       display: 'grid',
-      gridTemplateColumns: '28px 1fr 160px 80px 64px',
+      gridTemplateColumns: '28px 1fr 160px 80px 64px auto',
       gap: 12,
       alignItems: 'center',
       padding: '10px 0',
@@ -128,6 +129,17 @@ function VideoRow({ video }) {
           {rate}%
         </span>
       </div>
+
+      {/* Lien éditeur des questions in-video */}
+      <button
+        type="button"
+        onClick={() => navigate(`/professor/videos/${video._id}/questions`)}
+        title="Questions interactives in-video"
+        className="btn btn-ghost btn-sm"
+        style={{ padding: '4px 8px' }}
+      >
+        <HelpCircle size={13} /> Questions
+      </button>
     </div>
   );
 }

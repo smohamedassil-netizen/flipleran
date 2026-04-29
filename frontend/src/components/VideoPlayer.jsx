@@ -1,6 +1,8 @@
 import { useRef, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import api from '../utils/api.js';
 import { useVideoProgress } from '../hooks/useVideoProgress.js';
+import InVideoQuestionOverlay from './InVideoQuestionOverlay.jsx';
 import {
   Play, Pause, Volume2, VolumeX,
   Maximize, CheckCircle, ChevronRight, Loader,
@@ -291,6 +293,58 @@ export default function VideoPlayer({
 
   const [showQcmPrompt, closeQcmPrompt] = useQcmPrompt(videoId, watchedPercent, qcmPath, userRole);
 
+  /* ── Questions in-video (classe inversée Type 2 — Bergmann & Sams 2012,
+        Mazur 1997 ConcepTest) ─────────────────────────────────────────── */
+  const [videoQuestions,    setVideoQuestions]    = useState([]);
+  const [answeredIds,       setAnsweredIds]       = useState(() => new Set());
+  const [activeQuestion,    setActiveQuestion]    = useState(null);
+
+  // Charge les questions au montage. Pour les étudiants, le serveur
+  // sanitize la réponse (pas de correctAnswer ni explanation tant que
+  // la question n'est pas répondue).
+  useEffect(() => {
+    if (!videoId) return;
+    let cancelled = false;
+    api.get(`/video-questions/video/${videoId}`)
+      .then(({ data }) => {
+        if (cancelled) return;
+        const list = Array.isArray(data) ? data : [];
+        setVideoQuestions(list);
+        const already = new Set(
+          list.filter(q => q.previousAnswer).map(q => q._id)
+        );
+        setAnsweredIds(already);
+      })
+      .catch(() => { /* fail silent — pas de questions = comportement vidéo classique */ });
+    return () => { cancelled = true; };
+  }, [videoId]);
+
+  // Trouve la question à déclencher : la première (par timestamp croissant)
+  // dont le timestamp <= currentTime, qui n'est pas encore répondue, et
+  // qui demande une pause. Les profs ne sont jamais interrompus.
+  const findTriggerableQuestion = (t) => {
+    if (!isStudent || !videoQuestions.length) return null;
+    return videoQuestions.find(q =>
+      q.pauseVideo
+      && t >= q.timestamp
+      && !answeredIds.has(q._id)
+    ) || null;
+  };
+
+  const handleQuestionAnswered = (questionId) => {
+    setAnsweredIds(prev => {
+      const next = new Set(prev);
+      next.add(questionId);
+      return next;
+    });
+    setActiveQuestion(null);
+    // Reprise de la lecture
+    const v = videoRef.current;
+    if (v) {
+      v.play().catch(() => { /* autoplay parfois bloqué — l'utilisateur cliquera */ });
+    }
+  };
+
   /* ── auto-hide controls ─────────────────────────────────────────────────── */
   const resetHideTimer = () => {
     setShowControls(true);
@@ -329,6 +383,16 @@ export default function VideoPlayer({
     }
 
     onTimeUpdate(v.currentTime, v.duration);
+
+    // Déclenche une question interactive si on en croise une non-répondue.
+    if (!activeQuestion) {
+      const q = findTriggerableQuestion(v.currentTime);
+      if (q) {
+        v.pause();
+        setPlaying(false);
+        setActiveQuestion(q);
+      }
+    }
   };
 
   const handleEnded = () => {
@@ -348,7 +412,22 @@ export default function VideoPlayer({
     const rect  = e.currentTarget.getBoundingClientRect();
     const ratio = (e.clientX - rect.left) / rect.width;
     const v     = videoRef.current;
-    if (v) v.currentTime = ratio * v.duration;
+    if (!v) return;
+    let target = ratio * v.duration;
+
+    // Empêche un étudiant de sauter par-dessus une question non répondue.
+    // On clamp le seek à juste avant le timestamp de la première question
+    // pertinente (entre la position actuelle et la cible).
+    if (isStudent) {
+      const blocking = videoQuestions
+        .filter(q => q.pauseVideo && !answeredIds.has(q._id))
+        .filter(q => q.timestamp > v.currentTime && q.timestamp < target)
+        .sort((a, b) => a.timestamp - b.timestamp)[0];
+      if (blocking) {
+        target = Math.max(0, blocking.timestamp - 0.1);
+      }
+    }
+    v.currentTime = target;
     resetHideTimer();
   };
 
@@ -442,6 +521,39 @@ export default function VideoPlayer({
             <div style={{ position: 'absolute', left: 0, top: 0, height: '100%', width: `${progressPercent}%`, backgroundColor: 'var(--color-accent)', borderRadius: 2, transition: 'width 0.2s' }} />
             {/* Thumb */}
             <div style={{ position: 'absolute', top: '50%', left: `${progressPercent}%`, width: 12, height: 12, borderRadius: '50%', backgroundColor: 'var(--color-accent)', transform: 'translate(-50%, -50%)' }} />
+            {/* Marqueurs des questions in-video : vert=répondu, orange=à venir.
+                Pour les profs, le marqueur ouvre l'éditeur. */}
+            {duration > 0 && videoQuestions.map(q => {
+              const left = Math.min(100, Math.max(0, (q.timestamp / duration) * 100));
+              const answered = answeredIds.has(q._id);
+              return (
+                <button
+                  key={q._id}
+                  type="button"
+                  title={!isStudent
+                    ? `Question à ${Math.floor(q.timestamp)}s — cliquez pour éditer`
+                    : answered ? `Question (${Math.floor(q.timestamp)}s) — déjà répondue` : `Question à venir (${Math.floor(q.timestamp)}s)`}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (!isStudent) {
+                      navigate(`/professor/videos/${videoId}/questions`);
+                    }
+                  }}
+                  aria-label={`Marqueur question ${Math.floor(q.timestamp)}s`}
+                  style={{
+                    position: 'absolute',
+                    top: '50%', left: `${left}%`,
+                    width: 10, height: 10, borderRadius: '50%',
+                    transform: 'translate(-50%, -50%)',
+                    background: answered ? '#16A34A' : '#F59E0B',
+                    border: '2px solid #fff',
+                    cursor: isStudent ? 'default' : 'pointer',
+                    padding: 0,
+                    boxShadow: '0 1px 3px rgba(0,0,0,.3)',
+                  }}
+                />
+              );
+            })}
           </div>
 
           {/* Buttons row */}
@@ -568,6 +680,14 @@ export default function VideoPlayer({
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
 
       {showQcmPrompt && <QcmPromptModal qcmPath={qcmPath} onClose={closeQcmPrompt} />}
+
+      {/* Question interactive in-video — bloque la lecture jusqu'à réponse */}
+      {activeQuestion && (
+        <InVideoQuestionOverlay
+          question={activeQuestion}
+          onContinue={() => handleQuestionAnswered(activeQuestion._id)}
+        />
+      )}
     </div>
   );
 }

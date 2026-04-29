@@ -8,6 +8,7 @@ import {
   Play, CheckCircle, Clock, Lock, Home,
   BookOpen, AlertCircle, ChevronRight, MessageSquare,
   ArrowLeft, Upload, FileText, PenTool, Edit3, Trash2,
+  HelpCircle,
 } from 'lucide-react';
 
 /* ─── Status helpers ──────────────────────────────────────────────────────── */
@@ -25,7 +26,7 @@ const STATUS_CONFIG = {
 };
 
 /* ─── Video row ───────────────────────────────────────────────────────────── */
-function VideoRow({ video, index, onSelect, isActive, isProfOrAdmin, navigate, onEdit, onDelete }) {
+function VideoRow({ video, index, onSelect, isActive, isProfOrAdmin, navigate, onEdit, onDelete, questionCount = 0 }) {
   const progress = video.myProgress;
   const status   = getStatus(progress);
   const cfg      = STATUS_CONFIG[status];
@@ -99,6 +100,20 @@ function VideoRow({ video, index, onSelect, isActive, isProfOrAdmin, navigate, o
           >
             {cfg.label}
           </span>
+          {/* Badge questions interactives in-video */}
+          {questionCount > 0 && (
+            <span
+              title={`${questionCount} question(s) interactive(s) déclenchée(s) pendant la vidéo`}
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: 4,
+                padding: '1px 7px', borderRadius: 999,
+                background: '#FEF3C7', color: '#92400E',
+                fontSize: 10, fontWeight: 700, flexShrink: 0,
+              }}
+            >
+              <HelpCircle size={10} /> {questionCount} question{questionCount > 1 ? 's' : ''} interactive{questionCount > 1 ? 's' : ''}
+            </span>
+          )}
         </div>
       </div>
 
@@ -111,6 +126,13 @@ function VideoRow({ video, index, onSelect, isActive, isProfOrAdmin, navigate, o
             onClick={(e) => { e.stopPropagation(); navigate(`/professor/videos/${video._id}/qcm`); }}
           >
             <PenTool size={13} /> QCM
+          </button>
+          <button
+            className="btn btn-ghost btn-sm"
+            title="Questions interactives in-video"
+            onClick={(e) => { e.stopPropagation(); navigate(`/professor/videos/${video._id}/questions`); }}
+          >
+            <HelpCircle size={13} /> Questions
           </button>
           <button
             className="btn btn-ghost btn-sm"
@@ -150,6 +172,7 @@ export default function StudentCourse() {
   const [editingVideo, setEditingVideo] = useState(null);
   const [editForm, setEditForm] = useState({ titre: '', description: '', order: 0, chapters: [] });
   const [deleteConfirm, setDeleteConfirm] = useState(null);
+  const [questionCounts, setQuestionCounts] = useState({});  // { videoId: count }
 
   const formatTime = (s) => {
     const m = Math.floor(s / 60);
@@ -220,6 +243,16 @@ export default function StudentCourse() {
         ]);
         setCourse(courseRes.data);
         setVideos(videosRes.data);
+
+        // Compte les questions in-video par vidéo (en parallèle, fail silencieux)
+        const counts = {};
+        await Promise.all((videosRes.data || []).map(async (v) => {
+          try {
+            const { data } = await api.get(`/video-questions/video/${v._id}`);
+            counts[v._id] = Array.isArray(data) ? data.length : 0;
+          } catch { counts[v._id] = 0; }
+        }));
+        setQuestionCounts(counts);
       } catch (err) {
         setError(err.response?.data?.message ?? 'Erreur de chargement.');
       } finally {
@@ -313,6 +346,7 @@ export default function StudentCourse() {
                   onSelect={(v) => navigate(`/watch/${v._id}`)}
                   onEdit={handleEditVideo}
                   onDelete={(v) => setDeleteConfirm(v)}
+                  questionCount={questionCounts[video._id] ?? 0}
                 />
               ))}
             </div>

@@ -18,6 +18,7 @@ import WatchVideo           from './pages/WatchVideo.jsx';
 import QCMPage              from './pages/QCMPage.jsx';
 import ProfessorUpload      from './pages/ProfessorUpload.jsx';
 import ProfessorCreateQCM   from './pages/ProfessorCreateQCM.jsx';
+import ProfessorVideoQuestions from './pages/ProfessorVideoQuestions.jsx';
 import ProfessorDashboard   from './pages/ProfessorDashboard.jsx';
 import Leaderboard          from './pages/Leaderboard.jsx';
 import StudentProfile       from './pages/StudentProfile.jsx';
@@ -136,6 +137,7 @@ export default function App() {
             <Route path="/professor/dashboard"                   element={<ProfessorDashboard />} />
             <Route path="/professor/courses/:courseId/upload"    element={<ProfessorUpload />} />
             <Route path="/professor/videos/:videoId/qcm"        element={<ProfessorCreateQCM />} />
+            <Route path="/professor/videos/:videoId/questions"  element={<ProfessorVideoQuestions />} />
             <Route path="/professor/qcm/create"                 element={<ProfessorCreateQCM />} />
             <Route path="/professor/qcm"                       element={<ProfessorQCMHub />} />
             <Route path="/professor/badges"                    element={<BadgeManagement />} />

@@ -43,6 +43,7 @@ import feedbackRoutes      from './routes/feedbackRoutes.js';
 import battleRoutes        from './routes/battleRoutes.js';
 import prositRoutes        from './routes/prositRoutes.js';
 import userRoutes          from './routes/userRoutes.js';
+import videoQuestionRoutes from './routes/videoQuestionRoutes.js';
 import { seedDemoContent } from './services/contentSeed.js';
 import { seedDemoData } from './services/demoSeed.js';
 import { seedProsits }  from './services/prositsSeed.js';
@@ -199,6 +200,7 @@ app.use('/api/feedback',   feedbackRoutes);
 app.use('/api/battle',     battleRoutes);
 app.use('/api/prosits',    prositRoutes);
 app.use('/api/users',      userRoutes);
+app.use('/api/video-questions', videoQuestionRoutes);
 
 // ── En production : servir le frontend buildé ──────────────────────────────
 if (process.env.NODE_ENV === 'production') {
