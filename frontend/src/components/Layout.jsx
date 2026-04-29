@@ -36,6 +36,7 @@ import {
   Bot,
   Video,
   MessageCircle,
+  Lightbulb,
 } from 'lucide-react';
 
 /* ─── Nav config per role ───────────────────────────────────────────────────── */
@@ -49,6 +50,12 @@ const NAV = {
         { label: 'Ressources',      icon: FolderOpen,      to: '/resources' },
         { label: 'Mes decks',       icon: Layers,          to: '/decks' },
         { label: 'Projets',         icon: FolderKanban,    to: '/projects' },
+      ],
+    },
+    {
+      section: 'Apprentissage par Problème',
+      items: [
+        { label: 'Prosits',         icon: Lightbulb,       to: '/prosits' },
       ],
     },
     {
@@ -78,6 +85,12 @@ const NAV = {
         { label: 'Mes cours',       icon: BookOpen,        to: '/courses' },
         { label: 'Ressources',      icon: FolderOpen,      to: '/resources' },
         { label: 'Projets',         icon: FolderKanban,    to: '/projects' },
+      ],
+    },
+    {
+      section: 'Apprentissage par Problème',
+      items: [
+        { label: 'Prosits',         icon: Lightbulb,       to: '/prosits' },
       ],
     },
     {

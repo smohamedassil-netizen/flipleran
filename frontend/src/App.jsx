@@ -35,6 +35,8 @@ import LandingPage          from './pages/LandingPage.jsx';
 import ProjectList          from './pages/ProjectList.jsx';
 import ProjectDetail        from './pages/ProjectDetail.jsx';
 import ProjectCreate        from './pages/ProjectCreate.jsx';
+import PrositList           from './pages/PrositList.jsx';
+import PrositCreate         from './pages/PrositCreate.jsx';
 import NotificationsPage    from './pages/NotificationsPage.jsx';
 import ProfessorTracking    from './pages/ProfessorTracking.jsx';
 import ModuleAssistant      from './pages/ModuleAssistant.jsx';
@@ -109,6 +111,7 @@ export default function App() {
             <Route path="/support"                     element={<Support />} />
             <Route path="/projects"                    element={<ProjectList />} />
             <Route path="/projects/:projectId"         element={<ProjectDetail />} />
+            <Route path="/prosits"                     element={<PrositList />} />
             <Route path="/notifications"               element={<NotificationsPage />} />
             <Route path="/my-tickets"                  element={<Navigate to="/support" replace />} />
             <Route path="/courses/:courseId/assistant" element={<ModuleAssistant />} />
@@ -135,6 +138,7 @@ export default function App() {
             <Route path="/professor/qcm"                       element={<ProfessorQCMHub />} />
             <Route path="/professor/badges"                    element={<BadgeManagement />} />
             <Route path="/professor/projects/create"            element={<ProjectCreate />} />
+            <Route path="/prosits/new"                          element={<PrositCreate />} />
             <Route path="/professor/tracking"                   element={<ProfessorTracking />} />
             <Route path="/professor/tracking/:courseId"         element={<ProfessorTracking />} />
           </Route>
