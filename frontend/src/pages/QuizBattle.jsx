@@ -5,6 +5,7 @@ import { io } from 'socket.io-client';
 import {
   ArrowLeft, Swords, Users, Clock, Trophy, Plus, RefreshCw, Zap, CheckCircle,
   XCircle, Flame, Snowflake, Sparkles, Target, Award, Crown, Clock3, BookOpen,
+  ChevronDown,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext.jsx';
 import api from '../utils/api.js';
@@ -59,6 +60,9 @@ export default function QuizBattle() {
   // Pre-requis pedagogique : avoir complete au moins 1 video a 80%+ avant de defier
   const [eligible, setEligible]       = useState(null); // null = loading, true/false = checked
   const [completedVideos, setCompletedVideos] = useState(0);
+
+  // Panneau de regles repliable (lobby)
+  const [rulesOpen, setRulesOpen] = useState(false);
   useEffect(() => {
     api.get('/progress').then(({ data }) => {
       const arr = Array.isArray(data) ? data : [];
@@ -320,27 +324,54 @@ export default function QuizBattle() {
               </div>
             )}
 
-            {/* Règles / features */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 10, marginBottom: 24 }}>
-              <div style={{ padding: 14, background: '#FEF3C7', borderRadius: 10, border: '1px solid #FDE68A' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontWeight: 700, color: '#92400E', fontSize: 13, marginBottom: 4 }}>
-                  <Flame size={14} /> Combos
+            {/* Règles du jeu — repliable */}
+            <details
+              open={rulesOpen}
+              onToggle={(e) => setRulesOpen(e.currentTarget.open)}
+              style={{
+                marginBottom: 20, padding: '10px 14px',
+                background: 'white', borderRadius: 10,
+                border: '1px solid #E5E7EB',
+              }}
+            >
+              <summary
+                aria-label={rulesOpen ? 'Masquer les règles du jeu' : 'Afficher les règles du jeu'}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 8,
+                  fontSize: 13, fontWeight: 600, color: '#475569',
+                  cursor: 'pointer', listStyle: 'none', userSelect: 'none',
+                }}
+              >
+                <Sparkles size={14} color="#1B4F72" />
+                Règles du jeu
+                <ChevronDown
+                  size={14}
+                  style={{
+                    marginLeft: 'auto',
+                    transition: 'transform .2s',
+                    transform: rulesOpen ? 'rotate(180deg)' : 'rotate(0)',
+                  }}
+                />
+              </summary>
+              <div style={{
+                marginTop: 10, paddingTop: 10,
+                borderTop: '1px solid #F1F5F9',
+                fontSize: 12, color: '#475569', lineHeight: 1.6,
+              }}>
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8, marginBottom: 6 }}>
+                  <Flame size={13} color="#D97706" style={{ flexShrink: 0, marginTop: 2 }} />
+                  <span><strong>Combos</strong> — 3 bonnes réponses d'affilée donnent un bonus de +5 points, 5 d'affilée donnent +10.</span>
                 </div>
-                <div style={{ fontSize: 12, color: '#78350F' }}>3 bonnes d'affilée = +5 bonus ; 5 = +10</div>
-              </div>
-              <div style={{ padding: 14, background: '#E0F2FE', borderRadius: 10, border: '1px solid #BAE6FD' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontWeight: 700, color: '#075985', fontSize: 13, marginBottom: 4 }}>
-                  <Zap size={14} /> Power-ups
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8, marginBottom: 6 }}>
+                  <Zap size={13} color="#0EA5E9" style={{ flexShrink: 0, marginTop: 2 }} />
+                  <span><strong>Power-ups</strong> — 50/50 (élimine 2 mauvaises réponses), Freeze (+8 secondes), x2 Points. Utilisable 1 fois par match.</span>
                 </div>
-                <div style={{ fontSize: 12, color: '#0C4A6E' }}>50/50, Freeze, x2 Points — 1 par match</div>
-              </div>
-              <div style={{ padding: 14, background: '#F5F3FF', borderRadius: 10, border: '1px solid #DDD6FE' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontWeight: 700, color: '#5B21B6', fontSize: 13, marginBottom: 4 }}>
-                  <Crown size={14} /> Invincible
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+                  <Crown size={13} color="#9333EA" style={{ flexShrink: 0, marginTop: 2 }} />
+                  <span><strong>Badge Invincible</strong> — 5 combos d'affilée débloque ce badge spécial.</span>
                 </div>
-                <div style={{ fontSize: 12, color: '#4C1D95' }}>5 combos d'affilée = badge "Invincible"</div>
               </div>
-            </div>
+            </details>
 
             <button
               onClick={createRoom}

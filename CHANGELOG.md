@@ -4,6 +4,25 @@ Historique des modifications par date de session.
 
 ---
 
+## 29 Avril 2026 (cadre juridique récompenses + sobriété UX Quiz Battle)
+
+### Récompenses (Rewards) — restriction du catalogue actif
+- **Backend (`rewardsSeed.js`)** : seul le palier `1 mois FlipLearn Premium` (500 pts) reste seedé comme actif. Les paliers 3 mois / 6 mois / 1 an seedés dans des versions précédentes sont désormais **désactivés** automatiquement (`active: false`) au démarrage du serveur — pas de delete (l'historique des éventuels claims est préservé).
+- **Frontend (`Rewards.jsx`)** : ajout d'une section **« Perspectives d'évolution »** sous le catalogue, contenant 3 cartes informatives (3, 6, 12 mois) **non réclamables** : grisées, sans bouton Réclamer, sans coût en points affiché, label « PERSPECTIVE ».
+- **Disclaimer juridique explicite** : un bandeau précise que ces paliers « ne constituent pas une offre commerciale » et que leur mise en place dépendrait de partenariats avec des établissements et d'un cadre juridique à venir.
+- **Pourquoi** : à ce stade du PFE, FlipLearn n'est pas adossé à une structure juridique ; promettre des prestations longue durée serait déontologiquement et légalement contestable. La section Perspectives permet de montrer la vision long terme du programme de gamification sans créer d'attente non honorée.
+
+### Quiz Battle — sobriété de l'UI lobby
+- Suppression des 3 grosses cartes colorées « Combos » (orange) / « Power-ups » (bleu) / « Invincible » (violet) qui encombraient la page d'accueil du lobby.
+- Remplacées par un seul élément `<details>` repliable « Règles du jeu » — sobre, replié par défaut, chevron animé.
+- Contenu équivalent (combos +5 / +10, 3 power-ups, badge Invincible) accessible en un clic, mais ne distrait plus le joueur du bouton « Créer une salle ».
+
+### Documentation associée (hors repo `flipleran`)
+- `generate_memoire.py` § 7.4.1 réécrite : précise que seul le palier 1 mois est réclamable et explicite le rôle de la rubrique « Perspectives » comme pédagogique et non commerciale.
+- `Memoire_PFE_FlipLearn.docx` régénéré.
+
+---
+
 ## 28 Avril 2026 — fin de journée (audit pré-soutenance — pivot UX)
 
 ### Sidebar prof

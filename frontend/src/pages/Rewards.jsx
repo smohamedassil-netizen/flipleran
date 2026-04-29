@@ -4,7 +4,7 @@ import Layout from '../components/Layout.jsx';
 import api from '../utils/api.js';
 import {
   ArrowLeft, Gift, Star, Lock, Check, Crown, X, Loader2,
-  Clock, Sparkles, Package, Trophy, Award, ShoppingBag,
+  Clock, Sparkles, Package, Trophy, Award, ShoppingBag, Compass, Info,
 } from 'lucide-react';
 
 const TYPE_META = {
@@ -17,6 +17,28 @@ const TYPE_META = {
 };
 
 const DEFAULT_META = TYPE_META.abonnement_fliplearn;
+
+// Pistes d'évolution éditoriale — purement informatives, non réclamables.
+// Aucune promesse : leur disponibilité dépend de la mise en place d'une structure
+// juridique pour FlipLearn et de partenariats avec des établissements.
+// Cf. mémoire chap. 7.4 — perspectives d'évolution.
+const FUTURE_PERSPECTIVES = [
+  {
+    titre: '3 mois FlipLearn Premium',
+    description: 'Un trimestre d\'accès aux fonctionnalités IA premium, pour couvrir une période d\'examens.',
+    emoji: '🌟',
+  },
+  {
+    titre: '6 mois FlipLearn Premium',
+    description: 'Une demi-année d\'accès illimité, envisageable dans le cadre d\'un partenariat avec un établissement.',
+    emoji: '💫',
+  },
+  {
+    titre: '1 an FlipLearn Premium',
+    description: 'Une année complète, palier qui pourrait récompenser un engagement sur la durée si le programme évolue.',
+    emoji: '👑',
+  },
+];
 
 const CLAIM_STATUS = {
   pending:   { label: 'En attente', color: '#D97706', bg: '#FEF3C7', Icon: Clock },
@@ -324,6 +346,96 @@ export default function Rewards() {
                   <RewardCard key={r._id} reward={r} userPoints={userPoints} onClaim={claimReward} claiming={claiming} />
                 ))}
               </div>
+            )}
+
+            {/* Perspectives d'évolution — purement informatif, aucune promesse */}
+            {filter === 'all' && (
+              <section
+                aria-labelledby="perspectives-title"
+                style={{
+                  marginTop: 32, padding: 20,
+                  background: '#F8FAFC', borderRadius: 14,
+                  border: '1px dashed #CBD5E1',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
+                  <Compass size={18} color="#64748B" />
+                  <h2
+                    id="perspectives-title"
+                    style={{ fontSize: '1rem', fontWeight: 700, color: '#334155', margin: 0 }}
+                  >
+                    Perspectives d'évolution
+                  </h2>
+                </div>
+                <p style={{ fontSize: 13, color: '#64748B', margin: '0 0 12px', lineHeight: 1.5 }}>
+                  À ce stade du projet, FlipLearn n'est pas encore adossé à une structure juridique.
+                  Les paliers ci-dessous décrivent des pistes d'évolution étudiées pour le futur,
+                  <strong> sans engagement</strong> de notre part. Leur mise en place dépendrait de
+                  l'établissement de partenariats avec des écoles ou universités, et du cadre légal
+                  qui sera adopté.
+                </p>
+
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))',
+                  gap: 12,
+                }}>
+                  {FUTURE_PERSPECTIVES.map((p) => (
+                    <div
+                      key={p.titre}
+                      aria-disabled="true"
+                      style={{
+                        position: 'relative',
+                        padding: 14,
+                        background: 'white',
+                        borderRadius: 12,
+                        border: '1px solid #E2E8F0',
+                        opacity: 0.85,
+                      }}
+                    >
+                      <span style={{
+                        position: 'absolute', top: 10, right: 10,
+                        padding: '2px 8px',
+                        background: '#F1F5F9', color: '#64748B',
+                        fontSize: 10, fontWeight: 700, borderRadius: 999,
+                        textTransform: 'uppercase', letterSpacing: 0.4,
+                      }}>
+                        Perspective
+                      </span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+                        <div style={{
+                          width: 44, height: 44, borderRadius: 12,
+                          background: '#F1F5F9',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          fontSize: 22, filter: 'grayscale(0.4)',
+                        }}>
+                          {p.emoji}
+                        </div>
+                        <div style={{ fontSize: 14, fontWeight: 700, color: '#475569', lineHeight: 1.3 }}>
+                          {p.titre}
+                        </div>
+                      </div>
+                      <p style={{ fontSize: 12, color: '#64748B', margin: 0, lineHeight: 1.5 }}>
+                        {p.description}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+
+                <div style={{
+                  marginTop: 14, padding: '10px 12px',
+                  background: '#FFFBEB', borderLeft: '3px solid #F59E0B',
+                  borderRadius: 6,
+                  display: 'flex', alignItems: 'flex-start', gap: 8,
+                }}>
+                  <Info size={14} color="#92400E" style={{ flexShrink: 0, marginTop: 2 }} />
+                  <p style={{ fontSize: 11, color: '#78350F', margin: 0, lineHeight: 1.5 }}>
+                    Ces paliers ne sont <strong>pas réclamables</strong> aujourd'hui et ne constituent
+                    pas une offre commerciale. Ils figurent ici à titre d'illustration des évolutions
+                    possibles, sous réserve d'un cadre juridique et de partenariats à venir.
+                  </p>
+                </div>
+              </section>
             )}
           </>
         )}
