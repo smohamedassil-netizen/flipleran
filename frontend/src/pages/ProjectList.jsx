@@ -208,14 +208,14 @@ export default function ProjectList() {
           <div className="empty-state" style={{ padding: 60 }}>
             <FolderKanban size={40} className="empty-state-icon" />
             <p className="empty-state-title">
-              {search ? 'Aucun projet trouv\u00e9' : 'Aucun projet disponible'}
+              {search ? 'Aucun projet trouv\u00e9' : 'Aucun projet actif'}
             </p>
             <p className="empty-state-desc">
               {search
                 ? 'Essayez un autre terme de recherche.'
                 : role === 'professeur'
                   ? 'Cr\u00e9ez votre premier projet pour commencer.'
-                  : 'Aucun projet n\'a encore \u00e9t\u00e9 publi\u00e9.'}
+                  : 'Votre professeur en publiera bient\u00f4t.'}
             </p>
           </div>
         )}

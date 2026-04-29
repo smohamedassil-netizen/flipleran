@@ -254,6 +254,19 @@ export default function Dashboard() {
     { label: 'QCM complétés',     value: allQcm.length,     icon: BarChart2, color: '#10B981' },
   ];
 
+  /* ── Message d'accueil contextuel basé sur les deadlines ───────────── */
+  const pendingTasks = upcoming.filter(i => !i.done).length;
+  let welcomeSubtitle;
+  if (upcomingLoading) {
+    welcomeSubtitle = 'Voici un aperçu de votre activité sur FlipLearn.';
+  } else if (user?.role === 'etudiant') {
+    welcomeSubtitle = pendingTasks > 0
+      ? `Vous avez ${pendingTasks} tâche${pendingTasks > 1 ? 's' : ''} à faire cette semaine.`
+      : 'Tout est à jour ! Continuez comme ça. 🎉';
+  } else {
+    welcomeSubtitle = 'Voici un aperçu de votre activité sur FlipLearn.';
+  }
+
   return (
     <Layout title="Tableau de bord">
       {/* ── Welcome header ─────────────────────────────────────────── */}
@@ -274,7 +287,7 @@ export default function Dashboard() {
             Bonjour, {displayName} !
           </h1>
           <p style={{ margin: '6px 0 0', fontSize: '14px', opacity: 0.85 }}>
-            Voici un aperçu de votre activité sur FlipLearn.
+            {welcomeSubtitle}
           </p>
         </div>
         <Brain size={48} style={{ opacity: 0.3, flexShrink: 0 }} />

@@ -173,6 +173,20 @@ export default function ResourcesHub() {
           <div>
             <h1 style={{ fontSize: '1.5rem', fontWeight: 700, color: '#1B4F72', marginBottom: 4 }}>Bibliothèque de ressources</h1>
             <p style={{ color: '#64748b' }}>Tous les fichiers et documents de vos cours</p>
+            <p style={{ color: '#94A3B8', fontSize: 12, margin: '6px 0 0' }}>
+              Pour les ressources d'un cours précis, ouvrez le cours puis « Bibliothèque » —{' '}
+              <button
+                type="button"
+                onClick={() => navigate('/courses')}
+                style={{
+                  background: 'none', border: 'none', padding: 0,
+                  color: '#1B4F72', fontSize: 12, fontWeight: 600,
+                  cursor: 'pointer', textDecoration: 'underline',
+                }}
+              >
+                voir mes cours →
+              </button>
+            </p>
           </div>
           {isProf && (
             <div style={{ display: 'flex', gap: 8 }}>

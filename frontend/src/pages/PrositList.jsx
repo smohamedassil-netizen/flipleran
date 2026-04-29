@@ -194,7 +194,7 @@ export default function PrositList() {
           <div style={{ padding: 48, textAlign: 'center', background: 'white', borderRadius: 12, border: '1px dashed #CBD5E1' }}>
             <Lightbulb size={32} style={{ opacity: 0.4, marginBottom: 8, color: '#94A3B8' }} />
             <p style={{ color: '#94A3B8', marginBottom: isProf ? 14 : 0 }}>
-              {isProf ? 'Aucun Prosit créé pour l\'instant.' : 'Aucun Prosit disponible pour ta promotion.'}
+              {isProf ? 'Aucun Prosit créé pour l\'instant.' : 'Aucun Prosit actif pour votre filière.'}
             </p>
             {isProf && (
               <button

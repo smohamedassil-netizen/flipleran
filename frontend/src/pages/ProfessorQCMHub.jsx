@@ -100,6 +100,27 @@ export default function ProfessorQCMHub() {
         </div>
         <p style={{ color: '#64748b', marginBottom: 24 }}>Créez et modifiez les questionnaires associés à vos vidéos</p>
 
+        {/* Bandeau guide quand aucun QCM n'existe encore — l'arborescence
+            cours/vidéos reste accessible juste en dessous pour permettre la création. */}
+        {!loading && courses.length > 0 && Object.keys(qcmData).length === 0 && (
+          <div style={{
+            display: 'flex', alignItems: 'flex-start', gap: 12,
+            padding: '14px 16px', marginBottom: 16,
+            background: '#FFFBEB', border: '1px solid #FEF3C7',
+            borderRadius: 10,
+          }}>
+            <ClipboardList size={20} color="#D97706" style={{ flexShrink: 0, marginTop: 2 }} />
+            <div>
+              <p style={{ margin: 0, fontSize: 14, fontWeight: 600, color: '#92400E' }}>
+                Aucun QCM créé.
+              </p>
+              <p style={{ margin: '2px 0 0', fontSize: 12, color: '#78350F', lineHeight: 1.5 }}>
+                Commencez par ajouter une vidéo à un cours, puis générez son QCM.
+              </p>
+            </div>
+          </div>
+        )}
+
         {loading ? (
           <div style={{ textAlign: 'center', padding: 40, color: '#94a3b8' }}>Chargement...</div>
         ) : courses.length === 0 ? (

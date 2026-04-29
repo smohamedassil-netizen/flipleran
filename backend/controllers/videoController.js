@@ -217,6 +217,15 @@ export const getVideoById = async (req, res) => {
   }
 };
 
+/**
+ * Architecture note : la progression vidéo est stockée à deux endroits :
+ *  1. Video.watchedBy[]  — tracking temps réel par vidéo (watchedPercent, completed)
+ *  2. Progress.videosCompleted[] — liste des vidéos complétées par cours
+ * Ces deux sources sont synchronisées : quand watchedPercent >= 80%,
+ * on ajoute la vidéo à Progress.videosCompleted (voir ci-dessous).
+ * Video.watchedBy est la source de vérité principale pour les stats prof.
+ * Progress est utilisé pour le dashboard étudiant et le leaderboard.
+ */
 /* ─── POST /api/videos/:id/progress ─────────────────────────────────────── */
 export const saveProgress = async (req, res) => {
   try {

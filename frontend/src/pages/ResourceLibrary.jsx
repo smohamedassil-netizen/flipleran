@@ -318,6 +318,27 @@ export default function ResourceLibrary() {
       ]} />
 
       <div style={{ maxWidth: '860px', margin: '0 auto' }}>
+        {/* Cross-link vers la bibliothèque globale (tous cours confondus) */}
+        <div style={{
+          padding: '8px 12px', marginBottom: 14, borderRadius: 8,
+          background: '#F8FAFC', border: '1px solid #E5E7EB',
+          fontSize: 12, color: '#64748B', display: 'flex',
+          alignItems: 'center', gap: 8, flexWrap: 'wrap',
+        }}>
+          <span>Vue actuelle : ressources de <strong style={{ color: '#1E293B' }}>{course?.titre || 'ce cours'}</strong> uniquement.</span>
+          <button
+            type="button"
+            onClick={() => navigate('/resources')}
+            style={{
+              background: 'none', border: 'none', padding: 0,
+              color: '#1B4F72', fontSize: 12, fontWeight: 600,
+              cursor: 'pointer', textDecoration: 'underline',
+            }}
+          >
+            Voir la bibliothèque globale (tous les cours) →
+          </button>
+        </div>
+
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px', flexWrap: 'wrap', gap: 10 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>

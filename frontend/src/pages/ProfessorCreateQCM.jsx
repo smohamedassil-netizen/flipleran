@@ -266,6 +266,15 @@ export default function ProfessorCreateQCM() {
   const [aiCount,     setAiCount]     = useState(5);
   const [quotaInfo,   setQuotaInfo]   = useState(null);
   const [quotaExceeded, setQuotaExceeded] = useState(null);
+  const [videoMeta,   setVideoMeta]   = useState(null);
+
+  /* Charger les méta de la vidéo pré-sélectionnée (titre + cours associé) */
+  useEffect(() => {
+    if (!videoId) return;
+    api.get(`/videos/${videoId}`)
+      .then(({ data }) => setVideoMeta(data))
+      .catch(() => { /* vidéo inaccessible — on garde l'UI sans badge */ });
+  }, [videoId]);
 
   /* Charger l'état initial du quota IA (qcmGeneration) */
   useEffect(() => {
@@ -433,6 +442,20 @@ export default function ProfessorCreateQCM() {
           {questions.length} question{questions.length > 1 ? 's' : ''}
         </span>
       </div>
+
+      {/* Vidéo pré-sélectionnée (depuis useParams videoId) */}
+      {videoMeta && (
+        <div style={{
+          padding: '10px 14px', marginBottom: 18, borderRadius: 10,
+          background: '#EBF3FA', border: '1px solid #BFDBFE',
+          display: 'flex', alignItems: 'center', gap: 10, fontSize: 13,
+        }}>
+          <span style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: '#1B4F72', letterSpacing: 0.4 }}>
+            Vidéo associée
+          </span>
+          <span style={{ color: '#1E293B', fontWeight: 600 }}>{videoMeta.titre}</span>
+        </div>
+      )}
 
       <form onSubmit={handleSave}>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: 24, alignItems: 'start' }}>
