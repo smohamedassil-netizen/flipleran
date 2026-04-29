@@ -79,6 +79,15 @@ export const uploadVideo = async (req, res) => {
     }
 
     res.status(201).json(video);
+
+    // Analyse IA automatique (non-bloquant — ne retarde pas la réponse).
+    // Import dynamique : videoAnalyzer charge OpenAI (ressources lourdes), on
+    // évite de l'importer au boot de chaque controller.
+    import('../services/videoAnalyzer.js').then(({ analyzeVideo }) => {
+      analyzeVideo(video._id.toString(), req.user.id).catch(err =>
+        console.error('[auto-analyze upload]', err.message)
+      );
+    }).catch(() => {});
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -131,6 +140,15 @@ export const createYouTubeVideo = async (req, res) => {
     });
 
     res.status(201).json(video);
+
+    // Analyse IA automatique (non-bloquant). Le service tente l'analyse même
+    // pour une URL YouTube ; en cas d'incompatibilité, l'erreur est loguée
+    // mais l'ajout de la vidéo reste réussi.
+    import('../services/videoAnalyzer.js').then(({ analyzeVideo }) => {
+      analyzeVideo(video._id.toString(), req.user.id).catch(err =>
+        console.error('[auto-analyze youtube]', err.message)
+      );
+    }).catch(() => {});
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
