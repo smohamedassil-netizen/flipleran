@@ -165,17 +165,21 @@ export default function ProjectList() {
           )}
         </div>
 
-        {/* Encart pédagogique sobre : qu'est-ce qu'un projet */}
-        <div style={{
-          marginBottom: 20, padding: '12px 16px', borderRadius: 10,
-          background: '#F8FAFC',
-          borderLeft: '3px solid #1B4F72',
-          fontSize: 13, color: '#1E293B', lineHeight: 1.5,
-        }}>
-          <strong style={{ color: '#1B4F72' }}>Qu'est-ce qu'un projet&nbsp;?</strong>
-          {' '}Un travail en groupe rattaché à un ou plusieurs cours, avec des phases, des livrables et des rôles
-          (chef de projet, scribe, animateur, chrono, analyste). L'étudiant apprend en faisant.
-        </div>
+        {/* Encart pédagogique sobre : visible uniquement pour les étudiants débutants
+            (aucun projet) ou pour les profs. Disparaît pour un étudiant qui a déjà
+            au moins 1 projet — il connaît le concept. */}
+        {(role !== 'etudiant' || projects.length === 0) && !loading && (
+          <div style={{
+            marginBottom: 20, padding: '12px 16px', borderRadius: 10,
+            background: '#F8FAFC',
+            borderLeft: '3px solid #1B4F72',
+            fontSize: 13, color: '#1E293B', lineHeight: 1.5,
+          }}>
+            <strong style={{ color: '#1B4F72' }}>Qu'est-ce qu'un projet&nbsp;?</strong>
+            {' '}Un travail en groupe rattaché à un ou plusieurs cours, avec des phases, des livrables et des rôles
+            (chef de projet, scribe, animateur, chrono, analyste). L'étudiant apprend en faisant.
+          </div>
+        )}
 
         {/* Search bar */}
         <div style={{ position: 'relative', marginBottom: 20 }}>

@@ -6,6 +6,7 @@ import ProjectActivityFeed from '../components/ProjectActivityFeed.jsx';
 import { ProjectProgressWidget, PhaseChecklist, IdeasPanel } from '../components/ProjectProgressPanel.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
 import api from '../utils/api.js';
+import { capitalizeWords, formatFullName } from '../utils/format.js';
 import {
   Home, FolderKanban, Users, Calendar, Clock, FileText, Upload,
   Star, Send, CheckCircle, AlertCircle, ChevronDown, ChevronRight,
@@ -650,7 +651,7 @@ export default function ProjectDetail() {
                           {liv.titre}
                         </p>
                         <p style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-secondary)', margin: 0 }}>
-                          {liv.uploadedBy?.prenom ?? liv.uploadePar?.prenom ?? 'Moi'} {liv.uploadedBy?.nom ?? liv.uploadePar?.nom ?? ''} {'·'} {liv.uploadedAt ? new Date(liv.uploadedAt).toLocaleDateString('fr-FR') : 'Maintenant'}
+                          {(formatFullName(liv.uploadedBy) || formatFullName(liv.uploadePar)) || 'Moi'} {'·'} {liv.uploadedAt ? new Date(liv.uploadedAt).toLocaleDateString('fr-FR') : 'Maintenant'}
                         </p>
                       </div>
                     </div>
@@ -661,10 +662,25 @@ export default function ProjectDetail() {
           </div>
 
           {/* ── Activity feed temps réel ─────────────────────────────────── */}
-          <ProjectActivityFeed
-            projectId={project._id}
-            initialActivity={project.activity || []}
-          />
+          {project?.status === 'brouillon' ? (
+            <div
+              className="card"
+              style={{ padding: 20, textAlign: 'center', opacity: 0.55 }}
+              aria-disabled="true"
+            >
+              <h3 style={{ fontSize: 'var(--font-size-md)', fontWeight: 700, marginBottom: 8, color: 'var(--color-text-secondary)' }}>
+                Activité en direct
+              </h3>
+              <p style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-secondary)', margin: 0 }}>
+                Le flux d'activité sera disponible une fois le projet publié (sortie du brouillon).
+              </p>
+            </div>
+          ) : (
+            <ProjectActivityFeed
+              projectId={project._id}
+              initialActivity={project.activity || []}
+            />
+          )}
 
           {/* ── Auto-évaluation (students only) ──────────────────────────── */}
           {!isProfOrAdmin && canEvaluate && (
@@ -685,7 +701,7 @@ export default function ProjectDetail() {
                     .map((membre) => {
                       const etu = membre.userId;
                       const etuId = etu?._id ?? etu;
-                      const etuName = etu?.prenom ? `${etu.prenom} ${etu.nom ?? ''}` : 'Membre';
+                      const etuName = formatFullName(etu) || 'Membre';
                       return (
                         <div key={etuId} style={{ marginBottom: 16, paddingBottom: 16, borderBottom: '1px solid var(--color-border)' }}>
                           <p style={{ fontWeight: 600, fontSize: 'var(--font-size-sm)', marginBottom: 8, color: 'var(--color-text)' }}>
@@ -736,18 +752,28 @@ export default function ProjectDetail() {
           )}
 
           {/* ── Aide IA ──────────────────────────────────────────────────── */}
-          <div className="card" style={{ padding: 20, background: 'linear-gradient(135deg, #EBF3FA 0%, #FEF6E7 100%)' }}>
+          <div
+            className="card"
+            style={{
+              padding: 20,
+              background: 'linear-gradient(135deg, #EBF3FA 0%, #FEF6E7 100%)',
+              opacity: project?.status === 'brouillon' ? 0.55 : 1,
+            }}
+          >
             <h3 style={{ fontSize: 'var(--font-size-md)', fontWeight: 700, marginBottom: 10, color: 'var(--color-primary)' }}>
               <Sparkles size={18} style={{ marginRight: 6 }} />
               Aide IA
             </h3>
             <p style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-secondary)', marginBottom: 12 }}>
-              L'IA peut vous fournir des pistes de réflexion et des ressources pour avancer dans votre projet.
+              {project?.status === 'brouillon'
+                ? 'Aide IA disponible une fois le projet publié (sortie du brouillon).'
+                : "L'IA peut vous fournir des pistes de réflexion et des ressources pour avancer dans votre projet."}
             </p>
             <button
               className="btn btn-primary btn-sm"
               onClick={handleAiHelp}
-              disabled={aiLoading}
+              disabled={aiLoading || project?.status === 'brouillon'}
+              title={project?.status === 'brouillon' ? 'Indisponible en brouillon' : undefined}
             >
               <Sparkles size={14} />
               {aiLoading ? 'Réflexion en cours...' : "Demander de l'aide à l'IA"}
@@ -784,7 +810,7 @@ export default function ProjectDetail() {
                 </p>
                 {myGroup.membres?.map((membre, i) => {
                   const etu = membre.userId;
-                  const name = etu?.prenom ? `${etu.prenom} ${etu.nom ?? ''}` : 'Membre';
+                  const name = formatFullName(etu) || 'Membre';
                   const roleCfg = ROLE_CONFIG[membre.role] ?? {};
                   return (
                     <div key={i} style={{
@@ -827,7 +853,7 @@ export default function ProjectDetail() {
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                         {g.membres?.map((m, mi) => {
                           const etu = m.userId;
-                          const name = etu?.prenom ? `${etu.prenom} ${etu.nom ?? ''}` : 'Membre';
+                          const name = formatFullName(etu) || 'Membre';
                           return (
                             <div key={mi} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                               <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--color-text)', minWidth: 100 }}>{name}</span>
@@ -1135,7 +1161,7 @@ export default function ProjectDetail() {
                 {allEvals.map((ev, i) => (
                   <div key={i} style={{ padding: 12, borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)' }}>
                     <p style={{ fontWeight: 600, fontSize: 'var(--font-size-sm)', marginBottom: 6 }}>
-                      Évaluateur : {ev.evaluateur?.prenom ?? 'Inconnu'} {ev.evaluateur?.nom ?? ''}
+                      Évaluateur : {formatFullName(ev.evaluateur) || 'Inconnu'}
                     </p>
                     {ev.notes?.map((note, ni) => (
                       <div key={ni} style={{ marginLeft: 12, marginBottom: 4 }}>

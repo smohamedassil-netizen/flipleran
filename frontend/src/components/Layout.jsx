@@ -3,6 +3,7 @@ import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useNotifications } from '../context/NotificationContext.jsx';
 import Logo from './Logo.jsx';
+import { capitalizeWords } from '../utils/format.js';
 import {
   LayoutDashboard,
   BookOpen,
@@ -65,7 +66,7 @@ const NAV = {
         { label: 'Quiz Battle',     icon: Swords,          to: '/quiz-battle' },
         { label: 'Récompenses',     icon: Gift,            to: '/rewards' },
         { label: 'Messages',        icon: MessageSquare,   to: '/chat' },
-        { label: 'Mes retours',     icon: MessageCircle,   to: '/my-feedback' },
+        { label: 'Feedback reçu',   icon: MessageCircle,   to: '/my-feedback' },
       ],
     },
     {
@@ -161,7 +162,7 @@ function getInitials(user) {
 
 function getDisplayName(user) {
   if (!user) return 'Utilisateur';
-  if (user.prenom) return `${user.prenom} ${user.nom ?? ''}`.trim();
+  if (user.prenom) return `${capitalizeWords(user.prenom)} ${capitalizeWords(user.nom ?? '')}`.trim();
   return user.name ?? 'Utilisateur';
 }
 

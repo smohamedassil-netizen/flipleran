@@ -5,6 +5,7 @@ import Layout from '../components/Layout.jsx';
 import api from '../utils/api.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import BadgeCard from '../components/BadgeCard.jsx';
+import { capitalizeWords, formatFullName } from '../utils/format.js';
 
 /* ─── All possible badges (for "locked" display) ─────────────────────────── */
 const ALL_BADGE_KEYS = [
@@ -89,7 +90,7 @@ export default function StudentProfile() {
     const today = new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
     const earnedRows = earnedBadges.map(b => `<li><strong>${b.nom}</strong> — ${b.description ?? ''}</li>`).join('');
     const html = `<!DOCTYPE html>
-<html lang="fr"><head><meta charset="utf-8"><title>Récap FlipLearn — ${user?.prenom ?? ''} ${user?.nom ?? ''}</title>
+<html lang="fr"><head><meta charset="utf-8"><title>Récap FlipLearn — ${formatFullName(user)}</title>
 <style>
   @page { margin: 2cm; }
   body { font-family: 'Segoe UI', Arial, sans-serif; color: #1e293b; max-width: 720px; margin: 0 auto; padding: 24px; }
@@ -107,7 +108,7 @@ export default function StudentProfile() {
 </style>
 </head><body>
   <h1>Récap d'apprentissage FlipLearn</h1>
-  <p class="meta">${user?.prenom ?? ''} ${user?.nom ?? ''} · ${user?.email ?? ''} · ${user?.filiere ?? ''} ${user?.promotion ?? ''}<br>Édité le ${today}</p>
+  <p class="meta">${formatFullName(user)} · ${user?.email ?? ''} · ${user?.filiere ?? ''} ${user?.promotion ?? ''}<br>Édité le ${today}</p>
 
   <h2>Mes statistiques</h2>
   <div class="stats">
@@ -211,7 +212,7 @@ export default function StudentProfile() {
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
           <h2 style={{ margin: 0, fontSize: '20px', fontWeight: 800 }}>
-            {user?.prenom} {user?.nom}
+            {formatFullName(user)}
           </h2>
           <div style={{ fontSize: '13px', opacity: 0.8, marginTop: '2px' }}>{user?.email}</div>
           <div style={{ display: 'flex', gap: '8px', marginTop: '6px', flexWrap: 'wrap' }}>

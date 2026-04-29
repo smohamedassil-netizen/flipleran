@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
 import api from '../utils/api.js';
+import { capitalizeWords } from '../utils/format.js';
 import {
   BookOpen, BarChart2, Award, Zap,
   ChevronRight, Video, Brain,
@@ -68,8 +69,9 @@ export default function Dashboard() {
     ? `${completedVideos} / ${totalAvailable}`
     : `${completedVideos}`;
 
+  // Le bonjour utilise uniquement le prénom (capitalisé) — plus chaleureux et cohérent.
   const displayName = user?.prenom
-    ? `${user.prenom} ${user.nom ?? ''}`
+    ? capitalizeWords(user.prenom)
     : user?.name ?? 'Utilisateur';
 
   const stats = [

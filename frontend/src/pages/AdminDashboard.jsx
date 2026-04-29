@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import Layout from '../components/Layout.jsx';
 import api from '../utils/api.js';
+import { formatFullName } from '../utils/format.js';
 
 /* ─── Constants ────────────────────────────────────────────────────────── */
 const PRIMARY = '#1B4F72';
@@ -698,7 +699,7 @@ function UserEditModal({ user, onSave, onClose }) {
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px', padding: '12px', background: '#F8FAFC', borderRadius: RADIUS_SM }}>
           <Avatar prenom={user.prenom} nom={user.nom} size={42} />
           <div>
-            <div style={{ fontWeight: 600, color: '#1E293B' }}>{user.prenom} {user.nom}</div>
+            <div style={{ fontWeight: 600, color: '#1E293B' }}>{formatFullName(user)}</div>
             <div style={{ fontSize: '12px', color: '#94A3B8' }}>{user.email}</div>
           </div>
         </div>

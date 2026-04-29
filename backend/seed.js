@@ -94,7 +94,7 @@ async function createUsers() {
       password: "etudiant123",
       role: "etudiant",
       filiere: "Informatique",
-      promotion: "L3 2024",
+      promotion: "L3 2025/2026",
       points: 320,
     },
     {
@@ -104,7 +104,7 @@ async function createUsers() {
       password: "etudiant123",
       role: "etudiant",
       filiere: "Informatique",
-      promotion: "L3 2024",
+      promotion: "L3 2025/2026",
       points: 290,
     },
     {
@@ -114,7 +114,7 @@ async function createUsers() {
       password: "etudiant123",
       role: "etudiant",
       filiere: "Informatique",
-      promotion: "L3 2024",
+      promotion: "L3 2025/2026",
       points: 260,
     },
     {
@@ -124,7 +124,7 @@ async function createUsers() {
       password: "etudiant123",
       role: "etudiant",
       filiere: "Informatique",
-      promotion: "L3 2024",
+      promotion: "L3 2025/2026",
       points: 210,
     },
     {
@@ -134,7 +134,7 @@ async function createUsers() {
       password: "etudiant123",
       role: "etudiant",
       filiere: "Informatique",
-      promotion: "L3 2024",
+      promotion: "L3 2025/2026",
       points: 180,
     },
     {
@@ -144,7 +144,7 @@ async function createUsers() {
       password: "etudiant123",
       role: "etudiant",
       filiere: "Informatique",
-      promotion: "L3 2024",
+      promotion: "L3 2025/2026",
       points: 150,
     },
     {
@@ -154,7 +154,7 @@ async function createUsers() {
       password: "etudiant123",
       role: "etudiant",
       filiere: "Informatique",
-      promotion: "L3 2024",
+      promotion: "L3 2025/2026",
       points: 120,
     },
     {
@@ -164,7 +164,7 @@ async function createUsers() {
       password: "etudiant123",
       role: "etudiant",
       filiere: "Informatique",
-      promotion: "L3 2024",
+      promotion: "L3 2025/2026",
       points: 90,
     },
     {
@@ -174,7 +174,7 @@ async function createUsers() {
       password: "etudiant123",
       role: "etudiant",
       filiere: "Informatique",
-      promotion: "L3 2024",
+      promotion: "L3 2025/2026",
       points: 60,
     },
     {
@@ -184,7 +184,7 @@ async function createUsers() {
       password: "etudiant123",
       role: "etudiant",
       filiere: "Informatique",
-      promotion: "L3 2024",
+      promotion: "L3 2025/2026",
       points: 30,
     },
   ];
@@ -217,7 +217,7 @@ async function createCourses(prof1, prof2) {
         "Introduction aux algorithmes fondamentaux, complexité et structures de données (listes, piles, arbres, graphes).",
       professorId: prof1._id,
       filiere: "Informatique",
-      promotion: "L3 2024",
+      promotion: "L3 2025/2026",
       isActive: true,
     },
     {
@@ -226,7 +226,7 @@ async function createCourses(prof1, prof2) {
         "Modélisation entité-relation, SQL, normalisation et transactions. MySQL et PostgreSQL.",
       professorId: prof2._id,
       filiere: "Informatique",
-      promotion: "L3 2024",
+      promotion: "L3 2025/2026",
       isActive: true,
     },
   ]);
