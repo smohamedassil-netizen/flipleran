@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { io } from 'socket.io-client';
+import { SOCKET_URL, makeSocketConfig } from '../utils/socketConfig.js';
 import { Activity, CheckCircle, Upload, Star, Users as UsersIcon, Edit3, Clock } from 'lucide-react';
 
 const TYPE_META = {
@@ -43,11 +44,7 @@ export default function ProjectActivityFeed({ projectId, initialActivity = [] })
     } catch { user = null; }
     if (!user?.token || !projectId) return;
 
-    const socketUrl = import.meta.env.VITE_SOCKET_URL || (import.meta.env.PROD ? '' : 'http://localhost:5000');
-    const socket = io(socketUrl, {
-      auth: { token: user.token },
-      transports: ['websocket', 'polling'],
-    });
+    const socket = io(SOCKET_URL, makeSocketConfig(user.token));
     socketRef.current = socket;
 
     socket.on('connect', () => {

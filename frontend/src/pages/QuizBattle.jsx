@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout.jsx';
 import { io } from 'socket.io-client';
+import { SOCKET_URL, makeSocketConfig } from '../utils/socketConfig.js';
 import {
   ArrowLeft, Swords, Users, Clock, Trophy, Plus, RefreshCw, Zap, CheckCircle,
   XCircle, Flame, Snowflake, Sparkles, Target, Award, Crown, Clock3, BookOpen,
@@ -10,7 +11,6 @@ import {
 import { useAuth } from '../context/AuthContext.jsx';
 import api from '../utils/api.js';
 
-const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || (import.meta.env.PROD ? '' : 'http://localhost:5000');
 const STORAGE_KEY = 'fliplearn_user';
 const getToken = () => JSON.parse(sessionStorage.getItem(STORAGE_KEY) || 'null')?.token ?? null;
 const TIMER_SECONDS = 15;
@@ -112,7 +112,7 @@ export default function QuizBattle() {
     const token = getToken();
     if (!token) return;
 
-    const socket = io(SOCKET_URL, { auth: { token }, transports: ['websocket', 'polling'] });
+    const socket = io(SOCKET_URL, makeSocketConfig(token));
     socketRef.current = socket;
 
     socket.on('connect', () => { setError(''); refreshRooms(); });

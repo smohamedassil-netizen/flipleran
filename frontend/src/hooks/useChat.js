@@ -7,8 +7,8 @@
  */
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { io } from 'socket.io-client';
+import { SOCKET_URL, makeSocketConfig } from '../utils/socketConfig.js';
 
-const SOCKET_URL  = import.meta.env.VITE_SOCKET_URL || (import.meta.env.PROD ? '' : 'http://localhost:5000');
 const STORAGE_KEY = 'fliplearn_user';
 
 function getToken() {
@@ -38,10 +38,7 @@ export function useChat(roomId) {
     const token = getToken();
     if (!token) return;
 
-    const socket = io(SOCKET_URL, {
-      auth:       { token },
-      transports: ['websocket', 'polling'],
-    });
+    const socket = io(SOCKET_URL, makeSocketConfig(token));
     socketRef.current = socket;
 
     socket.on('connect', () => {

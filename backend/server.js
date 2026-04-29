@@ -79,6 +79,7 @@ const io = new Server(httpServer, {
   cors: {
     origin: allowedOrigins,
     methods: ['GET', 'POST'],
+    credentials: true,
   },
 });
 
@@ -234,6 +235,72 @@ const battleRooms = new Map();
 /* ── roomUsers: roomId → Map<socketId, userInfo> ──────────────────────── */
 const roomUsers = new Map();
 
+/* ═══════════════════════════════════════════════════════════════════════
+   Socket Room ACL — canJoinRoom(socket, roomId)
+   Returns true if the user is allowed to join the room.
+═══════════════════════════════════════════════════════════════════════ */
+async function canJoinRoom(socket, roomId) {
+  const { id: userId, role } = socket.user;
+  if (role === 'admin') return true;
+
+  // user_<id> — personal notification room
+  if (roomId.startsWith('user_')) {
+    return roomId === `user_${userId}`;
+  }
+
+  // course_<courseId> — enrolled student OR course professor
+  if (roomId.startsWith('course_')) {
+    const courseId = roomId.replace('course_', '');
+    const [progress, course] = await Promise.all([
+      (await import('./models/Progress.js')).default.exists({ userId, courseId }),
+      (await import('./models/Course.js')).default.exists({ _id: courseId, professorId: userId }),
+    ]);
+    return !!(progress || course);
+  }
+
+  // prosit_<prositId>
+  if (roomId.startsWith('prosit_')) {
+    const prositId = roomId.replace('prosit_', '');
+    const Prosit = (await import('./models/Prosit.js')).default;
+    const found = await Prosit.exists({
+      _id: prositId,
+      $or: [
+        { createdBy: userId },
+        { 'groupes.membres.userId': userId },
+      ],
+    });
+    return !!found;
+  }
+
+  // project_<projectId>
+  if (roomId.startsWith('project_')) {
+    const projectId = roomId.replace('project_', '');
+    const Project = (await import('./models/Project.js')).default;
+    const found = await Project.exists({
+      _id: projectId,
+      $or: [
+        { createdBy: userId },
+        { 'groupes.membres.userId': userId },
+      ],
+    });
+    return !!found;
+  }
+
+  // BATTLE-<roomId> — only players already registered via battle:create/join
+  if (roomId.startsWith('BATTLE-')) {
+    const room = battleRooms.get(roomId);
+    return !!room && room.players.some(p => p.odgerId === userId);
+  }
+
+  // bot_<…>, private chat rooms — allow (authenticated users only)
+  if (roomId.startsWith('bot_') || roomId.startsWith('private_')) {
+    return true;
+  }
+
+  // Unknown prefix → deny
+  return false;
+}
+
 function getRoomParticipants(roomId) {
   const room = roomUsers.get(roomId);
   if (!room) return [];
@@ -259,17 +326,38 @@ function leaveRoom(socket, roomId) {
 io.on('connection', (socket) => {
   const user = socket.user;
 
-  // Auto-join personal notification room
+  // Auto-join personal notification room (server-side, no user input)
   socket.join(`user_${user.id}`);
 
-  /* ── join (generic room join for notifications) ─────────────────────── */
-  socket.on('join', (room) => {
-    if (room) socket.join(room);
+  /* ── join — validated room join (replaces old generic handler) ────── */
+  socket.on('join', async (roomId) => {
+    if (!roomId) return;
+    try {
+      if (!(await canJoinRoom(socket, roomId))) {
+        console.warn(`[ACL] DENIED join room=${roomId} user=${user.id} role=${user.role}`);
+        socket.emit('error', { message: 'Accès refusé à cette salle.' });
+        return;
+      }
+      socket.join(roomId);
+    } catch (err) {
+      console.error(`[ACL] Error checking room=${roomId}:`, err.message);
+    }
   });
 
-  /* ── join_room ─────────────────────────────────────────────────────── */
+  /* ── join_room — chat room join with ACL ─────────────────────────── */
   socket.on('join_room', async (roomId) => {
     if (!roomId) return;
+
+    try {
+      if (!(await canJoinRoom(socket, roomId))) {
+        console.warn(`[ACL] DENIED join_room room=${roomId} user=${user.id} role=${user.role}`);
+        socket.emit('error', { message: 'Accès refusé à cette salle.' });
+        return;
+      }
+    } catch (err) {
+      console.error(`[ACL] Error checking room=${roomId}:`, err.message);
+      return;
+    }
 
     // Quitter la salle précédente
     if (socket.currentRoom && socket.currentRoom !== roomId) {
