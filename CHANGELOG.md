@@ -4,6 +4,27 @@ Historique des modifications par date de session.
 
 ---
 
+## 29 Avril 2026 — fin de journée (nettoyage final pré-soutenance — 10 corrections)
+
+Récapitulatif de la journée. 10 corrections appliquées en 7 commits, dans l'ordre chronologique :
+
+1. **Alertes urgentes prof sur dashboard** — bloc en haut du `ProfessorDashboard` listant les vidéos sous 50 % de complétion, affiché sans sélection préalable d'un cours (`7c0a779`).
+2. **Extension QCMs aux alertes** — même calcul de complétion appliqué aux QCMs liés à une vidéo du cours (`b9e4489`).
+3. **Aide IA projet enrichie** — `getAiHelp` du `projectController` populate filière/promotion/cours, calcule la phase courante, demande 3 ressources gratuites + 2 conseils méthodo + 1 cas MENA (`d9a50db`).
+4. **Compteur de quota IA** dans la génération de QCM — lecture des headers axios `x-ai-quota-*` + appel initial à `/users/me/ai-quota`, barre de progression colorée et écran 429 avec date de renouvellement + lien Premium (`151ec71`).
+5. **Prérequis vidéo soft avant QCM** — backend ajoute le flag `videoWatched` à la réponse sanitisée pour les étudiants, frontend affiche un bandeau jaune dismissable (pas de blocage) (`f7db191`).
+6. **Prosit courseId optionnel + agent IA dédié** — relaxation de la contrainte `required` sur `Prosit.courseId`, nouveau `POST /api/prosits/:id/ai-help` adapté à la phase courante et au cours associé (`79f1a32`).
+7. **Cross-link Resources** — `ResourceLibrary` (per-course) et `ResourcesHub` (global) reliés par bandeaux explicatifs ; conservation des deux pages car complémentaires (`4815acb`).
+8. **Vidéo associée affichée dans `ProfessorCreateQCM`** — fetch `/videos/:id` au montage, badge bleu « Vidéo associée : [titre] » sous le breadcrumb pour clarifier quel QCM est en cours d'édition (`4815acb`).
+9. **Commentaire d'architecture Progress / Video.watchedBy** — bloc explicatif au-dessus de `saveProgress` dans `videoController.js` documentant la double source de vérité (`4815acb`).
+10. **Empty states + message d'accueil contextuel** — Dashboard étudiant utilise désormais le compteur `upcoming.filter(!done)` pour afficher « X tâches cette semaine » ou « Tout est à jour ! » ; `/professor/qcm` affiche un bandeau guide quand aucun QCM n'existe (sans bloquer la création), `/prosits` et `/projects` ont des messages d'état vide alignés (`4815acb`).
+
+Commits :
+- `7c0a779`, `b9e4489`, `d9a50db`, `151ec71`, `f7db191`, `79f1a32`, `4815acb` (sept commits feat/chore)
+- `3d8234c`, `92ec9c9`, `139ef6c`, `8e21213`, `e22d5ca` (commits docs intermédiaires)
+
+---
+
 ## 29 Avril 2026 — soir (alertes urgentes prof sur dashboard + IA projet)
 
 Bloc d'alertes immédiat sur le tableau de bord professeur, extension aux QCMs, et enrichissement du prompt IA d'aide aux projets.
