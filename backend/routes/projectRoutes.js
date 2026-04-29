@@ -37,7 +37,7 @@ router.post('/:id/groupes/random', requireRole('professeur'), createGroupsRandom
 router.post('/:id/groupes',        requireRole('professeur'), createGroupsManual);
 
 // Phases
-router.put('/:id/phases/:phaseId', updatePhase);
+router.put('/:id/phases/:phaseId', requireRole('etudiant', 'professeur', 'admin'), updatePhase);
 
 // Checklist (tâches d'une phase)
 router.post('/:id/phases/:phaseId/checklist', requireRole('professeur', 'admin'), addChecklistItem);
@@ -49,13 +49,13 @@ router.post('/:id/ideas',          requireRole('professeur', 'admin'), addIdea);
 router.delete('/:id/ideas/:ideaId', requireRole('professeur', 'admin'), deleteIdea);
 
 // Livrables (upload fichier)
-router.post('/:id/livrables', uploadLivrable.single('file'), addLivrable);
+router.post('/:id/livrables', requireRole('etudiant'), uploadLivrable.single('file'), addLivrable);
 
 // Évaluations
-router.post('/:id/evaluations', addEvaluation);
+router.post('/:id/evaluations', requireRole('etudiant'), addEvaluation);
 router.get('/:id/evaluations',  requireRole('professeur', 'admin'), getEvaluations);
 
 // Aide IA
-router.post('/:id/ai-help', getAiHelp);
+router.post('/:id/ai-help', requireRole('etudiant', 'professeur'), getAiHelp);
 
 export default router;
