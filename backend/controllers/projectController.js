@@ -640,19 +640,51 @@ export const deleteIdea = async (req, res) => {
 /* ─── POST /api/projects/:id/ai-help ──────────────────────────────────────── */
 export const getAiHelp = async (req, res) => {
   try {
-    const project = await Project.findById(req.params.id);
+    const project = await Project.findById(req.params.id)
+      .populate('createdBy', 'filiere promotion')
+      .populate('courseId', 'titre description');
+
     if (!project) return res.status(404).json({ message: 'Projet introuvable.' });
 
-    const prompt = `Suggest 5 useful resources (articles, tutorials, tools) for a student project about: ${project.titre} - ${project.description}. Respond in French with a numbered list. For each resource, give the name, a short description, and a URL if possible.`;
+    const filiere = project.createdBy?.filiere ?? 'Informatique';
+    const promotion = project.createdBy?.promotion ?? 'L3';
+    const currentPhase = project.phases?.find(p => p.statut === 'en_cours')?.titre ?? 'Phase courante';
+    const courseContext = project.courseId
+      ? `Le projet est lié au cours : "${project.courseId.titre}". `
+      : '';
+    const livrables = (project.livrables ?? [])
+      .map(l => l.titre)
+      .filter(Boolean)
+      .join(', ') || 'livrables non définis';
+
+    const systemPrompt = `Tu es un tuteur pédagogique expert pour une université algérienne.
+Tu aides des étudiants en ${filiere} niveau ${promotion}.
+Tu réponds TOUJOURS en français.
+Tes suggestions doivent être adaptées au contexte algérien, aux ressources disponibles
+en ligne (pas de ressources payantes inaccessibles), et au niveau universitaire licence.`;
+
+    const userPrompt = `Un étudiant en ${filiere} ${promotion} travaille sur le projet :
+Titre : ${project.titre}
+Description : ${project.description}
+${courseContext}
+Phase actuelle : ${currentPhase}
+Livrables attendus : ${livrables}
+
+Donne lui :
+1. 3 ressources en ligne gratuites et accessibles (tutoriels, docs officielles, articles)
+2. 2 conseils méthodologiques pour cette phase du projet
+3. 1 exemple concret ou cas d'usage similaire en Algérie ou dans la région MENA
+
+Formate ta réponse avec des sections claires.`;
 
     const completion = await getGroq().chat.completions.create({
       model: 'llama-3.3-70b-versatile',
       messages: [
-        { role: 'system', content: 'Tu es un assistant pédagogique pour une université algérienne. Réponds toujours en français.' },
-        { role: 'user', content: prompt },
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userPrompt },
       ],
-      temperature: 0.7,
-      max_tokens: 1024,
+      temperature: 0.6,
+      max_tokens: 1200,
     });
 
     const response = completion.choices?.[0]?.message?.content || 'Aucune suggestion disponible.';
