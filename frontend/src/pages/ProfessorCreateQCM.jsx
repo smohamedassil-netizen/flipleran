@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import Layout from '../components/Layout.jsx';
 import api from '../utils/api.js';
 import {
   Plus, Trash2, ChevronUp, ChevronDown,
   CheckCircle, AlertCircle, ArrowLeft, Eye, Save, Sparkles,
+  Crown,
 } from 'lucide-react';
 
 const OPTION_LABELS = ['A', 'B', 'C', 'D'];
@@ -263,6 +264,20 @@ export default function ProfessorCreateQCM() {
   const [preview,     setPreview]     = useState(false);
   const [generating,  setGenerating]  = useState(false);
   const [aiCount,     setAiCount]     = useState(5);
+  const [quotaInfo,   setQuotaInfo]   = useState(null);
+  const [quotaExceeded, setQuotaExceeded] = useState(null);
+
+  /* Charger l'état initial du quota IA (qcmGeneration) */
+  useEffect(() => {
+    api.get('/users/me/ai-quota')
+      .then(({ data }) => {
+        const q = data?.quotas?.qcmGeneration;
+        if (q && q.limit !== null) {
+          setQuotaInfo({ used: q.used, limit: q.limit, resetAt: q.resetAt });
+        }
+      })
+      .catch(() => { /* fail silent — l'UI reste neutre si quota inconnu */ });
+  }, []);
 
   /* Charger un QCM existant si disponible */
   useEffect(() => {
@@ -320,11 +335,22 @@ export default function ProfessorCreateQCM() {
     if (!videoId) return setError('Aucune vidéo associée.');
     setGenerating(true);
     setError('');
+    setQuotaExceeded(null);
     try {
-      const { data } = await api.post('/qcm/generate-ai', {
+      const response = await api.post('/qcm/generate-ai', {
         videoId,
         numberOfQuestions: aiCount,
       });
+
+      // Lecture des headers de quota (axios force le lowercase)
+      const used  = response.headers?.['x-ai-quota-used'];
+      const limit = response.headers?.['x-ai-quota-limit'];
+      const reset = response.headers?.['x-ai-quota-reset'];
+      if (used && limit) {
+        setQuotaInfo({ used: Number(used), limit: Number(limit), resetAt: reset });
+      }
+
+      const { data } = response;
       if (data.questions?.length) {
         setQuestions(data.questions);
         if (data.suggestedTitle && !titre.trim()) {
@@ -333,7 +359,20 @@ export default function ProfessorCreateQCM() {
         setSaved(false);
       }
     } catch (err) {
-      setError(err.response?.data?.message ?? 'Erreur lors de la génération IA.');
+      // 429 = quota dépassé : le body contient { used, limit, resetAt, upgrade }
+      if (err.response?.status === 429) {
+        const body = err.response.data ?? {};
+        setQuotaExceeded({
+          resetAt: body.resetAt ?? null,
+          used:    body.used ?? null,
+          limit:   body.limit ?? null,
+        });
+        if (body.used != null && body.limit != null) {
+          setQuotaInfo({ used: Number(body.used), limit: Number(body.limit), resetAt: body.resetAt });
+        }
+      } else {
+        setError(err.response?.data?.message ?? 'Erreur lors de la génération IA.');
+      }
     } finally {
       setGenerating(false);
     }
@@ -494,11 +533,83 @@ export default function ProfessorCreateQCM() {
                 className="btn btn-primary"
                 style={{ width: '100%', justifyContent: 'center' }}
                 onClick={handleGenerateAI}
-                disabled={generating}
+                disabled={generating || !!quotaExceeded}
               >
                 <Sparkles size={15} />
                 {generating ? 'Génération en cours...' : 'Générer avec l\'IA'}
               </button>
+
+              {/* Compteur de quota mensuel */}
+              {quotaInfo && !quotaExceeded && (() => {
+                const { used, limit } = quotaInfo;
+                const ratio = limit > 0 ? Math.min(used / limit, 1) : 0;
+                const barColor = ratio >= 1 ? '#9B2335' : ratio >= 0.8 ? '#D4952A' : '#276749';
+                return (
+                  <div style={{ marginTop: 4 }}>
+                    <p style={{
+                      fontSize: 11,
+                      color: 'var(--color-text-secondary)',
+                      margin: '0 0 4px 0',
+                    }}>
+                      {used} / {limit} générations utilisées ce mois
+                    </p>
+                    <div style={{
+                      height: 4,
+                      backgroundColor: '#E2E8F0',
+                      borderRadius: 2,
+                      overflow: 'hidden',
+                    }}>
+                      <div style={{
+                        height: '100%',
+                        width: `${ratio * 100}%`,
+                        backgroundColor: barColor,
+                        transition: 'width 0.4s ease, background-color 0.3s ease',
+                      }} />
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* Quota dépassé : message + lien Premium */}
+              {quotaExceeded && (
+                <div style={{
+                  marginTop: 4,
+                  padding: '10px 12px',
+                  borderRadius: 8,
+                  backgroundColor: '#FFF5F5',
+                  border: '1px solid #9B233533',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 8,
+                }}>
+                  <p style={{
+                    fontSize: 12,
+                    color: '#9B2335',
+                    fontWeight: 600,
+                    margin: 0,
+                  }}>
+                    Quota mensuel atteint.
+                  </p>
+                  {quotaExceeded.resetAt && (
+                    <p style={{
+                      fontSize: 11,
+                      color: 'var(--color-text-secondary)',
+                      margin: 0,
+                    }}>
+                      Renouvellement le {new Date(quotaExceeded.resetAt).toLocaleDateString('fr-FR', {
+                        day: '2-digit', month: 'long', year: 'numeric',
+                      })}.
+                    </p>
+                  )}
+                  <Link
+                    to="/rewards"
+                    className="btn btn-primary btn-sm"
+                    style={{ justifyContent: 'center' }}
+                  >
+                    <Crown size={13} /> Passer en Premium
+                  </Link>
+                </div>
+              )}
             </div>
 
             {/* Summary */}
