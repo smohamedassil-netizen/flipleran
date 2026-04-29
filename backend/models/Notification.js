@@ -24,7 +24,8 @@ const notificationSchema = new mongoose.Schema(
     relatedType: { type: String, enum: ['qcm', 'video', 'project', 'ticket', 'course', null], default: null },
     relatedId:   { type: mongoose.Schema.Types.ObjectId, default: null },
     // Clé de dédoublonnage pour les rappels cron (ex: `qcm_<qcmId>_<userId>_<YYYYMMDD>`)
-    dedupKey:  { type: String, default: null, index: true },
+    // Note : index unique+sparse défini explicitement plus bas, ne pas dupliquer ici.
+    dedupKey:  { type: String, default: null },
   },
   { timestamps: true }
 );
