@@ -78,6 +78,33 @@ export const BADGE_DEFS = [
     rarity:      'rare',
     condition:   '1 projet passé en statut "termine"',
   },
+  {
+    key:         'prosit_completed',
+    nom:         'Prositer',
+    description: 'Premier Prosit terminé et évalué',
+    icon:        'Lightbulb',
+    color:       '#F59E0B',
+    rarity:      'rare',
+    condition:   '1 Prosit avec phase Retour évaluée par le tuteur',
+  },
+  {
+    key:         'prosit_animator',
+    nom:         'Animateur né',
+    description: 'Avoir endossé le rôle d\'Animateur dans 3 Prosits',
+    icon:        'Mic',
+    color:       '#8B5CF6',
+    rarity:      'epic',
+    condition:   '3 Prosits joués en tant qu\'Animateur',
+  },
+  {
+    key:         'prosit_perfect',
+    nom:         'Solution exemplaire',
+    description: 'Obtenir une note ≥ 18/20 sur un Prosit',
+    icon:        'Award',
+    color:       '#EF4444',
+    rarity:      'epic',
+    condition:   'Note finale ≥ 18/20 sur un Prosit',
+  },
 ];
 
 /* ─── Seed badges into DB (call once on server start) ───────────────────────── */

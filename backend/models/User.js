@@ -19,6 +19,19 @@ const userSchema = new mongoose.Schema(
     rejectionReason: { type: String, default: '' },
     approvedBy:{ type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
     approvedAt:{ type: Date, default: null },
+
+    /* ─── Prosit : rotation obligatoire des rôles CESI ───────────────────
+       Un étudiant doit passer par TOUS les rôles avant que le cycle se
+       réinitialise. `prositRolesDoneInCycle` liste les rôles déjà occupés
+       dans le cycle courant ; `prositRolesCycle` est incrémenté à chaque
+       cycle complet. `prositRolesHistory` garde l'historique total. */
+    prositRolesCycle:        { type: Number, default: 0 },
+    prositRolesDoneInCycle:  [{ type: String, enum: ['animateur', 'secretaire', 'scribe', 'gestionnaire', 'membre'] }],
+    prositRolesHistory: [{
+      role:        { type: String, enum: ['animateur', 'secretaire', 'scribe', 'gestionnaire', 'membre'] },
+      prositId:    { type: mongoose.Schema.Types.ObjectId, ref: 'Prosit' },
+      completedAt: { type: Date, default: Date.now },
+    }],
   },
   { timestamps: true }
 );

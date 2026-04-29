@@ -36,6 +36,7 @@ import trackingRoutes      from './routes/trackingRoutes.js';
 import rewardRoutes        from './routes/rewardRoutes.js';
 import feedbackRoutes      from './routes/feedbackRoutes.js';
 import battleRoutes        from './routes/battleRoutes.js';
+import prositRoutes        from './routes/prositRoutes.js';
 import { seedBadges }   from './services/points.js';
 import { seedRewards }  from './services/rewardsSeed.js';
 import { seedDemoContent } from './services/contentSeed.js';
@@ -132,6 +133,7 @@ app.use('/api/tracking',   trackingRoutes);
 app.use('/api/rewards',    rewardRoutes);
 app.use('/api/feedback',   feedbackRoutes);
 app.use('/api/battle',     battleRoutes);
+app.use('/api/prosits',    prositRoutes);
 
 // ── En production : servir le frontend buildé ──────────────────────────────
 if (process.env.NODE_ENV === 'production') {
@@ -500,7 +502,7 @@ io.on('connection', (socket) => {
   });
 
   /* Soumettre une réponse */
-  socket.on('battle:answer', ({ roomId, questionIndex, answer, powerup }) => {
+  socket.on('battle:answer', async ({ roomId, questionIndex, answer, powerup }) => {
     const room = battleRooms.get(roomId);
     if (!room) return;
 
