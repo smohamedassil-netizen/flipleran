@@ -26,3 +26,9 @@ Thumbs.db
 
 # Vite
 .vite/
+
+# Backups (mongo dumps)
+backups/
+
+# Generated reports
+backend/scripts/audit-videos-report.csv

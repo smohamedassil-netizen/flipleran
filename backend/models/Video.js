@@ -35,6 +35,7 @@ const videoSchema = new mongoose.Schema(
     createdBy:    { type: mongoose.Schema.Types.ObjectId, ref: 'User',   required: true },
     watchedBy:    [watchedEntrySchema],
     deadline:     { type: Date, default: null },
+    corruptedByMigration: { type: Boolean, default: false },
   },
   { timestamps: true }
 );
