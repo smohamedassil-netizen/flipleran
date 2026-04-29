@@ -137,6 +137,7 @@ export default function App() {
             <Route path="/professor/dashboard"                   element={<ProfessorDashboard />} />
             <Route path="/professor/courses/:courseId/upload"    element={<ProfessorUpload />} />
             <Route path="/professor/videos/:videoId/qcm"        element={<ProfessorCreateQCM />} />
+            <Route path="/professor/qcm/create"                 element={<ProfessorCreateQCM />} />
             <Route path="/professor/qcm"                       element={<ProfessorQCMHub />} />
             <Route path="/professor/badges"                    element={<BadgeManagement />} />
             <Route path="/professor/projects/create"            element={<ProjectCreate />} />
