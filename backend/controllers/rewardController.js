@@ -154,6 +154,7 @@ export const processClaim = async (req, res) => {
     const claim = await RewardClaim.findById(req.params.id).populate('rewardId');
     if (!claim) return res.status(404).json({ message: 'Réclamation introuvable.' });
 
+    const previousStatus = claim.status;
     claim.status = status;
     claim.adminNote = adminNote || claim.adminNote;
     if (code) claim.code = code;
@@ -170,6 +171,24 @@ export const processClaim = async (req, res) => {
       if (claim.rewardId) {
         claim.rewardId.claimed = Math.max(0, (claim.rewardId.claimed || 0) - 1);
         await claim.rewardId.save();
+      }
+    }
+
+    // Activation Premium : à la première validation (transition pending → approved/delivered)
+    // d'une récompense de type abonnement FlipLearn. Étend la durée existante si l'utilisateur
+    // a déjà un Premium en cours (cumulable) ; sinon démarre à partir de maintenant.
+    const isFirstApproval = previousStatus === 'pending'
+      && (status === 'approved' || status === 'delivered');
+    if (isFirstApproval && claim.rewardId?.type === 'abonnement_fliplearn') {
+      const user = await User.findById(claim.userId);
+      if (user) {
+        const dureeMois = claim.rewardId.dureeMois || 1;
+        const DAY_MS = 24 * 60 * 60 * 1000;
+        const currentEnd = user.premiumUntil ? new Date(user.premiumUntil).getTime() : 0;
+        const baseTime = currentEnd > Date.now() ? currentEnd : Date.now();
+        user.plan = 'premium';
+        user.premiumUntil = new Date(baseTime + dureeMois * 30 * DAY_MS);
+        await user.save();
       }
     }
 

@@ -9,6 +9,7 @@ import {
 } from '../controllers/deckController.js';
 import authMiddleware from '../middleware/authMiddleware.js';
 import requireRole from '../middleware/roleMiddleware.js';
+import { checkAiQuota } from '../middleware/aiQuota.js';
 
 const router = express.Router();
 
@@ -17,7 +18,8 @@ router.use(authMiddleware);
 router.use(requireRole('etudiant'));
 
 router.route('/').get(getDecks).post(createDeck);
-router.post('/generate-ai', generateFlashcardsAI);
+// Génération IA — soumise au quota mensuel (FREE = 5 / mois).
+router.post('/generate-ai', checkAiQuota('deckGeneration'), generateFlashcardsAI);
 router.route('/:id').get(getDeckById).put(updateDeck).delete(deleteDeck);
 
 export default router;

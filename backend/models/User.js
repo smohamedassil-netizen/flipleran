@@ -32,6 +32,19 @@ const userSchema = new mongoose.Schema(
       prositId:    { type: mongoose.Schema.Types.ObjectId, ref: 'Prosit' },
       completedAt: { type: Date, default: Date.now },
     }],
+
+    /* ─── Plan IA & quotas ───────────────────────────────────────────────
+       FREE : limites mensuelles sur les agents IA (cf. middleware/aiQuota.js).
+       PREMIUM : illimité tant que premiumUntil > now. Le plan est activé
+       lorsqu'un admin approuve une RewardClaim de type abonnement FlipLearn. */
+    plan:         { type: String, enum: ['free', 'premium'], default: 'free' },
+    premiumUntil: { type: Date, default: null },
+    aiUsage: {
+      videoAnalysis:  { count: { type: Number, default: 0 }, resetAt: { type: Date, default: null } },
+      moduleBot:      { count: { type: Number, default: 0 }, resetAt: { type: Date, default: null } },
+      qcmGeneration:  { count: { type: Number, default: 0 }, resetAt: { type: Date, default: null } },
+      deckGeneration: { count: { type: Number, default: 0 }, resetAt: { type: Date, default: null } },
+    },
   },
   { timestamps: true }
 );

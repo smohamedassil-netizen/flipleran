@@ -37,6 +37,7 @@ import rewardRoutes        from './routes/rewardRoutes.js';
 import feedbackRoutes      from './routes/feedbackRoutes.js';
 import battleRoutes        from './routes/battleRoutes.js';
 import prositRoutes        from './routes/prositRoutes.js';
+import userRoutes          from './routes/userRoutes.js';
 import { seedBadges }   from './services/points.js';
 import { seedRewards }  from './services/rewardsSeed.js';
 import { seedDemoContent } from './services/contentSeed.js';
@@ -141,6 +142,7 @@ app.use('/api/rewards',    rewardRoutes);
 app.use('/api/feedback',   feedbackRoutes);
 app.use('/api/battle',     battleRoutes);
 app.use('/api/prosits',    prositRoutes);
+app.use('/api/users',      userRoutes);
 
 // ── En production : servir le frontend buildé ──────────────────────────────
 if (process.env.NODE_ENV === 'production') {
