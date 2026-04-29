@@ -107,9 +107,26 @@ export default function VideoAnalysis({ videoId, userRole }) {
   const [error, setError]       = useState('');
   const [loading, setLoading]   = useState(false);
   const [activeTab, setActiveTab] = useState('summary');
+  const [quota, setQuota]       = useState(null);  // { used, limit, resetAt, premiumActive }
 
   const canAnalyze = true; // tous les utilisateurs peuvent lancer l'analyse
   const canDelete = userRole === 'professeur' || userRole === 'admin';
+
+  // Charger les quotas IA (mis à jour après chaque analyse lancée)
+  const fetchQuota = useCallback(async () => {
+    try {
+      const { data } = await api.get('/users/me/ai-quota');
+      const q = data?.quotas?.videoAnalysis;
+      setQuota(q ? {
+        used: q.used,
+        limit: q.limit,                 // null si Premium actif (illimité)
+        resetAt: q.resetAt,
+        premiumActive: !!data.premiumActive,
+      } : null);
+    } catch { /* fail silently */ }
+  }, []);
+
+  useEffect(() => { fetchQuota(); }, [fetchQuota]);
 
   // Charger l'analyse existante
   const fetchAnalysis = useCallback(async () => {
@@ -155,15 +172,23 @@ export default function VideoAnalysis({ videoId, userRole }) {
     return () => clearInterval(interval);
   }, [status, videoId, fetchAnalysis]);
 
-  // Lancer l'analyse
+  // Lancer l'analyse via le nouvel endpoint étudiant-friendly /request-analysis
+  // (passe par le middleware checkAiQuota côté backend → 429 si quota dépassé).
   const handleAnalyze = async () => {
     setLoading(true);
     setError('');
     try {
-      await api.post(`/videos/${videoId}/analyze`);
+      await api.post(`/videos/${videoId}/request-analysis`);
       setStatus('pending');
+      fetchQuota();  // refresh du compteur
     } catch (err) {
-      setError(err.response?.data?.message || 'Impossible de lancer l\'analyse.');
+      if (err.response?.status === 429) {
+        const r = err.response.data;
+        const resetDate = r?.resetAt ? new Date(r.resetAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' }) : 'le 1er du mois';
+        setError(`Quota IA atteint (${r?.used ?? '?'} / ${r?.limit ?? '?'} analyses ce mois). Réinitialisation ${resetDate}.`);
+      } else {
+        setError(err.response?.data?.message || 'Impossible de lancer l\'analyse.');
+      }
     } finally {
       setLoading(false);
     }
@@ -203,17 +228,26 @@ export default function VideoAnalysis({ videoId, userRole }) {
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           {status !== 'none' && <StatusBadge status={status} />}
 
-          {canAnalyze && status === 'none' && (
-            <button
-              onClick={handleAnalyze}
-              disabled={loading}
-              className="btn btn-primary"
-              style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 'var(--font-size-sm)' }}
-            >
-              {loading ? <Loader2 size={14} className="spin" /> : <Sparkles size={14} />}
-              Analyser avec GPT-4o
-            </button>
-          )}
+          {canAnalyze && status === 'none' && (() => {
+            const quotaReached = quota && quota.limit !== null && quota.used >= quota.limit;
+            return (
+              <button
+                onClick={handleAnalyze}
+                disabled={loading || quotaReached}
+                className="btn btn-primary"
+                title={quotaReached ? 'Quota mensuel atteint' : ''}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 6,
+                  fontSize: 'var(--font-size-sm)',
+                  opacity: quotaReached ? 0.55 : 1,
+                  cursor: quotaReached ? 'not-allowed' : 'pointer',
+                }}
+              >
+                {loading ? <Loader2 size={14} className="spin" /> : <Sparkles size={14} />}
+                Générer le résumé IA
+              </button>
+            );
+          })()}
 
           {canDelete && status === 'completed' && (
             <button
@@ -267,6 +301,22 @@ export default function VideoAnalysis({ videoId, userRole }) {
               </span>
             ))}
           </div>
+
+          {/* Compteur de quota — sous le bouton, ligne sobre */}
+          {quota && (
+            <p style={{
+              marginTop: 14,
+              fontSize: 'var(--font-size-xs)',
+              color: quota.premiumActive ? '#10b981' : (quota.limit !== null && quota.used >= quota.limit ? '#ef4444' : 'var(--color-text-secondary)'),
+              fontWeight: 500,
+            }}>
+              {quota.premiumActive
+                ? '⭐ Premium actif — analyses illimitées'
+                : quota.limit !== null && quota.used >= quota.limit
+                  ? `⏳ Quota atteint (${quota.used}/${quota.limit}) — réinitialisation le ${quota.resetAt ? new Date(quota.resetAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' }) : '1er du mois'}`
+                  : `${Math.max(0, (quota.limit ?? 0) - (quota.used ?? 0))} analyse${Math.max(0, (quota.limit ?? 0) - (quota.used ?? 0)) > 1 ? 's' : ''} restante${Math.max(0, (quota.limit ?? 0) - (quota.used ?? 0)) > 1 ? 's' : ''} ce mois`}
+            </p>
+          )}
         </div>
       )}
 

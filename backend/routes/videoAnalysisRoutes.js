@@ -15,6 +15,16 @@ const router = Router();
 // Soumis au quota IA mensuel (FREE = 3 / mois ; PREMIUM = illimité).
 router.post('/:id/analyze', authMiddleware, checkAiQuota('videoAnalysis'), startAnalysis);
 
+// Alias étudiant-friendly : nom plus explicite côté UI étudiant
+// ("Demander une analyse" plutôt que le verbe technique "analyze").
+// Soumis au même quota et au même contrôleur startAnalysis.
+router.post('/:id/request-analysis',
+  authMiddleware,
+  requireRole('etudiant', 'professeur', 'admin'),
+  checkAiQuota('videoAnalysis'),
+  startAnalysis
+);
+
 // Récupérer l'analyse complète — tous les utilisateurs authentifiés
 router.get('/:id/analysis', authMiddleware, getAnalysis);
 
