@@ -15,7 +15,8 @@ async function notifyPrositMembers(req, prosit, payload) {
   const memberIds = new Set();
   for (const g of prosit.groupes || []) {
     for (const m of g.membres || []) {
-      memberIds.add(m.userId.toString());
+      const id = memberUserIdString(m);
+      if (id) memberIds.add(id);
     }
   }
   await Promise.all([...memberIds].map(userId =>
@@ -29,12 +30,27 @@ async function notifyPrositMembers(req, prosit, payload) {
 ───────────────────────────────────────────────────────────────────────── */
 
 /**
+ * Extrait l'ID utilisateur d'un membre Prosit, que la ref soit populée
+ * (User document — `.userId._id`) ou non (ObjectId brut — `.userId`).
+ * Retourne une chaîne, ou null si introuvable.
+ */
+function memberUserIdString(m) {
+  const u = m?.userId;
+  if (!u) return null;
+  // populé ? User document a un _id
+  if (u._id) return u._id.toString();
+  // ObjectId brut ou string
+  return u.toString();
+}
+
+/**
  * Détermine si un utilisateur est dans un des groupes d'un Prosit.
  */
 function findUserGroupIndex(prosit, userId) {
-  if (!prosit?.groupes) return -1;
+  if (!prosit?.groupes || !userId) return -1;
+  const target = userId.toString();
   return prosit.groupes.findIndex(g =>
-    g.membres.some(m => m.userId?.toString() === userId.toString())
+    g.membres?.some(m => memberUserIdString(m) === target)
   );
 }
 
@@ -368,7 +384,7 @@ export async function joinGroupe(req, res) {
     const userId = req.user.id;
     // Retirer l'étudiant de tout autre groupe d'abord
     prosit.groupes.forEach(g => {
-      g.membres = g.membres.filter(m => m.userId.toString() !== userId);
+      g.membres = g.membres.filter(m => memberUserIdString(m) !== userId);
     });
 
     let groupe;
@@ -413,19 +429,28 @@ export async function updateGroupeWorkspace(req, res) {
     if (!prosit) return res.status(404).json({ message: 'Prosit introuvable' });
     if (!prosit.groupes[idx]) return res.status(404).json({ message: 'Groupe introuvable' });
 
-    // Vérifier que l'étudiant est membre du groupe
-    const isMember = prosit.groupes[idx].membres.some(m => m.userId.toString() === req.user.id);
+    // Vérifier que l'étudiant est membre du groupe (helper gère la ref populée)
+    const isMember = prosit.groupes[idx].membres.some(m => memberUserIdString(m) === req.user.id);
     if (!isMember && req.user.role !== 'admin') {
       return res.status(403).json({ message: 'Non membre de ce groupe' });
     }
 
-    // Phases autorisées : aller (workspace) ou retour (solution)
-    if (!['aller', 'recherche', 'retour'].includes(prosit.status)) {
-      return res.status(400).json({ message: 'Phase verrouillée' });
+    // Champs éditables selon la phase :
+    //   - aller   : espace collaboratif (mots-clés, problématique, hypothèses, plan)
+    //   - recherche : VERROUILLÉ — la contribution individuelle passe par /contribution
+    //   - retour  : solution finale uniquement
+    let fields = [];
+    if (prosit.status === 'aller') {
+      fields = ['motsClesIdentifies', 'problematiqueReformulee', 'hypotheses', 'planAction'];
+    } else if (prosit.status === 'retour') {
+      fields = ['solutionTexte', 'solutionFichier'];
+    } else {
+      return res.status(400).json({
+        message: prosit.status === 'recherche'
+          ? 'Espace collaboratif verrouillé en phase recherche. Utilisez /contribution pour votre travail individuel.'
+          : 'Phase verrouillée',
+      });
     }
-
-    const fields = ['motsClesIdentifies', 'problematiqueReformulee', 'hypotheses', 'planAction'];
-    if (prosit.status === 'retour') fields.push('solutionTexte', 'solutionFichier');
 
     for (const f of fields) {
       if (req.body[f] !== undefined) prosit.groupes[idx][f] = req.body[f];
@@ -453,7 +478,7 @@ export async function postContribution(req, res) {
       return res.status(400).json({ message: 'Contributions ouvertes uniquement en phase recherche' });
     }
 
-    const membre = prosit.groupes[idx].membres.find(m => m.userId.toString() === req.user.id);
+    const membre = prosit.groupes[idx].membres.find(m => memberUserIdString(m) === req.user.id);
     if (!membre) return res.status(403).json({ message: 'Non membre de ce groupe' });
 
     if (req.body.contributionTexte !== undefined)   membre.contributionTexte   = req.body.contributionTexte;
@@ -560,7 +585,8 @@ export async function evaluateGroupe(req, res) {
     const { addPoints, triggerAutoBadge } = await import('../services/points.js');
 
     for (const membre of groupe.membres) {
-      const userId = membre.userId.toString();
+      const userId = memberUserIdString(membre);
+      if (!userId) continue;
       // XP +150
       await addPoints(userId, 150, 'prosit_completed').catch(err => {
         console.error(`[prosit] addPoints failed for ${userId}:`, err.message);
@@ -605,6 +631,15 @@ export async function evaluateGroupe(req, res) {
       }
     }
 
+    // Auto-transition retour → evalue dès que TOUS les groupes ont une note.
+    // Permet de basculer la visibilité publique entre groupes sans demander
+    // au prof de cliquer une transition supplémentaire.
+    const allEvaluated = prosit.groupes.length > 0 &&
+      prosit.groupes.every(g => g.evaluation?.noteGlobale != null);
+    if (allEvaluated && prosit.status === 'retour') {
+      prosit.status = 'evalue';
+    }
+
     await prosit.save();
 
     // Notification temps réel aux membres du groupe évalué
@@ -612,7 +647,7 @@ export async function evaluateGroupe(req, res) {
     if (io) {
       await Promise.all(groupe.membres.map(m =>
         pushNotification(io, {
-          userId: m.userId.toString(),
+          userId: memberUserIdString(m),
           type: 'prosit_evaluated',
           priority: 'high',
           title: `✅ Prosit évalué : ${noteGlobale}/20`,
@@ -622,6 +657,18 @@ export async function evaluateGroupe(req, res) {
           relatedId: prosit._id,
         }).catch(err => console.error('[prosit evaluate notify]', err.message))
       ));
+
+      // Si on vient juste de basculer en 'evalue', notifier aussi tous les
+      // autres membres : ils peuvent maintenant voir les autres groupes.
+      if (allEvaluated) {
+        await notifyPrositMembers(req, prosit, {
+          type: 'prosit_phase',
+          priority: 'normal',
+          title: '💡 Phase Évaluée',
+          message: `Le Prosit "${prosit.titre}" est entièrement évalué. Tu peux désormais consulter les solutions des autres groupes.`,
+          link: `/prosits/${prosit._id}`,
+        });
+      }
     }
 
     res.json(groupe);
