@@ -78,27 +78,32 @@ const io = new Server(httpServer, {
 
 app.set('io', io);
 
-connectDB().then(async () => {
-  await migrateUserStatus();
-  // [DÉSACTIVÉ 28/04/2026] migrateBrokenVideos() écrasait silencieusement les vidéos
-  // YouTube par des MP4 samples au démarrage, ce qui détruisait les uploads légitimes.
-  // À ne JAMAIS réactiver tel quel.
-  // await migrateBrokenVideos().catch(err => console.error('[videoMigration]', err.message));
+// En mode test (Jest), on n'établit pas la connexion DB / seeds / cron : l'app
+// Express est juste exportée pour être consommée par supertest. Les tests qui
+// touchent la DB devront mocker les models concernés.
+if (process.env.NODE_ENV !== 'test') {
+  connectDB().then(async () => {
+    await migrateUserStatus();
+    // [DÉSACTIVÉ 28/04/2026] migrateBrokenVideos() écrasait silencieusement les vidéos
+    // YouTube par des MP4 samples au démarrage, ce qui détruisait les uploads légitimes.
+    // À ne JAMAIS réactiver tel quel.
+    // await migrateBrokenVideos().catch(err => console.error('[videoMigration]', err.message));
 
-  seedBadges().catch(console.error);
-  seedRewards().catch(console.error);
-  if (process.env.SEED_CONTENT !== 'false') {
-    try {
-      await seedUsers();
-      await seedDemoContent();
-      await seedDemoData();
-      await seedProsits();
-    } catch (err) {
-      console.error('[seed]', err.message);
+    seedBadges().catch(console.error);
+    seedRewards().catch(console.error);
+    if (process.env.SEED_CONTENT !== 'false') {
+      try {
+        await seedUsers();
+        await seedDemoContent();
+        await seedDemoData();
+        await seedProsits();
+      } catch (err) {
+        console.error('[seed]', err.message);
+      }
     }
-  }
-  startNotificationScheduler(io);
-});
+    startNotificationScheduler(io);
+  });
+}
 
 // Middleware
 app.use(cors({ origin: allowedOrigins }));
@@ -627,4 +632,9 @@ io.on('connection', (socket) => {
 });
 
 const PORT = process.env.PORT || 5000;
-httpServer.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+if (process.env.NODE_ENV !== 'test') {
+  httpServer.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+}
+
+export { app, httpServer, io };
+export default app;
