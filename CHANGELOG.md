@@ -23,6 +23,12 @@ Commits :
 - `b9e4489` — feat: include QCM completion in professor urgent alerts
 - `d9a50db` — feat: enrich AI project help with filière, phase and Algerian context
 
+### Frontend — quota IA visible
+- **`pages/ProfessorCreateQCM.jsx`** : `useEffect` au montage qui interroge `GET /api/users/me/ai-quota` (endpoint déjà existant) pour hydrater l'état initial du compteur `qcmGeneration`. `handleGenerateAI` lit désormais les headers axios `x-ai-quota-used` / `-limit` / `-reset` après succès, et le body `{ used, limit, resetAt }` sur erreur 429. UI sous le bouton « Générer avec l'IA » : ligne « X / Y générations utilisées ce mois » + barre de progression (vert < 80%, orange ≥ 80%, rouge = 100%). Si quota dépassé : encart rouge avec date de renouvellement formatée fr-FR + bouton « Passer en Premium » vers `/rewards`. Bouton de génération désactivé tant que le quota est plein.
+
+Commit :
+- `151ec71` — feat: display AI quota counter in QCM generation UI
+
 ---
 
 ## 29 Avril 2026 — nuit (module Prosit complet — APP/CESI)
