@@ -4,18 +4,24 @@ Historique des modifications par date de session.
 
 ---
 
-## 29 Avril 2026 — soir (alertes urgentes prof sur dashboard)
+## 29 Avril 2026 — soir (alertes urgentes prof sur dashboard + IA projet)
 
-Bloc d'alertes immédiat sur le tableau de bord professeur, sans sélection préalable d'un cours.
+Bloc d'alertes immédiat sur le tableau de bord professeur, extension aux QCMs, et enrichissement du prompt IA d'aide aux projets.
 
-### Backend
-- **`controllers/trackingController.js`** : nouvelle fonction `getProfessorAlerts` — parcourt les cours du prof, calcule la complétion vidéo par étudiant inscrit (filière + promotion), remonte jusqu'à 10 alertes sous 50 % de complétion, triées par criticité croissante.
+### Backend — alertes
+- **`controllers/trackingController.js`** : nouvelle fonction `getProfessorAlerts` — parcourt les cours du prof, calcule la complétion vidéo **et QCM** par étudiant inscrit (filière + promotion), remonte jusqu'à 10 alertes sous 50 % de complétion, triées par criticité croissante. Le champ `type` distingue 'video' et 'qcm'.
 - **`routes/trackingRoutes.js`** : nouvelle route `GET /api/tracking/alerts` (héritage du `authMiddleware` + `requireRole('professeur', 'admin')` déjà appliqué globalement).
 
-### Frontend
-- **`pages/ProfessorDashboard.jsx`** : appel `GET /tracking/alerts` au montage (parallèle au chargement du cours), bloc fond jaune pâle (#FFFBEB) en haut de page avec icône AlertTriangle, titre « ⚠️ Cours nécessitant votre attention ». Chaque alerte : nom du cours, nom de la vidéo, badge rouge X% de complétion, bouton « Voir le suivi → ». Bloc visible aussi en états loading et error pour rester immédiat. Si aucune alerte, le bloc n'est pas affiché.
+### Frontend — alertes
+- **`pages/ProfessorDashboard.jsx`** : appel `GET /tracking/alerts` au montage (parallèle au chargement du cours), bloc fond jaune pâle (#FFFBEB) en haut de page avec icône AlertTriangle, titre « ⚠️ Cours nécessitant votre attention ». Chaque alerte : nom du cours, nom de la vidéo/QCM (icône 🎥 ou 📝 selon le type), badge rouge X% de complétion, bouton « Voir le suivi → ». Bloc visible aussi en états loading et error pour rester immédiat. Si aucune alerte, le bloc n'est pas affiché.
 
-Commit : `feat: professor urgent alerts on dashboard without course selection` (`7c0a779`).
+### Backend — aide IA projet
+- **`controllers/projectController.js`** (`getAiHelp`) : prompt enrichi. `findById` populate `createdBy` (filiere, promotion) et `courseId` (titre, description). Calcul de la phase courante (`statut === 'en_cours'`), du contexte cours, et de la liste des livrables (depuis `project.livrables` top-level). System prompt = tuteur pédagogique algérien spécialisé filière/niveau. User prompt structuré demande : 3 ressources gratuites + 2 conseils méthodo pour la phase + 1 cas d'usage MENA. `temperature: 0.6`, `max_tokens: 1200`.
+
+Commits :
+- `7c0a779` — feat: professor urgent alerts on dashboard without course selection
+- `b9e4489` — feat: include QCM completion in professor urgent alerts
+- `d9a50db` — feat: enrich AI project help with filière, phase and Algerian context
 
 ---
 
