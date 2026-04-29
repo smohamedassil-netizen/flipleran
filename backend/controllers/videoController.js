@@ -267,7 +267,7 @@ export const saveProgress = async (req, res) => {
 
       // Award points only on first completion
       if (!wasAlreadyCompleted) {
-        pointsResult = await addPoints(req.user.id, 5, 'video_watched').catch(() => null);
+        pointsResult = await addPoints(req.user.id, 20, 'video_watched').catch(() => null);
         await checkChampionBadge(video.courseId).catch(() => {});
       }
     }

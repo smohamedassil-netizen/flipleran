@@ -193,9 +193,23 @@ async function getAllQCMResults(userId) {
 
 /* ─── Main: add points and check badges ────────────────────────────────────── */
 /**
+ * Barème XP de FlipLearn (cohérent avec la pédagogie classe inversée) :
+ *   - video_watched      : +20 XP (1ʳᵉ complétion à 80%, regarder la vidéo
+ *                          EST la préparation de base)
+ *   - qcm_completed      : +10 XP (bonus de complétion d'un QCM)
+ *   - qcm_score          : +pointsEarned (selon le score, calculé dans
+ *                          qcmController via pointsPerQuestion)
+ *   - qcm_bonus          : +20 XP si score > 80%
+ *   - project_completed  : +100 XP par membre du groupe (projet PBL terminé)
+ *   - prosit_completed   : +150 XP par membre (méthodologie APP/CESI, plus
+ *                          gros exercice du système)
+ *   - battle won/draw/lost : 0 XP (cadre éducatif, classement interne séparé)
+ *
  * @param {string}  userId
  * @param {number}  amount
- * @param {string}  reason   — 'video_watched' | 'qcm_completed' | 'qcm_bonus'
+ * @param {string}  reason   — 'video_watched' | 'qcm_completed' | 'qcm_score'
+ *                            | 'qcm_bonus' | 'project_completed'
+ *                            | 'prosit_completed'
  * @returns {{ newPoints: number, newBadges: Badge[] }}
  */
 export async function addPoints(userId, amount, reason) {

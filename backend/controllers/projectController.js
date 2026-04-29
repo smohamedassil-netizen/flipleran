@@ -3,7 +3,7 @@ import User from '../models/User.js';
 import { uploadBuffer } from '../config/cloudinary.js';
 import Groq from 'groq-sdk';
 import { pushNotification } from '../services/notificationService.js';
-import { triggerAutoBadge } from '../services/points.js';
+import { triggerAutoBadge, addPoints } from '../services/points.js';
 
 /**
  * Ajoute une entrée d'activité + notifie les membres via Socket.io.
@@ -221,12 +221,16 @@ export const updateProject = async (req, res) => {
     await project.save();
     await project.populate('createdBy', 'nom prenom');
 
-    // Auto-attribution du badge "Projet bouclé" pour chaque membre étudiant
-    // lorsqu'un projet passe en statut "termine" (1ère fois).
+    // Auto-attribution du badge "Projet bouclé" + XP pour chaque membre étudiant
+    // lorsqu'un projet passe en statut "termine" (1ère fois). XP = +100 par
+    // membre (cf. barème dans services/points.js). addPoints filtre les non-
+    // étudiants (pas d'XP pour profs/admins membres d'un groupe).
     if (previousStatus !== 'termine' && project.status === 'termine') {
       const memberIds = new Set();
       project.groupes.forEach(g => g.membres.forEach(m => memberIds.add(m.userId.toString())));
       for (const uid of memberIds) {
+        try { await addPoints(uid, 100, 'project_completed'); }
+        catch (e) { console.error('[project_completed XP]', e.message); }
         try { await triggerAutoBadge(uid, 'project_completed'); }
         catch (e) { console.error('[project_completed badge]', e.message); }
       }
