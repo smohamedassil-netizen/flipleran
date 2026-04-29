@@ -36,7 +36,6 @@ import {
   Sparkles,
   Bot,
   Video,
-  MessageCircle,
   Lightbulb,
 } from 'lucide-react';
 
@@ -66,7 +65,6 @@ const NAV = {
         { label: 'Quiz Battle',     icon: Swords,          to: '/quiz-battle' },
         { label: 'Récompenses',     icon: Gift,            to: '/rewards' },
         { label: 'Messages',        icon: MessageSquare,   to: '/chat' },
-        { label: 'Feedback reçu',   icon: MessageCircle,   to: '/my-feedback' },
       ],
     },
     {

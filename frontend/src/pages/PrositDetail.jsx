@@ -251,6 +251,47 @@ export default function PrositDetail() {
           </div>
         )}
 
+        {/* Encart explication des 5 rôles CESI */}
+        {(prosit.groupes?.length || 0) > 0 && (
+          <details style={{
+            marginBottom: 14,
+            background: 'white',
+            borderRadius: 10,
+            border: '1px solid #E5E7EB',
+            overflow: 'hidden',
+          }}>
+            <summary style={{
+              cursor: 'pointer',
+              padding: '10px 14px',
+              fontSize: 13,
+              fontWeight: 600,
+              color: '#1B4F72',
+              listStyle: 'none',
+            }}>
+              Comprendre les 5 rôles CESI ▾
+            </summary>
+            <div style={{ padding: '4px 14px 14px', fontSize: 12, color: '#475569', lineHeight: 1.6 }}>
+              <p style={{ margin: '0 0 8px' }}>
+                Les rôles tournent automatiquement à chaque Prosit (rotation obligatoire). Tu joues
+                chacun des 5 rôles avant que le cycle ne recommence. Aujourd'hui, ton groupe est
+                composé ainsi :
+              </p>
+              <ul style={{ margin: 0, paddingLeft: 18 }}>
+                <li><strong>Animateur</strong> — distribue la parole, garde le rythme, fait la synthèse en fin de séance.</li>
+                <li><strong>Secrétaire</strong> — prend le compte-rendu écrit (mots-clés, hypothèses, plan d'action).</li>
+                <li><strong>Scribe</strong> — met en forme la solution finale (mise en page, schémas, présentation).</li>
+                <li><strong>Gestionnaire</strong> — surveille les délais, vérifie que chacun a remis sa contribution, alerte sur les retards.</li>
+                <li><strong>Membre</strong> — contribue à la recherche pure et au débat collectif (rôle ouvert).</li>
+              </ul>
+              <p style={{ margin: '8px 0 0', fontSize: 11, fontStyle: 'italic', color: '#94A3B8' }}>
+                Note : tous les rôles peuvent éditer l'espace collaboratif. La distinction est
+                pédagogique (tu apprends à animer, à synthétiser, à gérer des délais) plutôt que
+                technique (pas de blocage logiciel).
+              </p>
+            </div>
+          </details>
+        )}
+
         {/* Groupes */}
         <section style={{ marginBottom: 18 }}>
           <h2 style={{ fontSize: 14, fontWeight: 700, color: '#1B4F72', margin: '0 0 12px' }}>
@@ -399,17 +440,27 @@ function CollaborativeWorkspace({ prosit, groupe, groupeIndex, userId, onUpdated
       {/* Phase Aller */}
       {prosit.status === 'aller' && (
         <>
+          <PhaseGuide
+            title="Phase Aller — comprendre le problème"
+            description="C'est la première séance en classe. En groupe, vous découvrez l'énoncé et le décortiquez ensemble."
+            steps={[
+              { label: 'Mots-clés', help: 'Identifiez 5 à 10 termes techniques ou notions-clés à explorer (ex : OWASP, JWT, bcrypt). Servira à orienter la recherche.' },
+              { label: 'Problématique', help: 'Reformulez le problème en une phrase claire. Ex : "Comment sécuriser une appli web contre les attaques OWASP top 10 ?"' },
+              { label: 'Hypothèses', help: 'Listez vos suppositions initiales (1 par ligne). Ex : "Les sessions JWT sont vulnérables au XSS", "HTTPS suffit à protéger contre MITM".' },
+              { label: 'Plan d\'action', help: 'Comment vous allez vous répartir le travail pendant la phase Recherche (qui fait quoi, quelles sources consulter).' },
+            ]}
+          />
           <label style={labelStyle}>Mots-clés identifiés (séparés par virgules)</label>
-          <input value={motsClesText} onChange={(e) => setMotsClesText(e.target.value)} style={{ ...inputStyle, marginBottom: 10 }} />
+          <input value={motsClesText} onChange={(e) => setMotsClesText(e.target.value)} style={{ ...inputStyle, marginBottom: 10 }} placeholder="Ex : OWASP, XSS, JWT, bcrypt, HTTPS" />
 
           <label style={labelStyle}>Problématique reformulée</label>
-          <textarea value={problematique} onChange={(e) => setProblematique(e.target.value)} rows={2} style={{ ...inputStyle, marginBottom: 10, resize: 'vertical' }} />
+          <textarea value={problematique} onChange={(e) => setProblematique(e.target.value)} rows={2} style={{ ...inputStyle, marginBottom: 10, resize: 'vertical' }} placeholder="Reformulez le problème en une phrase claire" />
 
           <label style={labelStyle}>Hypothèses (1 par ligne)</label>
-          <textarea value={hypothesesText} onChange={(e) => setHypothesesText(e.target.value)} rows={3} style={{ ...inputStyle, marginBottom: 10, resize: 'vertical' }} />
+          <textarea value={hypothesesText} onChange={(e) => setHypothesesText(e.target.value)} rows={3} style={{ ...inputStyle, marginBottom: 10, resize: 'vertical' }} placeholder={'Une hypothèse par ligne\nEx : Les sessions JWT sont vulnérables au XSS'} />
 
           <label style={labelStyle}>Plan d'action</label>
-          <textarea value={planAction} onChange={(e) => setPlanAction(e.target.value)} rows={3} style={{ ...inputStyle, marginBottom: 14, resize: 'vertical' }} />
+          <textarea value={planAction} onChange={(e) => setPlanAction(e.target.value)} rows={3} style={{ ...inputStyle, marginBottom: 14, resize: 'vertical' }} placeholder="Qui fait quoi pendant la phase Recherche ?" />
 
           <button onClick={saveWorkspace} disabled={saving} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 14px', background: '#F59E0B', color: 'white', border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: saving ? 'not-allowed' : 'pointer' }}>
             <Save size={13} /> {saving ? 'Sauvegarde…' : 'Sauvegarder l\'espace de travail'}
@@ -420,17 +471,24 @@ function CollaborativeWorkspace({ prosit, groupe, groupeIndex, userId, onUpdated
       {/* Phase Recherche */}
       {prosit.status === 'recherche' && (
         <>
-          <p style={{ fontSize: 12, color: '#64748B', margin: '0 0 12px', lineHeight: 1.5 }}>
-            Phase de recherche autonome. Documente ta partie de la solution selon ton rôle ({myMember?.role || 'membre'}).
-            L'espace collaboratif (mots-clés, hypothèses, plan d'action) est verrouillé.
-          </p>
+          <PhaseGuide
+            title="Phase Recherche — travail individuel autonome"
+            description={`Entre la séance Aller et la séance Retour, chacun travaille SEUL. Ton rôle dans le groupe : ${myMember?.role || 'membre'}.`}
+            steps={[
+              { label: 'Recherche', help: 'Consulte des sources fiables (docs officielles, articles de recherche, tutoriels reconnus).' },
+              { label: 'Documente', help: 'Note tes sources avec leurs URLs, ce que tu as appris, les exemples pertinents pour ton cas.' },
+              { label: 'Selon ton rôle', help: 'Animateur = synthèse. Secrétaire = compte-rendu écrit. Scribe = mise en forme. Gestionnaire = vérif délais/livrables. Membre = recherche pure.' },
+              { label: 'Soumets', help: 'Ta contribution écrite est visible par le prof à la phase Retour. L\'espace collaboratif (mots-clés, plan) est verrouillé.' },
+            ]}
+            color="#9333EA"
+          />
           <label style={labelStyle}>Ma contribution individuelle</label>
           <textarea
             value={contributionTexte}
             onChange={(e) => setContributionTexte(e.target.value)}
             rows={6}
             style={{ ...inputStyle, marginBottom: 14, resize: 'vertical' }}
-            placeholder="Documente ta partie : ce que tu as recherché, les sources consultées, tes apprentissages…"
+            placeholder="Documente ta partie : ce que tu as recherché, les sources consultées (URLs), tes apprentissages, ce que tu apportes au groupe…"
           />
           <button onClick={submitContribution} disabled={saving} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 14px', background: '#9333EA', color: 'white', border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: saving ? 'not-allowed' : 'pointer' }}>
             <Send size={13} /> {saving ? 'Envoi…' : 'Soumettre ma contribution'}
@@ -447,9 +505,17 @@ function CollaborativeWorkspace({ prosit, groupe, groupeIndex, userId, onUpdated
       {/* Phase Retour */}
       {prosit.status === 'retour' && (
         <>
-          <p style={{ fontSize: 12, color: '#64748B', margin: '0 0 12px', lineHeight: 1.5 }}>
-            Phase Retour. Présentation de la solution finale au tuteur (en classe).
-          </p>
+          <PhaseGuide
+            title="Phase Retour — solution finale et présentation"
+            description="Deuxième séance en classe. Le groupe synthétise les contributions individuelles en une solution unique, présentée au tuteur."
+            steps={[
+              { label: 'Synthèse', help: 'Combinez ce que chaque membre a trouvé en phase Recherche. La cohérence est essentielle.' },
+              { label: 'Solution', help: 'Rédigez la réponse au problème (technique, méthodologique, organisationnelle).' },
+              { label: 'Conclusions', help: 'Quelles leçons retenez-vous ? Quelles limites de votre solution ?' },
+              { label: 'Présentation orale', help: 'Le tuteur évaluera la solution + la qualité de la présentation. Préparez la prise de parole de chaque rôle.' },
+            ]}
+            color="#D97706"
+          />
           <label style={labelStyle}>Solution finale du groupe</label>
           <textarea value={solutionTexte} onChange={(e) => setSolutionTexte(e.target.value)} rows={6} style={{ ...inputStyle, marginBottom: 14, resize: 'vertical' }} placeholder="Synthèse de la solution, conclusions, livrables…" />
           <button onClick={saveWorkspace} disabled={saving} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 14px', background: '#D97706', color: 'white', border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: saving ? 'not-allowed' : 'pointer' }}>
@@ -458,6 +524,33 @@ function CollaborativeWorkspace({ prosit, groupe, groupeIndex, userId, onUpdated
         </>
       )}
     </section>
+  );
+}
+
+/* ─── Panneau d'aide expliquant la phase courante ─────────────────────── */
+function PhaseGuide({ title, description, steps, color = '#F59E0B' }) {
+  return (
+    <div style={{
+      padding: 14,
+      marginBottom: 16,
+      background: `${color}10`,
+      border: `1px solid ${color}40`,
+      borderRadius: 10,
+    }}>
+      <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color, marginBottom: 4 }}>
+        {title}
+      </p>
+      <p style={{ margin: '0 0 10px', fontSize: 12, color: '#475569', lineHeight: 1.5 }}>
+        {description}
+      </p>
+      <ol style={{ margin: 0, paddingLeft: 18, fontSize: 11.5, color: '#475569', lineHeight: 1.6 }}>
+        {steps.map((s, i) => (
+          <li key={i} style={{ marginBottom: 4 }}>
+            <strong style={{ color: '#1E293B' }}>{s.label}</strong> — {s.help}
+          </li>
+        ))}
+      </ol>
+    </div>
   );
 }
 

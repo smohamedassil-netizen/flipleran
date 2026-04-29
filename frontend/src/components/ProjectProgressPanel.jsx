@@ -4,6 +4,7 @@ import ConfirmDialog from './ConfirmDialog.jsx';
 import {
   CheckSquare, Square, Plus, Trash2, Lightbulb, X, Target,
   Zap, BookOpen, Hammer, Sparkles, ChevronDown, ChevronUp, TrendingUp,
+  Info,
 } from 'lucide-react';
 
 const IDEA_TYPE_META = {
@@ -77,27 +78,59 @@ function ProgressBar({ percent, color = '#1B4F72', height = 10 }) {
 export function ProjectProgressWidget({ project }) {
   const progress = computeProgress(project);
   const { details } = progress;
+  const [showFormula, setShowFormula] = useState(false);
   return (
     <div className="card" style={{ padding: 20 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
         <TrendingUp size={18} color="#1B4F72" />
         <h3 style={{ fontSize: 'var(--font-size-md)', fontWeight: 700, margin: 0 }}>Progression globale</h3>
+        <button
+          type="button"
+          onClick={() => setShowFormula(s => !s)}
+          aria-label="Afficher le calcul de la progression"
+          style={{
+            background: 'none', border: 'none', cursor: 'pointer',
+            padding: 0, color: '#94A3B8', display: 'flex',
+          }}
+          title="Comment ce % est-il calculé ?"
+        >
+          <Info size={14} />
+        </button>
         <span style={{ marginLeft: 'auto', fontSize: 24, fontWeight: 800, color: '#1B4F72' }}>{progress.percent}%</span>
       </div>
+
+      {showFormula && (
+        <div style={{
+          padding: '10px 12px', marginBottom: 12,
+          background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: 8,
+          fontSize: 11, color: '#475569', lineHeight: 1.5,
+        }}>
+          <strong style={{ color: '#1E293B' }}>Comment ce % est calculé :</strong>
+          <ul style={{ margin: '4px 0 0', paddingLeft: 18 }}>
+            <li><strong>Phases (40%)</strong> — proportion de phases au statut « terminé ».</li>
+            <li><strong>Tâches (40%)</strong> — proportion d'éléments cochés dans les checklists des phases.</li>
+            <li><strong>Livrables (20%)</strong> — proportion de groupes ayant déposé au moins un livrable.</li>
+          </ul>
+          <p style={{ margin: '6px 0 0', fontStyle: 'italic' }}>
+            Score = 0.4 × phases + 0.4 × tâches + 0.2 × livrables
+          </p>
+        </div>
+      )}
+
       <ProgressBar percent={progress.percent} height={10} />
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginTop: 16, fontSize: 12 }}>
         <div>
-          <div style={{ color: '#94A3B8', fontWeight: 600, marginBottom: 4 }}>PHASES</div>
+          <div style={{ color: '#94A3B8', fontWeight: 600, marginBottom: 4 }} title="40% du score global">PHASES (40%)</div>
           <ProgressBar percent={details.phases} color="#7C3AED" height={6} />
           <div style={{ fontSize: 11, color: '#64748B', marginTop: 4 }}>{details.phasesDone}/{details.phasesCount}</div>
         </div>
         <div>
-          <div style={{ color: '#94A3B8', fontWeight: 600, marginBottom: 4 }}>TÂCHES</div>
+          <div style={{ color: '#94A3B8', fontWeight: 600, marginBottom: 4 }} title="40% du score global">TÂCHES (40%)</div>
           <ProgressBar percent={details.checklist} color="#059669" height={6} />
           <div style={{ fontSize: 11, color: '#64748B', marginTop: 4 }}>{details.itemsDone}/{details.itemsCount}</div>
         </div>
         <div>
-          <div style={{ color: '#94A3B8', fontWeight: 600, marginBottom: 4 }}>LIVRABLES</div>
+          <div style={{ color: '#94A3B8', fontWeight: 600, marginBottom: 4 }} title="20% du score global">LIVRABLES (20%)</div>
           <ProgressBar percent={details.livrables} color="#D97706" height={6} />
           <div style={{ fontSize: 11, color: '#64748B', marginTop: 4 }}>
             {details.groupesCount > 0

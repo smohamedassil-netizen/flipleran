@@ -290,6 +290,49 @@ export async function checkPrositDeadlines(io) {
   }
 }
 
+/* ─── Rappels inactivité (vidéos sans deadline non vues depuis publication) ─
+ * Filet de sécurité quand le prof n'a pas mis de deadline : si une vidéo
+ * date de plus de 7 jours et qu'un étudiant ne l'a jamais commencée, on
+ * envoie une notification (in-app uniquement, pas d'email pour éviter le
+ * spam). Dédupliqué par semaine pour ne pas envoyer le même rappel
+ * plusieurs fois par mois.
+ */
+export async function checkInactivityReminders(io) {
+  const now = new Date();
+  const sevenDaysAgo = new Date(now.getTime() - 7 * DAY_MS);
+  const weekKey = `w${Math.floor(now.getTime() / (7 * DAY_MS))}`;
+
+  // Vidéos publiées il y a 7+ jours, sans deadline (sinon traitées par checkVideoDeadlines)
+  const videos = await Video.find({
+    deadline: { $in: [null, undefined] },
+    createdAt: { $lte: sevenDaysAgo },
+  }).select('titre courseId watchedBy');
+
+  for (const video of videos) {
+    const studentIds = await getStudentsForCourse(video.courseId);
+    const watchedIds = new Set(
+      video.watchedBy
+        .filter(w => (w.watchedPercent ?? 0) > 0)
+        .map(w => w.userId.toString())
+    );
+    const inactiveIds = studentIds.filter(id => !watchedIds.has(id));
+
+    for (const userId of inactiveIds) {
+      await pushNotification(io, {
+        userId,
+        type: 'reminder_inactivity',
+        priority: 'normal',
+        title: '🎥 Une vidéo t\'attend',
+        message: `Tu n'as pas encore commencé "${video.titre}". Pense à la regarder pour préparer ton cours.`,
+        link: `/watch/${video._id}`,
+        relatedType: 'video',
+        relatedId: video._id,
+        dedupKey: `inactivity_video_${video._id}_${userId}_${weekKey}`,
+      });
+    }
+  }
+}
+
 /* ─── Lanceur complet ────────────────────────────────────────────────── */
 export async function runAllDeadlineChecks(io) {
   try {
@@ -297,6 +340,7 @@ export async function runAllDeadlineChecks(io) {
     await checkVideoDeadlines(io);
     await checkProjectDeadlines(io);
     await checkPrositDeadlines(io);
+    await checkInactivityReminders(io);
     console.log(`[Scheduler] Deadline checks completed at ${new Date().toISOString()}`);
   } catch (err) {
     console.error('[Scheduler] error:', err.message);

@@ -88,13 +88,19 @@ export const getQCMByVideo = async (req, res) => {
 
     const isStudent = req.user.role === 'etudiant';
     if (isStudent) {
-      // Prérequis vidéo (classe inversée) : recommandation, pas blocage.
-      // Seuil : 30 % visionné OU completed=true (>=80 % côté Video.watchedBy).
+      // Prérequis vidéo (classe inversée).
+      // Seuil : 50 % visionné OU completed=true.
+      // Sous 50 %, le QCM est considéré non-prêt et videoWatched=false :
+      // le frontend bloque la soumission tant que ce seuil n'est pas atteint.
       const video = await Video.findById(req.params.videoId).select('watchedBy');
       let videoWatched = false;
+      let watchedPercent = 0;
       if (video) {
         const entry = video.watchedBy?.find(w => w.userId.toString() === req.user.id);
-        videoWatched = !!(entry && (entry.watchedPercent >= 30 || entry.completed));
+        if (entry) {
+          watchedPercent = entry.watchedPercent ?? 0;
+          videoWatched = !!(watchedPercent >= 50 || entry.completed);
+        }
       }
 
       const sanitized = {
@@ -110,6 +116,7 @@ export const getQCMByVideo = async (req, res) => {
           questionType: q.questionType ?? 'single',
         })),
         videoWatched,
+        watchedPercent,
       };
       return res.json(sanitized);
     }

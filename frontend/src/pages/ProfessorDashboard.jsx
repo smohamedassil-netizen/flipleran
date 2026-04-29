@@ -174,6 +174,7 @@ export default function ProfessorDashboard() {
   const [refreshing,setRefreshing]= useState(false);
   const [error,     setError]     = useState('');
   const [alerts,    setAlerts]    = useState([]);
+  const [alertsExpanded, setAlertsExpanded] = useState(false);
 
   /* ── Load course list for selector ─────────────────── */
   useEffect(() => {
@@ -185,72 +186,89 @@ export default function ProfessorDashboard() {
     api.get('/tracking/alerts').then(r => setAlerts(r.data ?? [])).catch(() => {});
   }, []);
 
-  /* ── Bloc d'alertes urgentes (visible sur tous les états) ── */
+  /* ── Bloc d'alertes : barre compacte par défaut, dépliable au clic ── */
   const alertsBlock = alerts.length > 0 && (
     <div style={{
-      backgroundColor: '#FFFBEB',
+      backgroundColor: alertsExpanded ? '#FFFBEB' : '#FFFEFA',
       border: `1px solid ${C_WARNING}33`,
-      borderRadius: 12,
-      padding: '16px 20px',
-      marginBottom: 20,
+      borderRadius: 10,
+      marginBottom: 16,
+      overflow: 'hidden',
+      transition: 'background-color 200ms',
     }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
-        <AlertTriangle size={18} color={C_WARNING} />
-        <span style={{ fontSize: 'var(--font-size-md)', fontWeight: 700, color: C_WARNING }}>
-          {'⚠️'} Cours nécessitant votre attention
-        </span>
-        <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-secondary)', marginLeft: 'auto' }}>
+      <button
+        type="button"
+        onClick={() => setAlertsExpanded(v => !v)}
+        style={{
+          width: '100%',
+          display: 'flex', alignItems: 'center', gap: 10,
+          padding: '10px 14px',
+          background: 'none', border: 'none',
+          cursor: 'pointer',
+          textAlign: 'left',
+        }}
+      >
+        <AlertTriangle size={16} color={C_WARNING} style={{ flexShrink: 0 }} />
+        <span style={{ fontSize: 'var(--font-size-sm)', fontWeight: 700, color: C_WARNING }}>
           {alerts.length} alerte{alerts.length > 1 ? 's' : ''}
         </span>
-      </div>
+        <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-secondary)' }}>
+          — cours sous 50% de complétion
+        </span>
+        <span style={{ marginLeft: 'auto', fontSize: 'var(--font-size-xs)', color: C_WARNING, fontWeight: 600 }}>
+          {alertsExpanded ? 'Masquer ▴' : 'Voir le détail ▾'}
+        </span>
+      </button>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-        {alerts.map((alert, i) => (
-          <div
-            key={`${alert.courseId}-${alert.resourceId}-${i}`}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 12,
-              padding: '10px 14px',
-              backgroundColor: '#fff',
-              borderRadius: 8,
-              border: `1px solid ${C_BORDER}`,
-              flexWrap: 'wrap',
-            }}
-          >
-            <div style={{ flex: 1, minWidth: 220 }}>
-              <p style={{ fontSize: 'var(--font-size-sm)', fontWeight: 600, color: 'var(--color-text)', margin: 0 }}>
-                {alert.courseTitre}
-              </p>
-              <p style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-secondary)', margin: '2px 0 0' }}>
-                {alert.type === 'video' ? '🎥 ' : '📝 '}{alert.resourceTitre}
-              </p>
-            </div>
-
-            <span style={{
-              padding: '4px 10px',
-              borderRadius: 'var(--radius-sm)',
-              backgroundColor: '#FFF5F5',
-              border: `1px solid ${C_ERROR}33`,
-              fontSize: 'var(--font-size-xs)',
-              fontWeight: 700,
-              color: C_ERROR,
-              flexShrink: 0,
-            }}>
-              {alert.completionRate}% de complétion
-            </span>
-
-            <button
-              onClick={() => navigate(alert.link)}
-              className="btn btn-ghost btn-sm"
-              style={{ flexShrink: 0 }}
+      {alertsExpanded && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: '0 14px 14px' }}>
+          {alerts.map((alert, i) => (
+            <div
+              key={`${alert.courseId}-${alert.resourceId}-${i}`}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 12,
+                padding: '10px 14px',
+                backgroundColor: '#fff',
+                borderRadius: 8,
+                border: `1px solid ${C_BORDER}`,
+                flexWrap: 'wrap',
+              }}
             >
-              Voir le suivi →
-            </button>
-          </div>
-        ))}
-      </div>
+              <div style={{ flex: 1, minWidth: 220 }}>
+                <p style={{ fontSize: 'var(--font-size-sm)', fontWeight: 600, color: 'var(--color-text)', margin: 0 }}>
+                  {alert.courseTitre}
+                </p>
+                <p style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-secondary)', margin: '2px 0 0' }}>
+                  {alert.type === 'video' ? '🎥 ' : '📝 '}{alert.resourceTitre}
+                </p>
+              </div>
+
+              <span style={{
+                padding: '4px 10px',
+                borderRadius: 'var(--radius-sm)',
+                backgroundColor: '#FFF5F5',
+                border: `1px solid ${C_ERROR}33`,
+                fontSize: 'var(--font-size-xs)',
+                fontWeight: 700,
+                color: C_ERROR,
+                flexShrink: 0,
+              }}>
+                {alert.completionRate}% de complétion
+              </span>
+
+              <button
+                onClick={() => navigate(alert.link)}
+                className="btn btn-ghost btn-sm"
+                style={{ flexShrink: 0 }}
+              >
+                Voir le suivi →
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 

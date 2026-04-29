@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout.jsx';
 import QCMPlayer from '../components/QCMPlayer.jsx';
 import api from '../utils/api.js';
-import { ArrowLeft, AlertCircle, AlertTriangle, BookOpen, Clock, Play, X } from 'lucide-react';
+import { ArrowLeft, AlertCircle, AlertTriangle, BookOpen, Clock, Play } from 'lucide-react';
 import { useGamification } from '../context/GamificationContext.jsx';
 
 export default function QCMPage() {
@@ -15,7 +15,6 @@ export default function QCMPage() {
   const [loading,    setLoading]    = useState(true);
   const [error,      setError]      = useState('');
   const [errorCode,  setErrorCode]  = useState(null);
-  const [videoWarningDismissed, setVideoWarningDismissed] = useState(false);
 
   useEffect(() => {
     api.get(`/qcm/video/${videoId}`)
@@ -69,8 +68,10 @@ export default function QCMPage() {
     );
   }
 
-  // Prérequis vidéo (classe inversée) : recommandation visible, dismissable
-  const showVideoWarning = qcm.videoWatched === false && !videoWarningDismissed;
+  // Prérequis vidéo (classe inversée) : bloquant tant que <50 % visionné.
+  // Le drapeau videoWatched côté backend est false sous 50 %, true au-delà.
+  const videoBlocked = qcm.videoWatched === false;
+  const watchedPct = qcm.watchedPercent ?? 0;
 
   return (
     <Layout title={qcm.titre}>
@@ -85,71 +86,60 @@ export default function QCMPage() {
         </span>
       </div>
 
-      {/* Bandeau prérequis vidéo */}
-      {showVideoWarning && (
+      {/* Prérequis vidéo BLOQUANT : moins de 50 % visionné */}
+      {videoBlocked && (
         <div style={{
           maxWidth: 640,
           margin: '0 auto 16px',
-          padding: '14px 16px',
-          backgroundColor: '#FFFBEB',
-          border: '1px solid #D4952A55',
+          padding: '20px 22px',
+          backgroundColor: '#FEF2F2',
+          border: '2px solid #FECACA',
           borderRadius: 12,
-          position: 'relative',
         }}>
-          <button
-            type="button"
-            aria-label="Fermer l'avertissement"
-            onClick={() => setVideoWarningDismissed(true)}
-            style={{
-              position: 'absolute',
-              top: 8,
-              right: 8,
-              width: 24,
-              height: 24,
-              borderRadius: 6,
-              border: 'none',
-              background: 'transparent',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: '#92400E',
-            }}
-          >
-            <X size={14} />
-          </button>
-
-          <div style={{ display: 'flex', gap: 12, paddingRight: 24 }}>
-            <AlertTriangle size={18} color="#D4952A" style={{ flexShrink: 0, marginTop: 2 }} />
+          <div style={{ display: 'flex', gap: 14 }}>
+            <AlertTriangle size={22} color="#DC2626" style={{ flexShrink: 0, marginTop: 2 }} />
             <div style={{ flex: 1 }}>
-              <p style={{ margin: 0, fontSize: 'var(--font-size-sm)', fontWeight: 700, color: '#92400E' }}>
-                Vous n'avez pas encore regardé cette vidéo.
+              <p style={{ margin: 0, fontSize: 16, fontWeight: 700, color: '#991B1B' }}>
+                QCM verrouillé
               </p>
-              <p style={{ margin: '4px 0 12px', fontSize: 'var(--font-size-xs)', color: '#78350F', lineHeight: 1.5 }}>
-                Pour une meilleure préparation, regardez la vidéo avant de commencer le QCM.
+              <p style={{ margin: '6px 0 10px', fontSize: 13, color: '#7F1D1D', lineHeight: 1.5 }}>
+                Tu dois avoir regardé au moins <strong>50 %</strong> de la vidéo associée
+                avant de pouvoir commencer ce QCM. C'est le principe de la classe inversée :
+                la vidéo prépare le QCM.
               </p>
-              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                <button
-                  type="button"
-                  className="btn btn-primary btn-sm"
-                  onClick={() => navigate(`/watch/${videoId}`)}
-                >
-                  <Play size={13} /> Regarder la vidéo d'abord
-                </button>
-                <button
-                  type="button"
-                  className="btn btn-ghost btn-sm"
-                  onClick={() => setVideoWarningDismissed(true)}
-                >
-                  Continuer quand même
-                </button>
+              <div style={{
+                padding: '8px 10px', marginBottom: 12,
+                background: 'white', border: '1px solid #FECACA', borderRadius: 8,
+                fontSize: 12,
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                  <span style={{ color: '#7F1D1D', fontWeight: 600 }}>Ta progression actuelle</span>
+                  <span style={{ color: watchedPct >= 50 ? '#16A34A' : '#DC2626', fontWeight: 700 }}>
+                    {Math.round(watchedPct)}% / 50% requis
+                  </span>
+                </div>
+                <div style={{ height: 6, background: '#FEE2E2', borderRadius: 3, overflow: 'hidden' }}>
+                  <div style={{
+                    height: '100%',
+                    width: `${Math.min(watchedPct, 100)}%`,
+                    background: watchedPct >= 50 ? '#16A34A' : '#DC2626',
+                    transition: 'width 0.4s',
+                  }} />
+                </div>
               </div>
+              <button
+                type="button"
+                className="btn btn-primary"
+                onClick={() => navigate(`/watch/${videoId}`)}
+              >
+                <Play size={14} /> Regarder la vidéo
+              </button>
             </div>
           </div>
         </div>
       )}
 
-      <div style={{ maxWidth: 640, margin: '0 auto' }}>
+      <div style={{ maxWidth: 640, margin: '0 auto', display: videoBlocked ? 'none' : 'block' }}>
         {/* Header card */}
         <div className="card" style={{ marginBottom: 20, padding: '16px 20px' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
