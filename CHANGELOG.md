@@ -4,6 +4,30 @@ Historique des modifications par date de session.
 
 ---
 
+## 29 Avril 2026 — soir tardif (refonte UX post-revue encadrante)
+
+Refonte UX en réponse à la revue de l'encadrante. 8 corrections en un commit, structurées en trois chantiers : alléger le dashboard prof, fusionner Feedback dans Messages, expliquer Prosit/Projet, durcir le prérequis QCM.
+
+### Chantier A — Allègement et fusion
+- **`pages/ProfessorDashboard.jsx`** : bloc « Cours nécessitant votre attention » désormais **replié par défaut**. Une barre compacte affiche `N alertes — cours sous 50% de complétion` avec bouton « Voir le détail ▾ ». Le détail (cartes par alerte) ne s'affiche qu'au clic.
+- **`pages/ChatContacts.jsx`** : nouvel onglet **« Feedback profs »** (étudiant uniquement) au-dessus de la liste des contacts. Réutilise le composant `FeedbackCard` extrait de `MyFeedback.jsx`. Badge orange avec compteur des feedbacks non lus.
+- **`components/Layout.jsx`** : retrait de l'entrée « Feedback reçu » de la sidebar étudiante (icône MessageCircle). Évite la duplication avec « Messages ».
+- **`App.jsx`** : redirection `/my-feedback` → `/chat?tab=feedback` (preserve les anciens liens externes).
+
+### Chantier B — Onboarding pédagogique Prosit / Projet
+- **`pages/PrositDetail.jsx`** : nouveau composant `PhaseGuide` qui explique la phase courante (Aller / Recherche / Retour) en 4 étapes contextuelles. Placeholders dans les inputs avec exemples concrets (« Ex : OWASP, XSS, JWT… »). Bloc dépliable « Comprendre les 5 rôles CESI » détaillant Animateur / Secrétaire / Scribe / Gestionnaire / Membre.
+- **`components/ProjectProgressPanel.jsx`** : icône Info à côté du titre « Progression globale » qui révèle la formule de calcul (Phases 40 % + Tâches 40 % + Livrables 20 %). Labels des sous-barres mis à jour avec leur poids.
+
+### Chantier C — Prérequis QCM durci + rappel inactivité
+- **`controllers/qcmController.js`** : seuil `videoWatched` passe de **30 % à 50 %**, et le backend renvoie maintenant `watchedPercent` pour permettre au frontend d'afficher la progression vers le seuil.
+- **`pages/QCMPage.jsx`** : bandeau bloquant si `videoBlocked` — plus de bouton « Continuer quand même ». Affiche la progression actuelle vs le seuil 50 % avec barre rouge/verte. Le QCM (header + player) est masqué tant que le seuil n'est pas atteint.
+- **`services/notificationScheduler.js`** : nouvelle fonction `checkInactivityReminders` — filet de sécurité quand le prof n'a pas mis de deadline. Si une vidéo date de >7 jours et n'a jamais été commencée par un étudiant, notification in-app hebdomadaire (dédupliquée par semaine, pas d'email pour ne pas spammer).
+
+Commit :
+- `fa14095` — feat: UX overhaul — collapsible alerts, feedback in chat, prosit/project guides, hard QCM gate
+
+---
+
 ## 29 Avril 2026 — fin de journée (nettoyage final pré-soutenance — 10 corrections)
 
 Récapitulatif de la journée. 10 corrections appliquées en 7 commits, dans l'ordre chronologique :
