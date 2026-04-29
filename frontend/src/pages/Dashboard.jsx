@@ -8,6 +8,7 @@ import {
   BookOpen, BarChart2, Award, Zap,
   ChevronRight, Video, Brain,
   MessageSquare, Trophy, Swords,
+  Calendar, Clock, FileText, CheckCircle, AlertCircle,
 } from 'lucide-react';
 
 /* ─── Quick action card ──────────────────────────────────────────────── */
@@ -37,6 +38,163 @@ function QuickAction({ icon: Icon, label, description, to, color }) {
   );
 }
 
+/* ─── Bloc "Cette semaine" ───────────────────────────────────────────── */
+const DAYS_FR = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
+const MONTHS_FR = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
+
+function fmtDeadline(date) {
+  const d = new Date(date);
+  return `${DAYS_FR[d.getDay()].charAt(0).toUpperCase() + DAYS_FR[d.getDay()].slice(1)} ${String(d.getDate()).padStart(2, '0')} ${MONTHS_FR[d.getMonth()]}`;
+}
+
+function hoursUntil(date) {
+  return (new Date(date).getTime() - Date.now()) / (1000 * 60 * 60);
+}
+
+function UpcomingDeadlines({ items, loading }) {
+  const navigate = useNavigate();
+
+  return (
+    <div className="card" style={{ padding: 20, marginBottom: 24 }}>
+      <h2 style={{
+        fontSize: 'var(--font-size-md)', fontWeight: 700,
+        color: 'var(--color-text)',
+        margin: '0 0 14px',
+        display: 'flex', alignItems: 'center', gap: 8,
+      }}>
+        <Calendar size={18} color="var(--color-primary)" />
+        Cette semaine
+      </h2>
+
+      {loading && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {[1, 2, 3].map(i => (
+            <div key={i} style={{
+              height: 52, borderRadius: 'var(--radius-md)',
+              background: 'linear-gradient(90deg, #f1f5f9 0%, #e2e8f0 50%, #f1f5f9 100%)',
+              backgroundSize: '200% 100%',
+              animation: 'shimmer 1.4s infinite',
+            }} />
+          ))}
+          <style>{`@keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }`}</style>
+        </div>
+      )}
+
+      {!loading && items.length === 0 && (
+        <div style={{
+          padding: '14px 16px',
+          background: '#F0FDF4',
+          border: '1px solid #BBF7D0',
+          borderRadius: 'var(--radius-md)',
+          color: '#15803D',
+          fontSize: 'var(--font-size-sm)',
+          fontWeight: 500,
+          display: 'flex', alignItems: 'center', gap: 10,
+        }}>
+          <CheckCircle size={18} />
+          <span>Tout est à jour ! Aucune deadline cette semaine. ✅</span>
+        </div>
+      )}
+
+      {!loading && items.length > 0 && (
+        <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {items.map((item) => {
+            const hours = hoursUntil(item.deadline);
+            const imminent = !item.done && hours <= 24;
+            const TypeIcon = item.type === 'video' ? Video : FileText;
+            return (
+              <li
+                key={`${item.type}-${item.id}`}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 12,
+                  padding: '10px 12px',
+                  background: 'white',
+                  border: `1px solid ${imminent ? '#FCA5A5' : 'var(--color-border)'}`,
+                  borderRadius: 'var(--radius-md)',
+                  transition: 'border-color 150ms',
+                }}
+              >
+                <div style={{
+                  width: 36, height: 36, borderRadius: 'var(--radius-md)',
+                  background: item.type === 'video' ? '#EBF5FB' : '#FEF6E7',
+                  color: item.type === 'video' ? '#1B4F72' : '#B45309',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  flexShrink: 0,
+                }}>
+                  <TypeIcon size={18} />
+                </div>
+
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontWeight: 600, fontSize: 'var(--font-size-sm)', color: 'var(--color-text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {item.titre || (item.type === 'video' ? 'Vidéo' : 'QCM')}
+                  </div>
+                  <div style={{
+                    fontSize: 11, color: 'var(--color-text-secondary)',
+                    display: 'flex', alignItems: 'center', gap: 6, marginTop: 2,
+                    flexWrap: 'wrap',
+                  }}>
+                    {item.cours && <span>{item.cours} ·</span>}
+                    <Clock size={11} style={{ display: 'inline-block' }} />
+                    <span>{fmtDeadline(item.deadline)}</span>
+                  </div>
+                </div>
+
+                {/* Badge statut */}
+                {item.done ? (
+                  <span style={{
+                    display: 'inline-flex', alignItems: 'center', gap: 4,
+                    padding: '3px 10px', borderRadius: 999,
+                    background: '#F0FDF4', color: '#16A34A',
+                    fontSize: 11, fontWeight: 700,
+                  }}>
+                    <CheckCircle size={11} /> Fait
+                  </span>
+                ) : (
+                  <span
+                    className={imminent ? 'pulse-urgent' : undefined}
+                    style={{
+                      display: 'inline-flex', alignItems: 'center', gap: 4,
+                      padding: '3px 10px', borderRadius: 999,
+                      background: imminent ? '#FEE2E2' : '#FEF3C7',
+                      color: imminent ? '#DC2626' : '#92400E',
+                      fontSize: 11, fontWeight: 700,
+                    }}
+                  >
+                    <AlertCircle size={11} /> À faire
+                  </span>
+                )}
+
+                <button
+                  onClick={() => navigate(item.link)}
+                  style={{
+                    padding: '6px 12px', borderRadius: 'var(--radius-md)',
+                    background: 'var(--color-primary)', color: 'white',
+                    border: 'none', cursor: 'pointer',
+                    fontSize: 12, fontWeight: 600,
+                    display: 'inline-flex', alignItems: 'center', gap: 4,
+                    flexShrink: 0,
+                  }}
+                >
+                  Voir <ChevronRight size={12} />
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+
+      {/* Animation pulse pour les deadlines imminentes (< 24h) */}
+      <style>{`
+        @keyframes pulse-urgent-anim {
+          0%, 100% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.5); }
+          50%      { box-shadow: 0 0 0 6px rgba(220, 38, 38, 0); }
+        }
+        .pulse-urgent { animation: pulse-urgent-anim 1.6s ease-in-out infinite; }
+      `}</style>
+    </div>
+  );
+}
+
 export default function Dashboard() {
   const { user, refreshMe } = useAuth();
   const navigate       = useNavigate();
@@ -47,6 +205,8 @@ export default function Dashboard() {
   const [courses,    setCourses]    = useState([]);
   const [progresses, setProgresses] = useState([]);
   const [loading,    setLoading]    = useState(true);
+  const [upcoming,   setUpcoming]   = useState([]);
+  const [upcomingLoading, setUpcomingLoading] = useState(true);
 
   useEffect(() => {
     Promise.all([
@@ -60,6 +220,19 @@ export default function Dashboard() {
       .catch(console.error)
       .finally(() => setLoading(false));
   }, []);
+
+  // Section "Cette semaine" : deadlines J+0 à J+7. Réservé aux étudiants
+  // (l'endpoint backend renvoie 403 sinon — fail silently côté UI).
+  useEffect(() => {
+    if (user?.role && user.role !== 'etudiant') {
+      setUpcomingLoading(false);
+      return;
+    }
+    api.get('/progress/upcoming')
+      .then(r => setUpcoming(Array.isArray(r.data) ? r.data : []))
+      .catch(() => setUpcoming([]))
+      .finally(() => setUpcomingLoading(false));
+  }, [user?.role]);
 
   /* ── Computed stats ────────────────────────────────────────────────── */
   const completedVideos = progresses.reduce((s, p) => s + (p.videosCompleted?.length ?? 0), 0);
@@ -176,6 +349,11 @@ export default function Dashboard() {
           </div>
         )}
       </div>
+
+      {/* ── Cette semaine — deadlines J+0 à J+7 ─────────────────────── */}
+      {user?.role === 'etudiant' && (
+        <UpcomingDeadlines items={upcoming} loading={upcomingLoading} />
+      )}
 
       {/* ── Quick actions ─────────────────────────────────────────── */}
       <div>
