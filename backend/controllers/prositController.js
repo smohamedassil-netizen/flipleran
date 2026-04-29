@@ -1,8 +1,15 @@
 import mongoose from 'mongoose';
+import Groq from 'groq-sdk';
 import Prosit, { PROSIT_ROLES } from '../models/Prosit.js';
 import User from '../models/User.js';
 import Course from '../models/Course.js';
 import { pushNotification } from '../services/notificationService.js';
+
+let groq;
+function getGroq() {
+  if (!groq) groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+  return groq;
+}
 
 /**
  * Helper : envoie une notification temps réel (Socket.io + DB) à tous les
@@ -173,16 +180,20 @@ export async function createProsit(req, res) {
       groupesConfig, ressources = [], grilleEvaluation = [],
     } = req.body;
 
-    if (!titre || !enonce || !courseId || !filiere || !promotion || !dateAller || !dateRetour) {
+    if (!titre || !enonce || !filiere || !promotion || !dateAller || !dateRetour) {
       return res.status(400).json({ message: 'Champs obligatoires manquants' });
     }
 
-    const course = await Course.findById(courseId);
-    if (!course) return res.status(404).json({ message: 'Cours introuvable' });
+    // courseId optionnel : si fourni, on vérifie son existence ; sinon null.
+    if (courseId) {
+      const course = await Course.findById(courseId);
+      if (!course) return res.status(404).json({ message: 'Cours introuvable' });
+    }
 
     const prosit = await Prosit.create({
       titre, description, enonce, motsCles, objectifsApprentissage,
-      courseId, filiere, promotion, caseEntreprise,
+      courseId: courseId || null,
+      filiere, promotion, caseEntreprise,
       dateAller, dateRetour,
       dureeRechercheJours: dureeRechercheJours || 7,
       createdBy: req.user.id,
@@ -681,6 +692,98 @@ export async function evaluateGroupe(req, res) {
 /* ─────────────────────────────────────────────────────────────────────────
    PROFIL ÉTUDIANT — Rotation des rôles
 ───────────────────────────────────────────────────────────────────────── */
+
+/* ─────────────────────────────────────────────────────────────────────────
+   AIDE IA — POST /api/prosits/:id/ai-help
+   Tuteur Groq adapté au contexte Prosit (phase courante, cas entreprise,
+   mots-clés, cours associé). Pas de quota appliqué (parité avec
+   projectController.getAiHelp).
+───────────────────────────────────────────────────────────────────────── */
+
+const PHASE_GUIDANCE = {
+  brouillon: 'Le Prosit est encore en brouillon — aide-moi à comprendre la situation à venir.',
+  aller:     'Phase Aller : aide-moi à reformuler la problématique, identifier des hypothèses pertinentes et un plan d\'action.',
+  recherche: 'Phase Recherche : aide-moi à structurer mon travail individuel, identifier des sources fiables et orienter mes investigations.',
+  retour:    'Phase Retour : aide-moi à structurer la solution finale, anticiper les questions du jury et préparer la restitution.',
+  evalue:    'Phase Évaluée : aide-moi à analyser ce qui a été bien fait et les points d\'amélioration.',
+  archive:   'Le Prosit est archivé — tu peux donner un retour rétrospectif.',
+};
+
+export async function getAiHelp(req, res) {
+  try {
+    const prosit = await Prosit.findById(req.params.id)
+      .populate('createdBy', 'filiere promotion')
+      .populate('courseId', 'titre description');
+
+    if (!prosit) return res.status(404).json({ message: 'Prosit introuvable.' });
+
+    const phaseGuidance = PHASE_GUIDANCE[prosit.status] || PHASE_GUIDANCE.aller;
+    const courseContext = prosit.courseId
+      ? `Le Prosit est ancré dans le cours « ${prosit.courseId.titre} »${prosit.courseId.description ? ` (${prosit.courseId.description})` : ''}. `
+      : 'Le Prosit n\'est rattaché à aucun cours spécifique (transverse). ';
+
+    const motsCles = (prosit.motsCles ?? []).filter(Boolean).join(', ') || 'aucun mot-clé défini';
+    const objectifs = (prosit.objectifsApprentissage ?? []).filter(Boolean).join(' ; ') || 'objectifs non précisés';
+    const caseEntreprise = prosit.caseEntreprise?.trim() || 'aucun cas spécifique';
+
+    // Mots-clés identifiés par le groupe de l'étudiant en phase Aller, si applicable
+    let groupKeywords = '';
+    if (req.user.role === 'etudiant') {
+      const target = req.user.id.toString();
+      const myGroup = (prosit.groupes ?? []).find(g =>
+        (g.membres ?? []).some(m => {
+          const u = m?.userId;
+          if (!u) return false;
+          return (u._id ? u._id.toString() : u.toString()) === target;
+        })
+      );
+      if (myGroup) {
+        const gk = (myGroup.motsClesIdentifies ?? []).filter(Boolean).join(', ');
+        if (gk) groupKeywords = `\nMots-clés identifiés par mon groupe en phase Aller : ${gk}.`;
+      }
+    }
+
+    const systemPrompt = `Tu es un tuteur pédagogique expert en méthodologie APP/CESI (Apprentissage Par Problème) pour une université algérienne.
+Tu accompagnes des étudiants en ${prosit.filiere} niveau ${prosit.promotion}.
+Tu réponds TOUJOURS en français.
+Tes conseils sont adaptés au contexte algérien et à la phase courante du Prosit.
+Tu privilégies des ressources gratuites accessibles depuis l'Algérie.`;
+
+    const userPrompt = `Contexte du Prosit :
+Titre : ${prosit.titre}
+Énoncé : ${prosit.enonce}
+${courseContext}
+Cas d'entreprise : ${caseEntreprise}
+Mots-clés du Prosit : ${motsCles}
+Objectifs d'apprentissage : ${objectifs}
+Phase actuelle : ${prosit.status}.${groupKeywords}
+
+${phaseGuidance}
+
+Donne :
+1. 3 ressources en ligne gratuites adaptées à cette phase (tutoriels, docs, articles)
+2. 2 conseils méthodologiques spécifiques à la phase ${prosit.status}
+3. 1 piste de réflexion ou cas concret pertinent en Algérie ou région MENA
+
+Formate ta réponse avec des sections claires.`;
+
+    const completion = await getGroq().chat.completions.create({
+      model: 'llama-3.3-70b-versatile',
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userPrompt },
+      ],
+      temperature: 0.6,
+      max_tokens: 1200,
+    });
+
+    const response = completion.choices?.[0]?.message?.content || 'Aucune suggestion disponible.';
+    res.json({ suggestions: response, phase: prosit.status });
+  } catch (err) {
+    console.error('[prosit] getAiHelp error:', err.message);
+    res.status(500).json({ message: 'Erreur lors de la génération de suggestions IA.' });
+  }
+}
 
 export async function getMyRolesProgress(req, res) {
   try {

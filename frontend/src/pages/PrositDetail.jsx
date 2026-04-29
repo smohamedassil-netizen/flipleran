@@ -212,7 +212,27 @@ export default function PrositDetail() {
             </div>
             <div style={{ fontSize: 13, color: '#1E293B', lineHeight: 1.6 }}>
               <strong>{prosit.filiere} {prosit.promotion}</strong>
-              {prosit.courseId && (typeof prosit.courseId === 'object' ? <><br/>{prosit.courseId.titre}</> : null)}
+              {prosit.courseId && typeof prosit.courseId === 'object' ? (
+                <>
+                  <br/>
+                  <span style={{ fontSize: 11, color: '#64748B' }}>
+                    Lié au cours :
+                  </span>{' '}
+                  <button
+                    type="button"
+                    onClick={() => navigate(`/courses/${prosit.courseId._id}`)}
+                    style={{
+                      background: 'none', border: 'none', padding: 0,
+                      color: '#1B4F72', fontSize: 13, fontWeight: 600,
+                      cursor: 'pointer', textDecoration: 'underline',
+                    }}
+                  >
+                    📚 {prosit.courseId.titre} →
+                  </button>
+                </>
+              ) : (
+                <><br/><span style={{ fontSize: 11, color: '#94A3B8', fontStyle: 'italic' }}>Prosit autonome (non rattaché)</span></>
+              )}
             </div>
           </div>
           <div style={{ background: 'white', borderRadius: 12, padding: 14, border: '1px solid #E5E7EB' }}>

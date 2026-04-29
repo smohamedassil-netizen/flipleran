@@ -82,7 +82,9 @@ const prositSchema = new mongoose.Schema({
   objectifsApprentissage: [String],
 
   // Contexte pédagogique
-  courseId:       { type: mongoose.Schema.Types.ObjectId, ref: 'Course', required: true },
+  // courseId rendu optionnel : un Prosit peut être autonome (transverse,
+  // workshop hors module) ou rattaché à un cours pour ancrage pédagogique.
+  courseId:       { type: mongoose.Schema.Types.ObjectId, ref: 'Course', default: null },
   filiere:        { type: String, enum: ['ISIL', 'Management', 'Finance'], required: true },
   promotion:      { type: String, enum: ['L1', 'L2', 'L3'], required: true },
   caseEntreprise: { type: String, default: '' },

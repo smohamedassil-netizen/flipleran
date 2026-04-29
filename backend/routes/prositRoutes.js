@@ -8,6 +8,7 @@ import {
   updateGroupeWorkspace, postContribution,
   transitionPhase, evaluateGroupe,
   getMyRolesProgress,
+  getAiHelp,
 } from '../controllers/prositController.js';
 
 const router = express.Router();
@@ -37,5 +38,8 @@ router.post('/:id/groupes/:gIdx/contribution',  requireRole('etudiant'), postCon
 /* ─── Transitions de phase (prof) ─── */
 router.post('/:id/transition',         requireRole('professeur', 'admin'), transitionPhase);
 router.put('/:id/groupes/:gIdx/evaluation', requireRole('professeur', 'admin'), evaluateGroupe);
+
+/* ─── Aide IA Prosit (prof + étudiant) ─── */
+router.post('/:id/ai-help', getAiHelp);
 
 export default router;

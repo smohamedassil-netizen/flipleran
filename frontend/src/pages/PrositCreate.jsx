@@ -69,8 +69,8 @@ export default function PrositCreate() {
     e?.preventDefault?.();
     setError('');
 
-    if (!titre.trim() || !enonce.trim() || !courseId || !dateAller || !dateRetour) {
-      setError('Champs obligatoires manquants : titre, énoncé, cours, dates Aller et Retour.');
+    if (!titre.trim() || !enonce.trim() || !dateAller || !dateRetour) {
+      setError('Champs obligatoires manquants : titre, énoncé, dates Aller et Retour.');
       return;
     }
     if (new Date(dateAller) >= new Date(dateRetour)) {
@@ -93,7 +93,8 @@ export default function PrositCreate() {
       motsCles: motsClesText.split(',').map(s => s.trim()).filter(Boolean),
       objectifsApprentissage: objectifsText.split('\n').map(s => s.trim()).filter(Boolean),
       caseEntreprise: caseEntreprise.trim(),
-      courseId, filiere, promotion,
+      courseId: courseId || null,
+      filiere, promotion,
       dateAller, dateRetour,
       dureeRechercheJours: Number(dureeRecherche),
       groupesConfig: {
@@ -171,9 +172,9 @@ export default function PrositCreate() {
           </h2>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12 }}>
             <div>
-              <label htmlFor="course" style={labelStyle}>Cours *</label>
-              <select id="course" value={courseId} onChange={(e) => setCourseId(e.target.value)} required style={inputStyle}>
-                <option value="">— Choisir un cours —</option>
+              <label htmlFor="course" style={labelStyle}>Cours associé (optionnel)</label>
+              <select id="course" value={courseId} onChange={(e) => setCourseId(e.target.value)} style={inputStyle}>
+                <option value="">— Aucun (Prosit autonome) —</option>
                 {courses.map(c => <option key={c._id} value={c._id}>{c.titre}</option>)}
               </select>
             </div>
