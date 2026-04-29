@@ -3,8 +3,19 @@ import User from '../models/User.js';
 import { pushNotification } from '../services/notificationService.js';
 
 /* ─── helpers ─────────────────────────────────────────────────────────────── */
-const generateToken = (payload) =>
-  jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '30d' });
+const generateAccessToken = (payload) =>
+  jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '24h' });
+
+const generateRefreshToken = (payload) =>
+  jwt.sign(payload, process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET + '_refresh', { expiresIn: '7d' });
+
+const REFRESH_COOKIE_OPTIONS = {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === 'production',
+  sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
+  path: '/api/auth/refresh',
+  maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+};
 
 const sanitize = (user) => ({
   _id:       user._id,
@@ -109,8 +120,11 @@ export const login = async (req, res) => {
     }
 
     const data = sanitize(user);
-    const token = generateToken({ id: user._id, role: user.role });
+    const tokenPayload = { id: user._id, role: user.role };
+    const token = generateAccessToken(tokenPayload);
+    const refreshToken = generateRefreshToken(tokenPayload);
 
+    res.cookie('refreshToken', refreshToken, REFRESH_COOKIE_OPTIONS);
     res.json({ ...data, token });
   } catch (err) {
     res.status(500).json({ message: err.message });

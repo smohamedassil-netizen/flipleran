@@ -2,6 +2,11 @@ import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import jwt from 'jsonwebtoken';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
+import mongoSanitize from 'express-mongo-sanitize';
+import hpp from 'hpp';
+import cookieParser from 'cookie-parser';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
 import path from 'path';
@@ -106,10 +111,50 @@ if (process.env.NODE_ENV !== 'test') {
   });
 }
 
-// Middleware
-app.use(cors({ origin: allowedOrigins }));
-app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+// ── Security middleware ──────────────────────────────────────────────────
+app.use(helmet({ contentSecurityPolicy: false }));
+app.use(mongoSanitize());
+app.use(hpp());
+app.use(cookieParser());
+app.use(cors({
+  origin: allowedOrigins,
+  credentials: true,               // needed for httpOnly refresh cookie
+}));
+app.use(express.json({ limit: '1mb' }));
+app.use(express.urlencoded({ extended: true, limit: '1mb' }));
+
+// ── Rate limiters ───────────────────────────────────────────────────────
+const globalLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,        // 15 min
+  max: 300,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { message: 'Trop de requêtes, réessayez dans 15 minutes.' },
+});
+app.use('/api', globalLimiter);
+
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  skipSuccessfulRequests: false,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { message: 'Trop de tentatives, réessayez dans 15 minutes.' },
+});
+app.use('/api/auth/login', authLimiter);
+app.use('/api/auth/register', authLimiter);
+
+const aiLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,        // 1 hour
+  max: 30,
+  keyGenerator: (req) => req.user?.id || 'anon',
+  validate: { xForwardedForHeader: false },
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { message: 'Limite IA atteinte (30/h), réessayez plus tard.' },
+});
+app.use('/api/chatbot', aiLimiter);
+app.use('/api/qcm/generate-ai', aiLimiter);
 
 // Sert les vidéos locales déposées par le prof dans backend/public/videos/
 // URL : http://.../videos/<filename>.mp4

@@ -6,12 +6,18 @@ import {
 } from '../controllers/authController.js';
 import authMiddleware from '../middleware/authMiddleware.js';
 import requireRole from '../middleware/roleMiddleware.js';
+import refreshHandler from '../middleware/refreshToken.js';
 
 const router = express.Router();
 const avatarUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024 } });
 
 router.post('/register',      register);
 router.post('/login',         login);
+router.post('/refresh',       refreshHandler);
+router.post('/logout', (_req, res) => {
+  res.clearCookie('refreshToken', { path: '/api/auth/refresh' });
+  res.json({ message: 'Déconnecté.' });
+});
 router.get('/status',         checkStatus);                    // public : ?email=...
 router.get('/me',             authMiddleware, getMe);
 router.put('/profile',        authMiddleware, updateProfile);
