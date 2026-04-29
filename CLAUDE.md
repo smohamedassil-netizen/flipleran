@@ -110,9 +110,11 @@ All UI text is in French. User-facing strings use proper French accents. In JSX 
 
 ## Recent Changes (Module PBL)
 
-- `backend/models/Project.js` — Modèle projet avec groupes, rôles CESI, phases, livrables, évaluations
+- `backend/models/Project.js` — Modèle projet avec types `mono` / `groupe`, rôles CESI, phases, livrables, évaluations
 - `backend/controllers/projectController.js` — 12 endpoints (CRUD, groupes aléatoires, upload livrables, évaluations, aide IA Groq)
 - `backend/routes/projectRoutes.js` — Routes protégées par auth + role middleware
-- `frontend/src/pages/ProjectList.jsx` — Liste des projets avec filtres Prosits/Projets
+- `frontend/src/pages/ProjectList.jsx` — Liste des projets, encart pédagogique sobre (l'ancienne dichotomie Prosits/Projets a été fusionnée en mono/groupe le 28/04/2026)
 - `frontend/src/pages/ProjectDetail.jsx` — Détail projet avec timeline, groupes, badges rôles style Loup-Garou, livrables, auto-évaluation, aide IA
-- `frontend/src/pages/ProjectCreate.jsx` — Formulaire création Prosit/Projet avec phases pré-remplies
+- `frontend/src/pages/ProjectCreate.jsx` — Formulaire création projet mono/groupé avec phases pré-remplies
+
+Note : un module **Prosit** dédié (méthodologie APP/CESI : phases Aller / Recherche / Retour, rôles spécifiques) sera réintroduit séparément du module Project actuel — voir le brief `_briefs/02_SPECS_PROSIT.md` à la racine du projet PFE.

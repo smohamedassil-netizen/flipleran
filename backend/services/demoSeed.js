@@ -2,8 +2,10 @@
  * demoSeed.js — Remplit la DB avec du contenu réel pour démo PFE :
  *   - 9 QCMs (1 par cours-clé) avec questions pédagogiques en dur
  *   - 18 ressources externes (PDFs, liens officiels)
- *   - 6 prosits complets avec énoncés, mots-clés, phases et checklist
- *   - 4 projets (3 mono-filière + 1 collaboratif multi-modules)
+ *   - 6 projets mono-module avec énoncés, mots-clés, phases et checklist
+ *     (structure inspirée de la méthodologie Prosit — sera migrée vers le
+ *      module Prosit dédié quand celui-ci sera réintroduit)
+ *   - 4 projets multi-modules (3 mono-filière + 1 collaboratif multi-modules)
  *
  * Idempotent : ne duplique pas (matche par titre / relationship).
  * Appelé une fois au boot après contentSeed.
@@ -421,9 +423,13 @@ const RESOURCE_DEFS = [
 ];
 
 /* ═══════════════════════════════════════════════════════════════════════
-   PROSITS — énoncé + mots-clés + phases + checklist + idées
+   PROJETS PÉDAGOGIQUES MONO-MODULE
+   Note : ces définitions ont la structure d'un Prosit (méthodologie APP/CESI)
+   mais sont seedées comme projets mono-module — `type: 'mono'`. Elles seront
+   migrées vers le module Prosit dédié quand celui-ci sera réintroduit comme
+   module séparé.
 ═══════════════════════════════════════════════════════════════════════ */
-const PROSIT_DEFS = [
+const MONO_PROJECT_DEFS = [
   // ISIL
   {
     filiere: 'ISIL', promotion: 'L3',
@@ -853,7 +859,7 @@ export async function seedDemoData() {
 
   let qcmsCreated = 0;
   let resourcesCreated = 0;
-  let prositsCreated = 0;
+  let monoProjectsCreated = 0;
   let projectsCreated = 0;
 
   // ── QCMs ────────────────────────────────────────────────────────────
@@ -899,14 +905,13 @@ export async function seedDemoData() {
     }
   }
 
-  // ── Prosits ─────────────────────────────────────────────────────────
-  for (const def of PROSIT_DEFS) {
+  // ── Projets mono-module ─────────────────────────────────────────────
+  for (const def of MONO_PROJECT_DEFS) {
     const existing = await Project.findOne({ titre: def.titre });
     if (existing) continue;
 
     const course = def.courseTitre ? await Course.findOne({ titre: def.courseTitre, filiere: def.filiere }) : null;
 
-    // Les anciens prosits deviennent des projets mono-module rattachés à un seul cours
     await Project.create({
       type: 'mono',
       titre: def.titre,
@@ -923,7 +928,7 @@ export async function seedDemoData() {
       })),
       ideas: def.ideas.map(i => ({ ...i, addedBy: prof._id })),
     });
-    prositsCreated++;
+    monoProjectsCreated++;
   }
 
   // ── Projets ─────────────────────────────────────────────────────────
@@ -968,6 +973,6 @@ export async function seedDemoData() {
     projectsCreated++;
   }
 
-  console.log(`[demoSeed] ${qcmsCreated} QCMs, ${resourcesCreated} ressources, ${prositsCreated} prosits, ${projectsCreated} projets créés.`);
-  return { qcmsCreated, resourcesCreated, prositsCreated, projectsCreated };
+  console.log(`[demoSeed] ${qcmsCreated} QCMs, ${resourcesCreated} ressources, ${monoProjectsCreated} projets mono-module, ${projectsCreated} projets groupés créés.`);
+  return { qcmsCreated, resourcesCreated, monoProjectsCreated, projectsCreated };
 }

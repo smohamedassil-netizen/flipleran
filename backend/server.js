@@ -35,6 +35,7 @@ import notificationRoutes  from './routes/notificationRoutes.js';
 import trackingRoutes      from './routes/trackingRoutes.js';
 import rewardRoutes        from './routes/rewardRoutes.js';
 import feedbackRoutes      from './routes/feedbackRoutes.js';
+import battleRoutes        from './routes/battleRoutes.js';
 import { seedBadges }   from './services/points.js';
 import { seedRewards }  from './services/rewardsSeed.js';
 import { seedDemoContent } from './services/contentSeed.js';
@@ -130,6 +131,7 @@ app.use('/api/notifications', notificationRoutes);
 app.use('/api/tracking',   trackingRoutes);
 app.use('/api/rewards',    rewardRoutes);
 app.use('/api/feedback',   feedbackRoutes);
+app.use('/api/battle',     battleRoutes);
 
 // ── En production : servir le frontend buildé ──────────────────────────────
 if (process.env.NODE_ENV === 'production') {
@@ -395,6 +397,8 @@ io.on('connection', (socket) => {
       currentQ: 0,
       answers: {},
       started: false,
+      // Cours (matière) sélectionné par l'hôte ; null = toutes matières
+      courseId: data.courseId || null,
     });
     socket.join(roomId);
     if (typeof callback === 'function') callback({ roomId });
@@ -451,11 +455,18 @@ io.on('connection', (socket) => {
     if (!room || room.players.length < 2) return;
     room.started = true;
 
-    // Charger des questions aléatoires depuis les QCMs existants
+    // Charger des questions aléatoires depuis les QCMs existants.
+    // Si un courseId est sélectionné, ne tirer que les QCMs des vidéos de ce cours.
     let questions = [];
     try {
       const QCM = (await import('./models/QCM.js')).default;
-      const qcms = await QCM.find({}).select('questions').limit(20);
+      let qcmQuery = {};
+      if (room.courseId) {
+        const Video = (await import('./models/Video.js')).default;
+        const videoIds = await Video.find({ courseId: room.courseId }).select('_id');
+        qcmQuery = { videoId: { $in: videoIds.map(v => v._id) } };
+      }
+      const qcms = await QCM.find(qcmQuery).select('questions').limit(20);
       const allQuestions = qcms.flatMap(q => q.questions || []);
       // Mélanger et prendre 5
       questions = allQuestions.sort(() => Math.random() - 0.5).slice(0, 5).map(q => ({
@@ -545,6 +556,35 @@ io.on('connection', (socket) => {
           totalQuestions: room.questions.length,
           correctAnswer: room.questions[questionIndex].correctAnswer,
         });
+
+        // Persister les résultats pour le classement interne du Quiz Battle.
+        // ⚠️ Conformément au brief 01 (cadre éducatif) : aucune XP ajoutée à User.points.
+        // Le classement BattleResult est entièrement séparé de l'XP global.
+        try {
+          const BattleResult = (await import('./models/BattleResult.js')).default;
+          const [p1, p2] = room.players;
+          if (p1 && p2 && p1.odgerId && p2.odgerId) {
+            const draw = p1.score === p2.score;
+            const p1Outcome = draw ? 'draw' : (p1.score > p2.score ? 'win' : 'loss');
+            const p2Outcome = draw ? 'draw' : (p2.score > p1.score ? 'win' : 'loss');
+            const total = room.questions.length;
+            await BattleResult.insertMany([
+              {
+                userId: p1.odgerId, opponentId: p2.odgerId, courseId: room.courseId,
+                score: p1.score, correctCount: p1.correctCount || 0, totalQuestions: total,
+                bestStreak: p1.bestStreak || 0, outcome: p1Outcome,
+              },
+              {
+                userId: p2.odgerId, opponentId: p1.odgerId, courseId: room.courseId,
+                score: p2.score, correctCount: p2.correctCount || 0, totalQuestions: total,
+                bestStreak: p2.bestStreak || 0, outcome: p2Outcome,
+              },
+            ]);
+          }
+        } catch (err) {
+          console.error('[battle] persist results error:', err.message);
+        }
+
         setTimeout(() => battleRooms.delete(roomId), 5000);
       } else {
         io.to(roomId).emit('battle:next', {

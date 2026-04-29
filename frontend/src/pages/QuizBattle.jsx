@@ -5,7 +5,7 @@ import { io } from 'socket.io-client';
 import {
   ArrowLeft, Swords, Users, Clock, Trophy, Plus, RefreshCw, Zap, CheckCircle,
   XCircle, Flame, Snowflake, Sparkles, Target, Award, Crown, Clock3, BookOpen,
-  ChevronDown,
+  ChevronDown, BarChart3, Medal,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext.jsx';
 import api from '../utils/api.js';
@@ -63,6 +63,42 @@ export default function QuizBattle() {
 
   // Panneau de regles repliable (lobby)
   const [rulesOpen, setRulesOpen] = useState(false);
+
+  // Onglet du lobby : 'play' (jouer) ou 'ranking' (classement interne du Battle)
+  const [lobbyTab, setLobbyTab] = useState('play');
+
+  // Configuration avant de creer une salle (matiere / cours)
+  const [showConfigModal, setShowConfigModal] = useState(false);
+  const [courses, setCourses] = useState([]);
+  const [selectedCourseId, setSelectedCourseId] = useState(''); // '' = toutes matieres
+
+  // Classement interne (separé de l'XP global FlipLearn)
+  const [leaderboard, setLeaderboard] = useState([]);
+  const [leaderboardLoading, setLeaderboardLoading] = useState(false);
+  const [myBattleStats, setMyBattleStats] = useState(null);
+
+  // Charger la liste des cours pour le selecteur de matiere
+  useEffect(() => {
+    api.get('/courses')
+      .then(({ data }) => setCourses(Array.isArray(data) ? data : []))
+      .catch(() => setCourses([]));
+  }, []);
+
+  // Charger le classement (et ses stats personnelles) a l'entree de l'onglet
+  useEffect(() => {
+    if (lobbyTab !== 'ranking' || phase !== 'lobby') return;
+    setLeaderboardLoading(true);
+    Promise.all([
+      api.get('/battle/leaderboard?limit=10'),
+      api.get('/battle/mine'),
+    ])
+      .then(([{ data: lb }, { data: mine }]) => {
+        setLeaderboard(Array.isArray(lb) ? lb : []);
+        setMyBattleStats(mine || null);
+      })
+      .catch(() => { setLeaderboard([]); setMyBattleStats(null); })
+      .finally(() => setLeaderboardLoading(false));
+  }, [lobbyTab, phase]);
   useEffect(() => {
     api.get('/progress').then(({ data }) => {
       const arr = Array.isArray(data) ? data : [];
@@ -168,6 +204,14 @@ export default function QuizBattle() {
       setError('Tu dois avoir complété au moins 1 vidéo à 80% pour participer.');
       return;
     }
+    // Ouvre la modale de configuration (choix de matiere) avant de creer la salle.
+    // Le check socket est differe a confirmCreateRoom (l'utilisateur peut configurer
+    // pendant que le socket finit de se connecter).
+    setError('');
+    setShowConfigModal(true);
+  };
+
+  const confirmCreateRoom = () => {
     if (!socketRef.current?.connected) {
       setError('Connexion au serveur en cours… Réessayez.');
       return;
@@ -175,8 +219,10 @@ export default function QuizBattle() {
     socketRef.current.emit('battle:create', {
       name: `${user?.prenom ?? ''} ${user?.nom ?? ''}`.trim(),
       userId: user?._id,
+      courseId: selectedCourseId || null,
     }, (res) => {
       if (!res || !res.roomId) { setError('Impossible de créer la salle.'); return; }
+      setShowConfigModal(false);
       setRoomId(res.roomId);
       setIsHost(true);
       setPhase('waiting');
@@ -283,13 +329,131 @@ export default function QuizBattle() {
         {/* LOBBY */}
         {phase === 'lobby' && (
           <div>
-            <div style={{ textAlign: 'center', marginBottom: 28 }}>
+            <div style={{ textAlign: 'center', marginBottom: 20 }}>
               <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 76, height: 76, borderRadius: '50%', background: 'linear-gradient(135deg, #1B4F72, #2874A6)', marginBottom: 12, boxShadow: '0 8px 24px rgba(27,79,114,.25)' }}>
                 <Swords size={38} color="white" />
               </div>
               <h1 style={{ fontSize: '1.75rem', fontWeight: 800, color: '#1B4F72', margin: 0, letterSpacing: '-0.02em' }}>Quiz Battle</h1>
               <p style={{ color: '#64748b', marginTop: 6 }}>Défie un autre étudiant en duel temps réel avec power-ups et combos</p>
             </div>
+
+            {/* Onglets : Jouer / Classement */}
+            <div role="tablist" aria-label="Sections du Quiz Battle" style={{
+              display: 'flex', gap: 6, marginBottom: 20,
+              borderBottom: '2px solid #E5E7EB',
+            }}>
+              <button
+                role="tab"
+                aria-selected={lobbyTab === 'play'}
+                onClick={() => setLobbyTab('play')}
+                style={{
+                  padding: '10px 16px', background: 'none', border: 'none',
+                  borderBottom: lobbyTab === 'play' ? '3px solid #1B4F72' : '3px solid transparent',
+                  marginBottom: -2, cursor: 'pointer', fontSize: 14,
+                  fontWeight: lobbyTab === 'play' ? 700 : 500,
+                  color: lobbyTab === 'play' ? '#1B4F72' : '#64748B',
+                  display: 'inline-flex', alignItems: 'center', gap: 6,
+                }}
+              >
+                <Swords size={14} /> Jouer
+              </button>
+              <button
+                role="tab"
+                aria-selected={lobbyTab === 'ranking'}
+                onClick={() => setLobbyTab('ranking')}
+                style={{
+                  padding: '10px 16px', background: 'none', border: 'none',
+                  borderBottom: lobbyTab === 'ranking' ? '3px solid #1B4F72' : '3px solid transparent',
+                  marginBottom: -2, cursor: 'pointer', fontSize: 14,
+                  fontWeight: lobbyTab === 'ranking' ? 700 : 500,
+                  color: lobbyTab === 'ranking' ? '#1B4F72' : '#64748B',
+                  display: 'inline-flex', alignItems: 'center', gap: 6,
+                }}
+              >
+                <BarChart3 size={14} /> Classement
+              </button>
+            </div>
+
+            {lobbyTab === 'ranking' && (
+              <div>
+                <p style={{ fontSize: 12, color: '#64748B', margin: '0 0 12px', lineHeight: 1.5 }}>
+                  Classement <strong>interne au Quiz Battle</strong> — séparé de l'XP global FlipLearn.
+                  Aucune XP n'est attribuée pour gagner un Battle : la motivation se fait par le classement et les badges.
+                </p>
+
+                {myBattleStats && myBattleStats.matches > 0 && (
+                  <div style={{
+                    padding: 14, marginBottom: 14,
+                    background: 'linear-gradient(135deg, #1B4F72, #2874A6)',
+                    color: 'white', borderRadius: 12,
+                    display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(80px, 1fr))', gap: 10,
+                  }}>
+                    {[
+                      { label: 'Matches', value: myBattleStats.matches },
+                      { label: 'Victoires', value: myBattleStats.wins },
+                      { label: 'Défaites', value: myBattleStats.losses },
+                      { label: 'Meilleur streak', value: myBattleStats.bestPersonalStreak },
+                    ].map(s => (
+                      <div key={s.label} style={{ textAlign: 'center' }}>
+                        <div style={{ fontSize: 20, fontWeight: 800 }}>{s.value}</div>
+                        <div style={{ fontSize: 10, opacity: .85, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.4 }}>{s.label}</div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {leaderboardLoading ? (
+                  <p style={{ color: '#94A3B8', textAlign: 'center', padding: 30 }}>Chargement du classement…</p>
+                ) : leaderboard.length === 0 ? (
+                  <div style={{ padding: 40, textAlign: 'center', color: '#94A3B8', background: 'white', borderRadius: 12, border: '1px dashed #CBD5E1' }}>
+                    <Medal size={28} style={{ opacity: 0.4, marginBottom: 8 }} />
+                    <p>Aucun match terminé pour l'instant. Lancez le premier !</p>
+                  </div>
+                ) : (
+                  <ol style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    {leaderboard.map((p) => (
+                      <li
+                        key={p.userId}
+                        style={{
+                          display: 'flex', alignItems: 'center', gap: 12,
+                          padding: '10px 14px', background: 'white',
+                          borderRadius: 10, border: '1px solid #E5E7EB',
+                        }}
+                      >
+                        <div style={{
+                          width: 32, height: 32, borderRadius: '50%',
+                          background: p.rank === 1 ? '#F59E0B' : p.rank === 2 ? '#94A3B8' : p.rank === 3 ? '#B45309' : '#E5E7EB',
+                          color: p.rank <= 3 ? 'white' : '#475569',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          fontSize: 13, fontWeight: 800, flexShrink: 0,
+                        }}>
+                          {p.rank}
+                        </div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontSize: 14, fontWeight: 700, color: '#1E293B' }}>
+                            {p.prenom} {p.nom}
+                          </div>
+                          <div style={{ fontSize: 11, color: '#94A3B8' }}>
+                            {p.matches} match{p.matches > 1 ? 'es' : ''} · streak max {p.bestStreak}
+                          </div>
+                        </div>
+                        <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                          <div style={{ fontSize: 13, fontWeight: 700, color: '#0EA5E9' }}>
+                            {p.wins} V
+                          </div>
+                          <div style={{ fontSize: 10, color: '#94A3B8', fontWeight: 600 }}>
+                            {p.totalScore} pts cumul.
+                          </div>
+                        </div>
+                      </li>
+                    ))}
+                  </ol>
+                )}
+              </div>
+            )}
+
+            {lobbyTab === 'play' && (
+              <>
 
             {/* Encart pedagogique : prerequis */}
             {eligible === false && (
@@ -426,6 +590,90 @@ export default function QuizBattle() {
                 ))}
               </div>
             )}
+              </>
+            )}
+          </div>
+        )}
+
+        {/* Modale de configuration avant creation de salle */}
+        {showConfigModal && (
+          <div
+            onClick={() => setShowConfigModal(false)}
+            style={{
+              position: 'fixed', inset: 0,
+              background: 'rgba(0,0,0,.5)', zIndex: 1000,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              padding: 16,
+            }}
+          >
+            <div
+              onClick={(e) => e.stopPropagation()}
+              role="dialog"
+              aria-labelledby="battle-config-title"
+              style={{
+                background: 'white', borderRadius: 14, padding: 24,
+                width: '100%', maxWidth: 460,
+                boxShadow: '0 20px 50px rgba(0,0,0,.2)',
+              }}
+            >
+              <h2 id="battle-config-title" style={{ fontSize: '1.1rem', fontWeight: 700, color: '#1B4F72', margin: '0 0 4px' }}>
+                Configurer ta partie
+              </h2>
+              <p style={{ fontSize: 12, color: '#64748B', margin: '0 0 18px', lineHeight: 1.5 }}>
+                Choisis la matière sur laquelle porteront les questions. Mode actuel : <strong>1 contre 1</strong>.
+              </p>
+
+              <label htmlFor="battle-course" style={{ display: 'block', fontSize: 12, color: '#475569', fontWeight: 600, marginBottom: 6 }}>
+                Matière (cours)
+              </label>
+              <select
+                id="battle-course"
+                value={selectedCourseId}
+                onChange={(e) => setSelectedCourseId(e.target.value)}
+                style={{
+                  width: '100%', padding: 10, marginBottom: 14,
+                  border: '1px solid #E5E7EB', borderRadius: 8,
+                  fontSize: 14, fontFamily: 'inherit',
+                }}
+              >
+                <option value="">Toutes matières (questions mélangées)</option>
+                {courses.map(c => (
+                  <option key={c._id} value={c._id}>
+                    {c.titre}{c.filiere ? ` — ${c.filiere}` : ''}
+                  </option>
+                ))}
+              </select>
+
+              <div style={{ padding: '8px 10px', background: '#FEF3C7', borderRadius: 6, marginBottom: 14, display: 'flex', gap: 6 }}>
+                <span style={{ fontSize: 11, color: '#78350F', lineHeight: 1.5 }}>
+                  ℹ️ Si la matière sélectionnée n'a pas assez de QCMs, des questions de démo prendront le relais.
+                </span>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+                <button
+                  onClick={() => setShowConfigModal(false)}
+                  style={{
+                    padding: '9px 14px', border: '1px solid #E5E7EB', borderRadius: 8,
+                    background: 'white', cursor: 'pointer', fontSize: 13, fontWeight: 600,
+                    color: '#475569',
+                  }}
+                >
+                  Annuler
+                </button>
+                <button
+                  onClick={confirmCreateRoom}
+                  style={{
+                    display: 'inline-flex', alignItems: 'center', gap: 6,
+                    padding: '9px 14px', border: 'none', borderRadius: 8,
+                    background: 'linear-gradient(135deg, #1B4F72, #2874A6)',
+                    color: 'white', cursor: 'pointer', fontSize: 13, fontWeight: 700,
+                  }}
+                >
+                  <Plus size={14} /> Créer la salle
+                </button>
+              </div>
+            </div>
           </div>
         )}
 

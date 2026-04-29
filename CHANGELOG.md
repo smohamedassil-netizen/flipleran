@@ -4,6 +4,36 @@ Historique des modifications par date de session.
 
 ---
 
+## 29 Avril 2026 — soir (audit briefs + Quiz Battle classement interne + sélection matière)
+
+### Audit complet sur briefs `_briefs/00_CONTEXTE_PROJET.md`, `01_SPECS_QUIZ_BATTLE.md`, `02_SPECS_PROSIT.md`
+- Vérifié l'architecture du Quiz Battle (1 page `QuizBattle.jsx` + handlers Socket.io dans `server.js`).
+- Audité le système d'XP : barème actuel = vidéo +5, QCM +80 max (5 questions), projet 0, Battle 0. Le Battle est déjà conforme à la contrainte du brief 01 ("XP minime ou nul").
+- Confirmé l'absence de traces littérales de "Projet Pro" dans le code. L'ancien enum `[prosit, projet]` du model `Project` a été remplacé par `[mono, groupe]` lors du commit `0b1ac51`.
+
+### Cleanup des traces résiduelles
+- `backend/services/demoSeed.js` : renommé `PROSIT_DEFS` → `MONO_PROJECT_DEFS`, `prositsCreated` → `monoProjectsCreated`. Commentaires et logs alignés. La structure des défs (phases Aller/Retour) est conservée car elle reflète la méthodologie APP — elle sera migrée vers le futur module Prosit dédié.
+- `fliplearn/CLAUDE.md` : retiré la mention obsolète "filtres Prosits/Projets" (les filtres ont été supprimés le 28/04). Ajouté une note signalant que le module Prosit dédié sera réintroduit séparément.
+
+### Quiz Battle — classement interne (brief 01 phase 1)
+- **Nouveau modèle `models/BattleResult.js`** : persiste les résultats de chaque match (1 entrée par joueur). Champs : `userId`, `opponentId`, `courseId`, `score`, `correctCount`, `totalQuestions`, `bestStreak`, `outcome` (win/loss/draw), `matchedAt`. Indexes sur `userId+matchedAt` et `courseId`.
+- **`backend/server.js`** : à la fin de chaque match (`battle:finished`), 2 entrées `BattleResult` sont insérées. **⚠️ Conformément au brief 01 (cadre éducatif vs farming) : aucune XP n'est ajoutée à `User.points`.** Le classement Battle est entièrement séparé de l'XP global FlipLearn.
+- **Nouvelle route `GET /api/battle/leaderboard`** ([controllers/battleController.js](fliplearn/backend/controllers/battleController.js)) : agrégation MongoDB avec tri par `wins desc, totalScore desc, bestStreak desc`. Hydratée avec prenom/nom/filière/promotion. Limite 10 par défaut, 50 max.
+- **Nouvelle route `GET /api/battle/mine`** : stats personnelles du joueur (matches, victoires, défaites, meilleur streak, 5 derniers matches).
+
+### Quiz Battle — sélection de matière (brief 01 phase 2)
+- **`backend/server.js`** : `battle:create` accepte un `courseId` optionnel ; `battle:start` filtre les QCMs par `videoId in (vidéos de courseId)`. Si pas de courseId → toutes matières mélangées (comportement précédent). Si pas assez de QCMs sur la matière, fallback sur les questions de démo (comportement existant).
+- **`frontend/src/pages/QuizBattle.jsx`** :
+  - Onglets "Jouer" / "Classement" en tête du lobby.
+  - Onglet Classement : tableau top 10 avec rangs colorés (or/argent/bronze) + bandeau de stats personnelles.
+  - Le bouton "Créer une salle" ouvre maintenant une **modale de configuration** : sélecteur de matière (cours), label "Mode actuel : 1 contre 1" (mode unique pour cette première version), boutons Annuler / Créer la salle.
+  - Disclaimer dans l'onglet Classement : *"Aucune XP n'est attribuée pour gagner un Battle : la motivation se fait par le classement et les badges."*
+
+### Brief 02 — Architecture Prosit proposée (à valider)
+- Document `_briefs/03_PROPOSITION_ARCHITECTURE_PROSIT.md` rédigé : modèle Mongoose dédié `Prosit` (séparé de `Project`), schéma complet (groupes, rôles CESI, 3 phases, contributions individuelles, grille d'évaluation), endpoints REST, pages React, state machine de transitions, badges, plan d'implémentation en 13 étapes (~14h). Aucun code écrit — en attente de validation utilisateur sur 7 points clés (XP par Prosit, mode d'évaluation, taille de groupe, etc.).
+
+---
+
 ## 29 Avril 2026 (cadre juridique récompenses + sobriété UX Quiz Battle)
 
 ### Récompenses (Rewards) — restriction du catalogue actif
