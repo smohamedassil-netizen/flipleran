@@ -1,10 +1,37 @@
 # backend/scripts/
 
-Scripts de maintenance pour FlipLearn.
+Scripts CLI de maintenance et de bootstrap pour FlipLearn. À exécuter
+manuellement, jamais en cron applicatif.
+
+## seed-prod.js
+
+Seeds idempotents essentiels (badges + rewards) à passer une fois après
+le premier déploiement, ou après tout ajout de nouveaux badges/rewards
+dans le code.
+
+```bash
+npm run seed:prod
+```
+
+## migrate.js
+
+Runner de migrations versionnées (`backend/migrations/`). Voir le
+[README dédié](../migrations/README.md) pour la convention de nommage et
+l'anatomie d'un fichier de migration.
+
+```bash
+npm run migrate                # applique les migrations en attente
+npm run migrate -- --dry-run    # liste sans appliquer
+```
 
 ## audit-videos.js
 
-**Contexte** : La fonction `migrateBrokenVideos()` (dans `services/videoMigration.js`) remplacait silencieusement les URLs de vidéos YouTube par des MP4 de demo (BigBuckBunny, ElephantsDream, etc.) au demarrage du serveur. Elle a ete desactivee le 28/04/2026 (voir `server.js` lignes 88-91).
+**Contexte** : La fonction `migrateBrokenVideos()` (anciennement dans
+`services/videoMigration.js`, fichier renommé `videoMigration.deprecated.js`
+pour empêcher toute réintroduction accidentelle) remplaçait silencieusement
+les URLs de vidéos YouTube par des MP4 de demo (BigBuckBunny, ElephantsDream,
+etc.) au démarrage du serveur. Désactivée le 28/04/2026, supprimée définitivement
+de `server.js` lors du sprint-0/P0.4.
 
 **But** : Identifier et marquer les videos corrompues par cette migration.
 

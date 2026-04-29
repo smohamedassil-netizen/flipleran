@@ -43,13 +43,10 @@ import feedbackRoutes      from './routes/feedbackRoutes.js';
 import battleRoutes        from './routes/battleRoutes.js';
 import prositRoutes        from './routes/prositRoutes.js';
 import userRoutes          from './routes/userRoutes.js';
-import { seedBadges }   from './services/points.js';
-import { seedRewards }  from './services/rewardsSeed.js';
 import { seedDemoContent } from './services/contentSeed.js';
 import { seedDemoData } from './services/demoSeed.js';
 import { seedProsits }  from './services/prositsSeed.js';
 import { seedUsers } from './services/usersSeed.js';
-import { migrateBrokenVideos } from './services/videoMigration.js';
 
 // Migration : les comptes créés avant le système d'approval n'ont pas de status,
 // on les considère actifs par défaut (sinon ils ne pourraient plus se connecter).
@@ -64,6 +61,35 @@ async function migrateUserStatus() {
     }
   } catch (err) {
     console.error('[migration] userStatus:', err.message);
+  }
+}
+
+/**
+ * Seeds de contenu de démonstration (utilisateurs fictifs, cours, vidéos,
+ * Prosits…). Strictement opt-in en dev/staging via SEED_CONTENT='true'.
+ * Ne tourne JAMAIS en production : Render redémarre fréquemment et un seed
+ * automatique pourrait écraser des données réelles.
+ *
+ * Pour les seeds idempotents essentiels (badges, rewards), voir le script
+ * dédié backend/scripts/seed-prod.js, à exécuter manuellement après le
+ * premier déploiement.
+ */
+async function runDemoSeedsIfEnabled() {
+  if (process.env.NODE_ENV === 'production') {
+    return; // garde-fou explicite : jamais en prod, même si SEED_CONTENT=true
+  }
+  if (process.env.SEED_CONTENT !== 'true') {
+    return; // opt-in strict (pas opt-out comme avant)
+  }
+  console.log('[seed] SEED_CONTENT=true détecté en dev/staging — exécution des seeds de démo…');
+  try {
+    await seedUsers();
+    await seedDemoContent();
+    await seedDemoData();
+    await seedProsits();
+    console.log('[seed] Seeds de démo terminés.');
+  } catch (err) {
+    console.error('[seed]', err.message);
   }
 }
 import { startNotificationScheduler } from './services/notificationScheduler.js';
@@ -91,23 +117,7 @@ app.set('io', io);
 if (process.env.NODE_ENV !== 'test') {
   connectDB().then(async () => {
     await migrateUserStatus();
-    // [DÉSACTIVÉ 28/04/2026] migrateBrokenVideos() écrasait silencieusement les vidéos
-    // YouTube par des MP4 samples au démarrage, ce qui détruisait les uploads légitimes.
-    // À ne JAMAIS réactiver tel quel.
-    // await migrateBrokenVideos().catch(err => console.error('[videoMigration]', err.message));
-
-    seedBadges().catch(console.error);
-    seedRewards().catch(console.error);
-    if (process.env.SEED_CONTENT !== 'false') {
-      try {
-        await seedUsers();
-        await seedDemoContent();
-        await seedDemoData();
-        await seedProsits();
-      } catch (err) {
-        console.error('[seed]', err.message);
-      }
-    }
+    await runDemoSeedsIfEnabled();
     startNotificationScheduler(io);
   });
 }

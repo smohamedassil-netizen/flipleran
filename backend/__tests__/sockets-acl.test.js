@@ -82,9 +82,9 @@ jest.unstable_mockModule('../services/usersSeed.js', () => ({
   seedUsers: jest.fn().mockResolvedValue(null),
 }));
 
-jest.unstable_mockModule('../services/videoMigration.js', () => ({
-  migrateBrokenVideos: jest.fn().mockResolvedValue(null),
-}));
+// Note : le mock de '../services/videoMigration.js' a été retiré.
+// Le fichier source a été renommé videoMigration.deprecated.js et n'est
+// plus importé par server.js (voir commit "chore(prod): disable seeds…").
 
 jest.unstable_mockModule('../services/notificationScheduler.js', () => ({
   startNotificationScheduler: jest.fn(),
