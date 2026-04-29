@@ -36,6 +36,18 @@ Commit :
 Commit :
 - `f7db191` — feat: soft video prerequisite check before QCM
 
+### Backend + Frontend — Prosit courseId optionnel + agent IA dédié
+- **`models/Prosit.js`** : `courseId` passe de `required: true` à `default: null` — un Prosit peut désormais être autonome (transverse, hors module).
+- **`controllers/prositController.js`** :
+  - `createProsit` : `courseId` retiré des champs obligatoires, vérification d'existence conditionnelle, fallback `courseId || null`.
+  - Nouveau `getAiHelp` (POST `/api/prosits/:id/ai-help`) : populate `createdBy` (filiere, promotion) et `courseId` (titre, description). Détecte le groupe de l'étudiant pour injecter ses `motsClesIdentifies`. Map `PHASE_GUIDANCE` qui adapte la consigne au statut (brouillon / aller / recherche / retour / evalue / archive). System prompt = tuteur APP/CESI algérien, ressources gratuites. Demande structurée : 3 ressources + 2 conseils méthodo phase + 1 piste MENA. `temperature: 0.6`, `max_tokens: 1200`.
+- **`routes/prositRoutes.js`** : route `POST /:id/ai-help` exposée (auth uniquement, accessible prof + étudiant).
+- **`pages/PrositCreate.jsx`** : libellé « Cours associé (optionnel) », première option « — Aucun (Prosit autonome) — », attribut `required` retiré, validation et payload mis à jour.
+- **`pages/PrositDetail.jsx`** : encart Contexte enrichi. Si `courseId` populé, bouton lien « 📚 [titre] → » qui navigate vers `/courses/:id`. Sinon, texte italique « Prosit autonome (non rattaché) ».
+
+Commit :
+- `79f1a32` — feat: optional courseId on Prosit + AI help endpoint for prosits
+
 ---
 
 ## 29 Avril 2026 — nuit (module Prosit complet — APP/CESI)
