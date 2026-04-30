@@ -5,6 +5,8 @@ import { useNotifications } from '../context/NotificationContext.jsx';
 import Logo from './Logo.jsx';
 import TeacherCoursesSubNav from './TeacherCoursesSubNav.jsx';
 import TutorBubble from './TutorBubble.jsx';
+import StreakFlame from './StreakFlame.jsx';
+import LevelBadge from './LevelBadge.jsx';
 import { capitalizeWords } from '../utils/format.js';
 import {
   LayoutDashboard,
@@ -413,6 +415,14 @@ function Topbar({ onMenuClick, title, user, role, mobileOpen, setMobileOpen }) {
 
       {/* Right actions */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
+        {/* F11A — Indicateurs gamification (étudiant uniquement) */}
+        {role === 'etudiant' && (
+          <div className="hide-mobile" style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+            <StreakFlame mode="compact" />
+            <LevelBadge mode="compact" />
+          </div>
+        )}
+
         {/* Notifications */}
         <div ref={notifRef} style={{ position: 'relative' }}>
           <button

@@ -366,6 +366,24 @@ async function runWeeklyAutoFlashcardsRegen() {
   }
 }
 
+/* ─── Cron lundi 6h : génération quêtes hebdomadaires IA (F11A) ──────── */
+/**
+ * Chaque lundi 06:00 (heure serveur) on déclenche la génération des quêtes
+ * hebdomadaires personnalisées pour tous les étudiants actifs sur les 14
+ * derniers jours. Idempotent (skip si une WeeklyQuest existe déjà pour la
+ * semaine), donc une relance manuelle ne crée pas de doublons.
+ *
+ * Cf. services/questGenerator.js (Csikszentmihalyi Flow + Locke & Latham SMART).
+ */
+async function runWeeklyQuestsGeneration() {
+  try {
+    const { generateForAllActiveStudents } = await import('./questGenerator.js');
+    await generateForAllActiveStudents();
+  } catch (err) {
+    console.error('[Scheduler/quests]', err.message);
+  }
+}
+
 /* ─── Cron quotidien 18h : notif proactive Coach IA (F7) ─────────────── */
 /**
  * Chaque jour à 18:00 on scanne les Prosits actifs et Projets en cours pour
@@ -428,8 +446,13 @@ export function startNotificationScheduler(io) {
     runDailyCoachProactiveNotifications(io);
   });
 
+  // F11A — Quêtes hebdomadaires IA : lundi 06:00.
+  cron.schedule('0 6 * * 1', () => {
+    runWeeklyQuestsGeneration();
+  });
+
   // Un premier check 30s après démarrage (utile en dev)
   setTimeout(() => runAllDeadlineChecks(io), 30_000);
 
-  console.log('[Scheduler] Notification scheduler started (deadlines 08:00 + auto-flashcards Sun 09:00 + coach proactif 18:00)');
+  console.log('[Scheduler] Notification scheduler started (deadlines 08:00 + auto-flashcards Sun 09:00 + coach proactif 18:00 + quests hebdo Mon 06:00)');
 }

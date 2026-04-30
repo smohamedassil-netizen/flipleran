@@ -4,6 +4,9 @@ import Layout from '../components/Layout.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
 import api from '../utils/api.js';
 import { capitalizeWords } from '../utils/format.js';
+import StreakFlame from '../components/StreakFlame.jsx';
+import LevelBadge from '../components/LevelBadge.jsx';
+import WeeklyQuestsCard from '../components/WeeklyQuestsCard.jsx';
 import {
   BookOpen, BarChart2, Award, Zap,
   ChevronRight, Video, Brain,
@@ -372,6 +375,21 @@ export default function Dashboard() {
           </div>
         )}
       </div>
+
+      {/* ── F11A — Bandeau STATUS étudiant : streak / niveau / flashcards ─── */}
+      {user?.role === 'etudiant' && (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 12, marginBottom: 24 }}>
+          <StreakFlame mode="card" />
+          <LevelBadge mode="card" />
+        </div>
+      )}
+
+      {/* ── F11A — Quêtes hebdomadaires IA ────────────────────────── */}
+      {user?.role === 'etudiant' && (
+        <div style={{ marginBottom: 24 }}>
+          <WeeklyQuestsCard />
+        </div>
+      )}
 
       {/* ── Cette semaine — deadlines J+0 à J+7 ─────────────────────── */}
       {user?.role === 'etudiant' && (

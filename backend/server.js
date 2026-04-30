@@ -48,6 +48,7 @@ import learningPathRoutes  from './routes/learningPathRoutes.js';
 import courseAutoPrepRoutes, { autoPrepJobRouter } from './routes/courseAutoPrepRoutes.js';
 import tutorRoutes from './routes/tutorRoutes.js';
 import projectTemplateRoutes from './routes/projectTemplateRoutes.js';
+import gamificationRoutes from './routes/gamificationRoutes.js';
 import { seedDemoContent } from './services/contentSeed.js';
 import { seedDemoData } from './services/demoSeed.js';
 import { seedProsits }  from './services/prositsSeed.js';
@@ -230,6 +231,7 @@ app.use('/api/auto-prep-jobs', autoPrepJobRouter);
 app.use('/api/courses', courseAutoPrepRoutes);  // ce router définit /:courseId/videos/:videoId/auto-prep — ne conflicte pas avec courseRoutes /:id
 app.use('/api/tutor', tutorRoutes);
 app.use('/api/project-templates', projectTemplateRoutes);  // F10 — bibliothèque de templates projets
+app.use('/api', gamificationRoutes);  // F11A — /api/streak, /api/levels/*, /api/quests*
 
 // ── En production : servir le frontend buildé ──────────────────────────────
 if (process.env.NODE_ENV === 'production') {
