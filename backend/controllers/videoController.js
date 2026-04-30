@@ -278,6 +278,50 @@ export const saveProgress = async (req, res) => {
       if (!wasAlreadyCompleted) {
         pointsResult = await addPoints(req.user.id, 20, 'video_watched').catch(() => null);
         await checkChampionBadge(video.courseId).catch(() => {});
+
+        // F11A — Streak + quête video + quête streak (chained)
+        const userId = req.user.id;
+        const io = req.app.get('io');
+        try {
+          const { updateStreak } = await import('../services/streakService.js');
+          const streakRes = await updateStreak(userId, 'video_watched', 20);
+          if (io && streakRes.justUnlocked && streakRes.justUnlocked.length > 0) {
+            const days = streakRes.justUnlocked[streakRes.justUnlocked.length - 1];
+            const { pushNotification } = await import('../services/notificationService.js');
+            await pushNotification(io, {
+              userId,
+              type: 'achievement',
+              priority: 'normal',
+              title: `🔥 Streak de ${days} jours !`,
+              message: `Tu enchaînes ${days} jour${days > 1 ? 's' : ''} d'activité — continue !`,
+              dedupKey: `streak_${userId}_${days}`,
+            });
+          }
+
+          const { recordQuestProgress } = await import('../services/questGenerator.js');
+          const questRes = await recordQuestProgress(userId, 'video', 1);
+          // Quête streak gagne aussi 1 si c'est le premier hit du jour
+          if (streakRes.isFirstActivity || streakRes.currentStreak !== streakRes.previousStreak) {
+            await recordQuestProgress(userId, 'streak', 1).catch(() => {});
+          }
+          // Notif quêtes complétées + crédit XP
+          if (io && questRes.completed.length > 0) {
+            const { pushNotification } = await import('../services/notificationService.js');
+            for (const q of questRes.completed) {
+              await addPoints(userId, q.xpReward, 'quest_completed').catch(() => {});
+              await pushNotification(io, {
+                userId,
+                type: 'achievement',
+                priority: 'normal',
+                title: `🎯 Quête complétée — +${q.xpReward} XP`,
+                message: q.title,
+                dedupKey: `quest_${q.id}_completed`,
+              });
+            }
+          }
+        } catch (gErr) {
+          console.error('[gamification hook]', gErr.message);
+        }
       }
     }
 
