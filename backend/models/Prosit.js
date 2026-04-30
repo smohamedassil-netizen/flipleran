@@ -96,6 +96,23 @@ const finalIndividualScoreSchema = new mongoose.Schema({
   computedAt:       { type: Date, default: Date.now },
 }, { _id: false });
 
+/**
+ * Sous-document : rapport de détection de texte généré par IA (F2 sprint-final).
+ * Stocké sur la contribution de chaque membre. On ne garde JAMAIS le texte
+ * intégral ici — uniquement le score, les flags et un extrait court (200 chars).
+ *
+ * @see Mitchell et al. (2023) DetectGPT, Krishna et al. (2023).
+ */
+const aiDetectionSchema = new mongoose.Schema({
+  aiProbability:  { type: Number, default: 0, min: 0, max: 100 },
+  heuristicScore: { type: Number, default: 0, min: 0, max: 100 },
+  groqScore:      { type: Number, default: null },
+  flags:          [{ type: String }],
+  reasons:        [{ type: String }],
+  checkedAt:      { type: Date, default: null },
+  textPreview:    { type: String, default: '', maxlength: 200 },
+}, { _id: false });
+
 const membreSchema = new mongoose.Schema({
   userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   role:   { type: String, enum: PROSIT_ROLES, required: true, default: 'membre' },
@@ -104,6 +121,9 @@ const membreSchema = new mongoose.Schema({
   contributionTexte:   { type: String, default: '' },
   contributionFichier: fichierSchema,
   contributionAt:      { type: Date, default: null },
+
+  // Détection texte IA (F2 sprint-final) — calcul en background à la soumission
+  aiDetection: { type: aiDetectionSchema, default: null },
 }, { _id: false });
 
 const groupeSchema = new mongoose.Schema({

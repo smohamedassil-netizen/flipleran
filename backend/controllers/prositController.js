@@ -498,6 +498,41 @@ export async function postContribution(req, res) {
     membre.contributionAt = new Date();
 
     await prosit.save();
+
+    // Détection plagiat IA en arrière-plan (fail-soft, jamais bloquant)
+    // F2 sprint-final : si la contribution texte est suffisamment longue,
+    // on lance l'analyse en background avec timeout 5s.
+    const txt = membre.contributionTexte || '';
+    if (txt.length >= 80) {
+      const prositId = prosit._id;
+      const userId = req.user.id;
+      setImmediate(async () => {
+        try {
+          const { detectAIGenerated } = await import('../services/aiPlagiarismDetector.js');
+          const report = await detectAIGenerated(txt, { timeoutMs: 5000 });
+          // Re-fetch + update atomique pour éviter d'écraser des changements concurrents
+          const fresh = await Prosit.findById(prositId);
+          if (!fresh) return;
+          const g = fresh.groupes[idx];
+          if (!g) return;
+          const m = g.membres.find((mm) => memberUserIdString(mm) === userId);
+          if (!m) return;
+          m.aiDetection = {
+            aiProbability:  report.aiProbability,
+            heuristicScore: report.heuristicScore,
+            groqScore:      report.groqScore,
+            flags:          report.flags,
+            reasons:        report.reasons,
+            checkedAt:      report.checkedAt,
+            textPreview:    txt.slice(0, 200),
+          };
+          await fresh.save();
+        } catch (err) {
+          console.error('[prosit] aiDetection background error:', err.message);
+        }
+      });
+    }
+
     res.json(membre);
   } catch (err) {
     console.error('[prosit] contribution error:', err);
@@ -1064,6 +1099,68 @@ export async function extendPeerAssessmentDeadline(req, res) {
   } catch (err) {
     console.error('[prosit] extendPeerAssessmentDeadline:', err);
     res.status(500).json({ message: 'Erreur prolongation deadline' });
+  }
+}
+
+/**
+ * GET /api/prosits/:id/ai-report
+ * Rapport d'intégrité IA pour un prof : pour chaque groupe et chaque membre,
+ * renvoie le score aiProbability + flags + extrait tronqué (200 chars).
+ *
+ * Privacy : on NE renvoie JAMAIS le texte intégral, seulement le textPreview
+ * stocké au moment de la détection. Cohérent avec Mitchell et al. (2023) :
+ * le rapport est un signal au prof, pas une preuve auto-incriminante.
+ *
+ * Tri : par aiProbability décroissant pour mettre les cas suspects en haut.
+ */
+export async function getAiReport(req, res) {
+  try {
+    const prosit = await Prosit.findById(req.params.id)
+      .populate('groupes.membres.userId', 'prenom nom email');
+    if (!prosit) return res.status(404).json({ message: 'Prosit introuvable' });
+    if (prosit.createdBy.toString() !== req.user.id && req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'Non autorisé' });
+    }
+
+    const groupReports = (prosit.groupes || []).map((g, gIdx) => {
+      const members = (g.membres || [])
+        .map((m) => {
+          const u = m.userId && typeof m.userId === 'object' ? m.userId : null;
+          const det = m.aiDetection;
+          return {
+            userId:        u?._id?.toString?.() || (typeof m.userId === 'object' ? null : m.userId?.toString()),
+            prenom:        u?.prenom || '',
+            nom:           u?.nom    || '',
+            role:          m.role,
+            hasContribution: !!(m.contributionTexte && m.contributionTexte.trim().length >= 80),
+            aiProbability: det?.aiProbability ?? null,
+            heuristicScore:det?.heuristicScore ?? null,
+            groqScore:     det?.groqScore ?? null,
+            flags:         det?.flags || [],
+            reasons:       det?.reasons || [],
+            textPreview:   det?.textPreview || '',
+            checkedAt:     det?.checkedAt || null,
+          };
+        })
+        .sort((a, b) => (b.aiProbability ?? -1) - (a.aiProbability ?? -1));
+
+      return {
+        groupIndex: gIdx,
+        nom:        g.nom,
+        members,
+        suspectsCount: members.filter((m) => (m.aiProbability ?? 0) >= 70).length,
+      };
+    });
+
+    res.json({
+      prositId: prosit._id,
+      titre: prosit.titre,
+      groups: groupReports,
+      generatedAt: new Date(),
+    });
+  } catch (err) {
+    console.error('[prosit] getAiReport:', err);
+    res.status(500).json({ message: 'Erreur rapport intégrité IA' });
   }
 }
 

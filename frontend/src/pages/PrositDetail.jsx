@@ -9,6 +9,7 @@ import {
   FinalScoreCard,
   PeerAssessmentMonitor,
 } from '../components/PrositPeerAssessmentBlocks.jsx';
+import PrositAiReport from '../components/PrositAiReport.jsx';
 import {
   ArrowLeft, Lightbulb, Edit2, Trash2, ChevronRight, Calendar, Send,
   CheckCircle, Save, FileText, Hash, Sparkles, BookOpen, Trophy, AlertTriangle,
@@ -290,6 +291,18 @@ export default function PrositDetail() {
         {/* Suivi peer assessment (prof, phase retour/evalue) */}
         {isProf && ['retour', 'evalue'].includes(prosit.status) && prosit.peerAssessmentEnabled && (
           <PeerAssessmentMonitor prosit={prosit} onUpdated={load} />
+        )}
+
+        {/* Intégrité IA (prof, dès la phase recherche : les contributions arrivent) */}
+        {isProf && ['recherche', 'retour', 'evalue', 'archive'].includes(prosit.status) && (
+          <details style={{ background: 'white', borderRadius: 12, border: '1px solid #E5E7EB', marginBottom: 14, overflow: 'hidden' }}>
+            <summary style={{ cursor: 'pointer', padding: '12px 14px', fontSize: 13, fontWeight: 700, color: '#1B4F72', background: 'linear-gradient(135deg, #EBF3FA, #F8FAFC)', listStyle: 'none' }}>
+              🛡️ Rapport d'intégrité IA (détection texte ChatGPT-like)
+            </summary>
+            <div style={{ padding: 14 }}>
+              <PrositAiReport prositId={prosit._id} />
+            </div>
+          </details>
         )}
 
         {/* Encart explication des 5 rôles CESI */}
@@ -578,9 +591,13 @@ function CollaborativeWorkspace({ prosit, groupe, groupeIndex, userId, onUpdated
             value={contributionTexte}
             onChange={(e) => setContributionTexte(e.target.value)}
             rows={6}
-            style={{ ...inputStyle, marginBottom: 14, resize: 'vertical' }}
+            style={{ ...inputStyle, marginBottom: 8, resize: 'vertical' }}
             placeholder="Documente ta partie : ce que tu as recherché, les sources consultées (URLs), tes apprentissages, ce que tu apportes au groupe…"
           />
+          <p style={{ fontSize: 11, color: '#64748B', fontStyle: 'italic', margin: '0 0 14px' }}>
+            ℹ️ Ta contribution sera analysée pour authenticité (détection automatique de texte
+            généré par IA). Écris avec tes propres mots — c'est ton apprentissage qui compte.
+          </p>
           <button onClick={submitContribution} disabled={saving} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 14px', background: '#9333EA', color: 'white', border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: saving ? 'not-allowed' : 'pointer' }}>
             <Send size={13} /> {saving ? 'Envoi…' : 'Soumettre ma contribution'}
           </button>
