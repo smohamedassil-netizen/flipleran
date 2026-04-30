@@ -3,9 +3,10 @@ import { useParams, useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout.jsx';
 import VideoPlayer from '../components/VideoPlayer.jsx';
 import api from '../utils/api.js';
-import { ArrowLeft, AlertCircle, BookOpen, Home, ListOrdered } from 'lucide-react';
+import { ArrowLeft, AlertCircle, BookOpen, Home, ListOrdered, MessageCircle } from 'lucide-react';
 import Breadcrumb from '../components/Breadcrumb.jsx';
 import VideoAnalysis from '../components/VideoAnalysis.jsx';
+import AskVideoPanel from '../components/AskVideoPanel.jsx';
 import { useGamification } from '../context/GamificationContext.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
 
@@ -23,6 +24,7 @@ export default function WatchVideo() {
   const [videos,  setVideos]  = useState([]);   // liste du cours pour navigation
   const [loading, setLoading] = useState(true);
   const [error,   setError]   = useState('');
+  const [askOpen, setAskOpen] = useState(false);    // Panneau "Demande à la vidéo"
 
   const formatTime = (s) => {
     const m = Math.floor(s / 60);
@@ -103,6 +105,27 @@ export default function WatchVideo() {
             userRole={user?.role}
             onPointsEarned={handlePointsEarned}
           />
+
+          {/* "Demande à la vidéo" — bouton sous le player, étudiant uniquement */}
+          {user?.role === 'etudiant' && (
+            <div style={{ marginTop: 12, display: 'flex', justifyContent: 'flex-end' }}>
+              <button
+                type="button"
+                onClick={() => setAskOpen(true)}
+                title="Pose une question sur cette vidéo, l'IA répond avec citation des moments clés"
+                style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 8,
+                  padding: '10px 16px', borderRadius: 10,
+                  background: 'linear-gradient(135deg, #9333EA, #C084FC)',
+                  color: '#fff', border: 'none', cursor: 'pointer',
+                  fontSize: 13, fontWeight: 700,
+                  boxShadow: '0 2px 8px rgba(147,51,234,0.25)',
+                }}
+              >
+                <MessageCircle size={15} /> 💬 Demande à la vidéo
+              </button>
+            </div>
+          )}
 
           {/* Description */}
           {video.description && (
@@ -242,6 +265,15 @@ export default function WatchVideo() {
           </div>
         </div>
       </div>
+
+      {/* Panneau "Demande à la vidéo" (RAG sur transcript Whisper) */}
+      {askOpen && user?.role === 'etudiant' && (
+        <AskVideoPanel
+          videoId={video._id}
+          videoTitre={video.titre}
+          onClose={() => setAskOpen(false)}
+        />
+      )}
     </Layout>
   );
 }
