@@ -58,6 +58,7 @@ const NAV = {
       section: 'Apprentissage par Problème',
       items: [
         { label: 'Prosits',         icon: Lightbulb,       to: '/prosits' },
+        { label: 'Méthode Prosit',  icon: BookOpen,        to: '/method-guide' },
       ],
     },
     {
@@ -92,6 +93,7 @@ const NAV = {
       section: 'Apprentissage par Problème',
       items: [
         { label: 'Prosits',         icon: Lightbulb,       to: '/prosits' },
+        { label: 'Méthode Prosit',  icon: BookOpen,        to: '/method-guide' },
       ],
     },
     {

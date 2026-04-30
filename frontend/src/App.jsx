@@ -46,6 +46,7 @@ import ModuleAssistant      from './pages/ModuleAssistant.jsx';
 import Rewards              from './pages/Rewards.jsx';
 import LearningPathBuilder  from './pages/LearningPathBuilder.jsx';
 import CourseLearningOutcomes from './pages/CourseLearningOutcomes.jsx';
+import CesiMethodGuide       from './pages/CesiMethodGuide.jsx';
 
 /* ── Pages d'erreur ────────────────────────────────────────────────────────── */
 function ErrorPage({ code, title, description }) {
@@ -121,6 +122,7 @@ export default function App() {
             <Route path="/notifications"               element={<NotificationsPage />} />
             <Route path="/my-tickets"                  element={<Navigate to="/support" replace />} />
             <Route path="/courses/:courseId/assistant" element={<ModuleAssistant />} />
+            <Route path="/method-guide"                element={<CesiMethodGuide />} />
           </Route>
 
           {/* Étudiant uniquement — apprentissage actif & gamification */}

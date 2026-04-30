@@ -38,11 +38,13 @@ export default function PrositDetail() {
     try { return JSON.parse(sessionStorage.getItem('fliplearn_user')); } catch { return null; }
   });
   const isProf = user?.role === 'professeur' || user?.role === 'admin';
+  const isStudent = user?.role === 'etudiant';
 
   const [prosit, setProsit] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [transitioning, setTransitioning] = useState(false);
+  const [showFirstTimeModal, setShowFirstTimeModal] = useState(false);
 
   const load = useCallback(() => {
     setLoading(true);
@@ -53,6 +55,25 @@ export default function PrositDetail() {
   }, [id]);
 
   useEffect(() => { load(); }, [load]);
+
+  // Onboarding première fois : si étudiant et flag jamais posé, on propose
+  // de lire la fiche méthode CESI. Persistance localStorage par user.
+  useEffect(() => {
+    if (!isStudent || !user?._id) return;
+    const key = `fliplearn_prosit_method_seen_${user._id}`;
+    try {
+      if (!localStorage.getItem(key)) {
+        setShowFirstTimeModal(true);
+      }
+    } catch { /* localStorage indisponible */ }
+  }, [isStudent, user?._id]);
+
+  const dismissFirstTimeModal = (markSeen = true) => {
+    setShowFirstTimeModal(false);
+    if (markSeen && user?._id) {
+      try { localStorage.setItem(`fliplearn_prosit_method_seen_${user._id}`, '1'); } catch {}
+    }
+  };
 
   const transitionPhase = async () => {
     if (!confirm('Confirmer la transition de phase ? Cette action peut verrouiller les modifications.')) return;
@@ -378,6 +399,56 @@ export default function PrositDetail() {
           </section>
         )}
       </div>
+
+      {/* Onboarding première fois — fiche méthode CESI */}
+      {showFirstTimeModal && (
+        <div className="modal-overlay" onClick={() => dismissFirstTimeModal(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 480 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
+              <div style={{
+                width: 44, height: 44, borderRadius: 12, flexShrink: 0,
+                background: '#EBF3FA', color: '#1B4F72',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22,
+              }}>
+                💡
+              </div>
+              <div>
+                <h3 style={{ margin: 0, fontSize: 16, fontWeight: 800, color: '#1B4F72' }}>
+                  Première fois sur un Prosit ?
+                </h3>
+                <p style={{ margin: '2px 0 0', fontSize: 12, color: '#64748B' }}>
+                  Avant de te lancer, prends 5 minutes pour lire la méthode.
+                </p>
+              </div>
+            </div>
+            <p style={{ margin: '0 0 14px', fontSize: 13, color: '#1E293B', lineHeight: 1.6 }}>
+              Tu vas découvrir la pédagogie APP/CESI : les <strong>3 phases</strong> (Aller / Recherche / Retour),
+              les <strong>5 rôles tournants</strong>, l'évaluation combinée prof + pairs, et les pièges courants
+              à éviter. Une lecture rapide qui t'évitera bien des malentendus.
+            </p>
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', flexWrap: 'wrap' }}>
+              <button
+                type="button"
+                className="btn btn-ghost btn-sm"
+                onClick={() => dismissFirstTimeModal(true)}
+              >
+                Plus tard
+              </button>
+              <button
+                type="button"
+                className="btn btn-primary btn-sm"
+                onClick={() => {
+                  dismissFirstTimeModal(true);
+                  navigate('/method-guide');
+                }}
+                style={{ background: 'linear-gradient(135deg, #1B4F72, #2874A6)' }}
+              >
+                <BookOpen size={13} /> Lire la méthode (5 min)
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </Layout>
   );
 }
