@@ -1103,6 +1103,56 @@ export async function extendPeerAssessmentDeadline(req, res) {
 }
 
 /**
+ * GET /api/prosits/:id/eligible-students
+ * Liste les étudiants éligibles à ce Prosit (même filière + même promotion).
+ * Réservé au prof propriétaire / admin pour la composition manuelle des groupes.
+ */
+export async function getEligibleStudents(req, res) {
+  try {
+    const prosit = await Prosit.findById(req.params.id);
+    if (!prosit) return res.status(404).json({ message: 'Prosit introuvable' });
+    if (prosit.createdBy.toString() !== req.user.id && req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'Non autorisé' });
+    }
+
+    const students = await User.find({
+      role: 'etudiant',
+      isActive: { $ne: false },
+      status: { $ne: 'rejected' },
+      filiere: prosit.filiere,
+      promotion: prosit.promotion,
+    })
+      .select('prenom nom email')
+      .sort({ nom: 1, prenom: 1 })
+      .lean();
+
+    // Marqueur : est déjà dans un groupe de CE prosit ?
+    const alreadyAssigned = new Set();
+    for (const g of prosit.groupes || []) {
+      for (const m of g.membres || []) {
+        const id = (m.userId?._id || m.userId)?.toString?.();
+        if (id) alreadyAssigned.add(id);
+      }
+    }
+
+    res.json({
+      filiere: prosit.filiere,
+      promotion: prosit.promotion,
+      students: students.map((s) => ({
+        _id: s._id,
+        prenom: s.prenom,
+        nom: s.nom,
+        email: s.email,
+        alreadyAssigned: alreadyAssigned.has(s._id.toString()),
+      })),
+    });
+  } catch (err) {
+    console.error('[prosit] getEligibleStudents:', err);
+    res.status(500).json({ message: 'Erreur liste étudiants éligibles' });
+  }
+}
+
+/**
  * GET /api/prosits/:id/ai-report
  * Rapport d'intégrité IA pour un prof : pour chaque groupe et chaque membre,
  * renvoie le score aiProbability + flags + extrait tronqué (200 chars).

@@ -12,6 +12,7 @@ import {
   postSelfAssessment, postPeerAssessment, getMyAssessmentsStatus,
   getPeerAssessmentSummary, extendPeerAssessmentDeadline,
   getAiReport,
+  getEligibleStudents,
 } from '../controllers/prositController.js';
 
 const router = express.Router();
@@ -54,5 +55,8 @@ router.put('/:id/peer-assessments/deadline',      requireRole('professeur', 'adm
 
 /* ─── Détection plagiat IA (F2 sprint-final, Mitchell et al. 2023) ─── */
 router.get('/:id/ai-report', requireRole('professeur', 'admin'), getAiReport);
+
+/* ─── Composition de groupes (prof) ─── */
+router.get('/:id/eligible-students', requireRole('professeur', 'admin'), getEligibleStudents);
 
 export default router;
