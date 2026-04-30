@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Crown, Medal, Trophy, Users, Zap } from 'lucide-react';
+import { ArrowLeft, Crown, Medal, Trophy, Users, Zap, Calendar, TrendingUp } from 'lucide-react';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area, AreaChart } from 'recharts';
 import Layout from '../components/Layout.jsx';
 import api from '../utils/api.js';
 import { useAuth } from '../context/AuthContext.jsx';
@@ -83,6 +84,66 @@ function PodiumCard({ entry, meta }) {
   );
 }
 
+/* ─── F11B — Onglet Personal best : graphique XP cumulés sur 30 jours ─── */
+function PersonalBestView({ data }) {
+  const series = data?.series || [];
+  const total = data?.totalLast30Days || 0;
+  const max = Math.max(...series.map((p) => p.xpCumul), 1);
+
+  return (
+    <div>
+      <div style={{
+        display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16,
+        padding: '14px 18px', borderRadius: 10,
+        background: 'linear-gradient(135deg, #faf5ff, #eff6ff)',
+        border: '1px solid #e9d5ff',
+      }}>
+        <TrendingUp size={20} color="#7c3aed" />
+        <div style={{ flex: 1 }}>
+          <div style={{ fontSize: 11, color: '#64748b', fontWeight: 600 }}>30 DERNIERS JOURS</div>
+          <div style={{ fontSize: 18, fontWeight: 800, color: '#7c3aed' }}>+{total} XP</div>
+        </div>
+      </div>
+
+      {series.length > 0 && max > 1 ? (
+        <div style={{ height: 280, background: 'white', border: '1px solid #e2e8f0', borderRadius: 10, padding: 14 }}>
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart data={series} margin={{ top: 10, right: 14, left: 0, bottom: 0 }}>
+              <defs>
+                <linearGradient id="xpGradient" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%"   stopColor="#7c3aed" stopOpacity={0.4} />
+                  <stop offset="100%" stopColor="#7c3aed" stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+              <XAxis
+                dataKey="date"
+                tick={{ fontSize: 10, fill: '#64748b' }}
+                tickFormatter={(d) => d.slice(5)}
+                interval={Math.ceil(series.length / 8)}
+              />
+              <YAxis tick={{ fontSize: 10, fill: '#64748b' }} />
+              <Tooltip
+                contentStyle={{ fontSize: 12, borderRadius: 8 }}
+                labelFormatter={(d) => new Date(d).toLocaleDateString('fr-FR')}
+                formatter={(value, name) => [`${value} XP`, name === 'xpCumul' ? 'Cumul' : 'Gagné']}
+              />
+              <Area type="monotone" dataKey="xpCumul" stroke="#7c3aed" strokeWidth={2} fill="url(#xpGradient)" />
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
+      ) : (
+        <div style={{
+          padding: 24, textAlign: 'center', color: '#64748b', fontSize: 13,
+          background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 10,
+        }}>
+          📈 Pas encore d'activité enregistrée. Regarde des vidéos pour cumuler des XP visibles ici !
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function Leaderboard() {
   const { courseId } = useParams();
   const navigate     = useNavigate();
@@ -90,13 +151,20 @@ export default function Leaderboard() {
 
   const [data,    setData]    = useState(null);
   const [loading, setLoading] = useState(true);
-  const [mode,    setMode]    = useState(courseId ? 'course' : 'global');
+  // F11B — Onglets : 'cohort' | 'monthly' | 'personal' (par défaut cohort).
+  // Si on arrive avec un courseId (legacy), on utilise le mode 'course'.
+  const [mode,    setMode]    = useState(courseId ? 'course' : 'cohort');
 
   useEffect(() => {
     setLoading(true);
-    const url = mode === 'course' && courseId
-      ? `/leaderboard/course/${courseId}`
-      : '/leaderboard/global';
+    let url;
+    if (mode === 'course' && courseId) {
+      url = `/leaderboard/course/${courseId}`;
+    } else if (['cohort', 'monthly', 'personal'].includes(mode)) {
+      url = `/leaderboard?scope=${mode}`;
+    } else {
+      url = '/leaderboard/global';
+    }
 
     api.get(url)
       .then((r) => setData(r.data))
@@ -104,10 +172,13 @@ export default function Leaderboard() {
       .finally(() => setLoading(false));
   }, [mode, courseId]);
 
+  // Pour les modes cohort/monthly, le score peut être "points" (legacy) ou "score" (F11B)
   const entries = data?.entries ?? [];
-  const top3    = entries.slice(0, 3);
-  const rest    = entries.slice(3);
+  const normalizeEntry = (e) => ({ ...e, points: e.score ?? e.points });
+  const top3    = entries.slice(0, 3).map(normalizeEntry);
+  const rest    = entries.slice(3).map(normalizeEntry);
   const myRank  = data?.myRank;
+  const isPersonal = mode === 'personal';
 
   return (
     <Layout title="Classement">
@@ -116,7 +187,7 @@ export default function Leaderboard() {
       <button className="btn btn-ghost btn-sm" onClick={() => navigate(-1)}><ArrowLeft size={15} /> Retour</button>
 
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px', flexWrap: 'wrap', gap: 12 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
           <Trophy size={22} color="var(--accent)" />
           <h1 style={{ margin: 0, fontSize: '20px', fontWeight: 700 }}>Classement</h1>
@@ -136,18 +207,57 @@ export default function Leaderboard() {
         )}
       </div>
 
-      {loading && (
-        <div className="empty-state">Chargement du classement…</div>
-      )}
-
-      {!loading && entries.length === 0 && (
-        <div className="empty-state">
-          <Users size={32} />
-          <p>Aucun étudiant inscrit pour l'instant.</p>
+      {/* F11B — Onglets 3 scopes (uniquement quand pas de courseId) */}
+      {!courseId && (
+        <div style={{
+          display: 'flex', gap: 0, marginBottom: 20, padding: 3,
+          background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 10,
+          flexWrap: 'wrap',
+        }}>
+          {[
+            { k: 'cohort',   label: 'Ma promotion',  Icon: Users },
+            { k: 'monthly',  label: 'Top du mois',   Icon: Calendar },
+            { k: 'personal', label: 'Ma progression', Icon: TrendingUp },
+          ].map(({ k, label, Icon }) => (
+            <button
+              key={k}
+              onClick={() => setMode(k)}
+              style={{
+                flex: 1, minWidth: 120,
+                padding: '8px 14px', borderRadius: 7, border: 'none',
+                background: mode === k ? 'white' : 'transparent',
+                color: mode === k ? '#1e293b' : '#64748b',
+                fontWeight: 600, fontSize: 13, cursor: 'pointer',
+                display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                boxShadow: mode === k ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
+                transition: 'all 120ms',
+              }}
+            >
+              <Icon size={14} /> {label}
+            </button>
+          ))}
         </div>
       )}
 
-      {!loading && entries.length > 0 && (
+      {/* F11B — Vue personal : graphique 30j (avant les vues classement) */}
+      {!loading && isPersonal && <PersonalBestView data={data} />}
+
+      {loading && !isPersonal && (
+        <div className="empty-state">Chargement du classement…</div>
+      )}
+
+      {!loading && !isPersonal && entries.length === 0 && (
+        <div className="empty-state">
+          <Users size={32} />
+          <p>
+            {mode === 'monthly'
+              ? "Personne n'a encore gagné d'XP ce mois-ci. Sois le premier !"
+              : 'Aucun étudiant inscrit pour l\'instant.'}
+          </p>
+        </div>
+      )}
+
+      {!loading && !isPersonal && entries.length > 0 && (
         <>
           {/* My rank banner */}
           {myRank && (

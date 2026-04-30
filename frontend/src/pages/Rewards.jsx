@@ -7,13 +7,20 @@ import {
   Clock, Sparkles, Package, Trophy, Award, ShoppingBag,
 } from 'lucide-react';
 
+/**
+ * F11B — Catalogue de types pour le marketplace.
+ * NB : seul `abonnement_fliplearn` est actuellement actif (cf. backend/services/rewardsSeed.js).
+ * Les autres types sont préparés pour des extensions futures sans engagement
+ * juridique pendant le PFE (chap. 7.4.1 du mémoire).
+ */
 const TYPE_META = {
-  abonnement_fliplearn: {
-    label: 'Abonnement FlipLearn',
-    Icon: Crown,
-    color: '#9333EA',
-    bg: '#F5F3FF',
-  },
+  abonnement_fliplearn: { label: 'Abonnement FlipLearn',  Icon: Crown,    color: '#9333EA', bg: '#F5F3FF' },
+  tutoring:             { label: 'Tutorat individuel',    Icon: Award,    color: '#0891b2', bg: '#ecfeff' },
+  content:              { label: 'Accès anticipé',        Icon: Sparkles, color: '#f59e0b', bg: '#fffbeb' },
+  badge_linkedin:       { label: 'Insigne LinkedIn',      Icon: Trophy,   color: '#1e40af', bg: '#eff6ff' },
+  honor_board:          { label: 'Tableau d\'honneur',    Icon: Trophy,   color: '#dc2626', bg: '#fef2f2' },
+  project_choice:       { label: 'Choix sujet projet',    Icon: Star,     color: '#059669', bg: '#ecfdf5' },
+  cosmetic:             { label: 'Personnalisation',      Icon: Sparkles, color: '#ec4899', bg: '#fdf2f8' },
 };
 
 const DEFAULT_META = TYPE_META.abonnement_fliplearn;
