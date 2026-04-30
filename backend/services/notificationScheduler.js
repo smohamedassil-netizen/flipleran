@@ -366,6 +366,50 @@ async function runWeeklyAutoFlashcardsRegen() {
   }
 }
 
+/* ─── Cron quotidien 18h : notif proactive Coach IA (F7) ─────────────── */
+/**
+ * Chaque jour à 18:00 on scanne les Prosits actifs et Projets en cours pour
+ * détecter les étudiants en blocage severity 'high' (heuristiques pures, pas
+ * d'appel Groq). Push une notification douce qui les invite à ouvrir le
+ * coach. On déduplique par jour pour éviter de notifier matin/soir.
+ *
+ * Vygotsky ZPD : on intervient au bon moment pour relancer la dynamique,
+ * pas pour pointer du doigt l'inactivité.
+ */
+async function runDailyCoachProactiveNotifications(io) {
+  try {
+    const { getStudentsBlockedHigh } = await import('./projectCoach.js');
+    const blocked = await getStudentsBlockedHigh();
+    if (!blocked.length) {
+      console.log('[Scheduler/coach] no high-severity blockages today');
+      return;
+    }
+
+    const today = dateKey();
+    let pushed = 0;
+    for (const b of blocked) {
+      const dk = `coach_${b.kind}_${b.id}_${b.userId}_${today}`;
+      const label = b.kind === 'prosit' ? 'Étude de cas' : 'Projet';
+      await pushNotification(io, {
+        userId: b.userId,
+        type: 'reminder_manual',
+        priority: 'normal',
+        title: '🤖 Ton coach a un conseil',
+        message: `${label} "${b.titre}" — ton coach IA a remarqué que tu sembles bloqué. Veux-tu de l'aide pour redémarrer ?`,
+        link: b.link,
+        relatedType: b.kind,
+        relatedId: b.id,
+        dedupKey: dk,
+      });
+      pushed++;
+    }
+
+    console.log(`[Scheduler/coach] ${pushed} notifications proactives envoyées (${blocked.length} blocages high détectés)`);
+  } catch (err) {
+    console.error('[Scheduler/coach]', err.message);
+  }
+}
+
 /* ─── Initialisation des tâches cron ─────────────────────────────────── */
 export function startNotificationScheduler(io) {
   // Tous les jours à 08:00 (heure serveur)
@@ -379,8 +423,13 @@ export function startNotificationScheduler(io) {
     runWeeklyAutoFlashcardsRegen();
   });
 
+  // F7 — Coach IA proactif : tous les jours à 18:00.
+  cron.schedule('0 18 * * *', () => {
+    runDailyCoachProactiveNotifications(io);
+  });
+
   // Un premier check 30s après démarrage (utile en dev)
   setTimeout(() => runAllDeadlineChecks(io), 30_000);
 
-  console.log('[Scheduler] Notification scheduler started (deadlines daily 08:00 + auto-flashcards Sun 09:00)');
+  console.log('[Scheduler] Notification scheduler started (deadlines 08:00 + auto-flashcards Sun 09:00 + coach proactif 18:00)');
 }

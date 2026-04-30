@@ -4,6 +4,7 @@ import Layout from '../components/Layout.jsx';
 import Breadcrumb from '../components/Breadcrumb.jsx';
 import ProjectActivityFeed from '../components/ProjectActivityFeed.jsx';
 import { ProjectProgressWidget, PhaseChecklist, IdeasPanel } from '../components/ProjectProgressPanel.jsx';
+import CoachAIPanel from '../components/CoachAIPanel.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
 import api from '../utils/api.js';
 import { capitalizeWords, formatFullName } from '../utils/format.js';
@@ -616,6 +617,11 @@ export default function ProjectDetail() {
                 })}
               </div>
             </div>
+          )}
+
+          {/* ── F7 — Coach IA anti-blocage (étudiant en projet actif) ──── */}
+          {!isProfOrAdmin && myGroup && project.status === 'actif' && (
+            <CoachAIPanel kind="project" id={project._id} prositContext={{ titre: project.titre }} />
           )}
 
           {/* ── Livrables ────────────────────────────────────────────────── */}
