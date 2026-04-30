@@ -417,19 +417,18 @@ export function startNotificationScheduler(io) {
     runAllDeadlineChecks(io);
   });
 
-  // F6 — Auto-flashcards hebdo : dimanche 09:00.
-  // Cf. services/autoFlashcards.js (Wozniak 1990 SM-2, Ebbinghaus 1885).
-  cron.schedule('0 9 * * 0', () => {
-    runWeeklyAutoFlashcardsRegen();
-  });
+  // DÉSACTIVÉ pour PFE L3 — perspective d'évolution (F6 — Auto-flashcards hebdo dimanche 09:00, Wozniak 1990 SM-2)
+  // cron.schedule('0 9 * * 0', () => {
+  //   runWeeklyAutoFlashcardsRegen();
+  // });
 
-  // F7 — Coach IA proactif : tous les jours à 18:00.
-  cron.schedule('0 18 * * *', () => {
-    runDailyCoachProactiveNotifications(io);
-  });
+  // DÉSACTIVÉ pour PFE L3 — perspective d'évolution (F7 — Coach IA proactif quotidien 18:00)
+  // cron.schedule('0 18 * * *', () => {
+  //   runDailyCoachProactiveNotifications(io);
+  // });
 
   // Un premier check 30s après démarrage (utile en dev)
   setTimeout(() => runAllDeadlineChecks(io), 30_000);
 
-  console.log('[Scheduler] Notification scheduler started (deadlines 08:00 + auto-flashcards Sun 09:00 + coach proactif 18:00)');
+  console.log('[Scheduler] Notification scheduler started (deadlines 08:00) — F6 weekly + F7 18h disabled in MVP build');
 }

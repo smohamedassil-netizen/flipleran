@@ -61,11 +61,11 @@ router.get('/:id/evaluations',  requireRole('professeur', 'admin'), getEvaluatio
 // Aide IA
 router.post('/:id/ai-help', requireRole('etudiant', 'professeur'), getAiHelp);
 
-/* ─── F7 — Coach IA anti-blocage (étudiant uniquement) ───────────────────
-   Pas de quota IA : Groq gratuit + usage ponctuel par étudiant en blocage. */
+/* DÉSACTIVÉ pour PFE L3 — perspective d'évolution (F7 — Coach IA anti-blocage Projet)
 router.get('/:id/coach/status',  requireRole('etudiant'), projectCoachStatus);
 router.post('/:id/coach/suggest', requireRole('etudiant'), projectCoachSuggest);
 router.post('/:id/coach/review',  requireRole('etudiant'), projectCoachReview);
 router.get('/:id/coach/sources',  requireRole('etudiant'), projectCoachSources);
+*/
 
 export default router;

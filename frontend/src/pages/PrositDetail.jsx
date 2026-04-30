@@ -9,9 +9,11 @@ import {
   FinalScoreCard,
   PeerAssessmentMonitor,
 } from '../components/PrositPeerAssessmentBlocks.jsx';
-import PrositAiReport from '../components/PrositAiReport.jsx';
+// DÉSACTIVÉ pour PFE L3 — perspective d'évolution (F2 — Détection plagiat IA)
+// import PrositAiReport from '../components/PrositAiReport.jsx';
 import PrositGroupComposer from '../components/PrositGroupComposer.jsx';
-import CoachAIPanel from '../components/CoachAIPanel.jsx';
+// DÉSACTIVÉ pour PFE L3 — perspective d'évolution (F7 — Coach IA Prosit/Projet)
+// import CoachAIPanel from '../components/CoachAIPanel.jsx';
 import {
   ArrowLeft, Lightbulb, Edit2, Trash2, ChevronRight, Calendar, Send,
   CheckCircle, Save, FileText, Hash, Sparkles, BookOpen, Trophy, AlertTriangle,
@@ -296,7 +298,7 @@ export default function PrositDetail() {
           <PeerAssessmentMonitor prosit={prosit} onUpdated={load} />
         )}
 
-        {/* Intégrité IA (prof, dès la phase recherche : les contributions arrivent) */}
+        {/* DÉSACTIVÉ pour PFE L3 — perspective d'évolution (F2 — Détection plagiat IA)
         {isProf && ['recherche', 'retour', 'evalue', 'archive'].includes(prosit.status) && (
           <details style={{ background: 'white', borderRadius: 12, border: '1px solid #E5E7EB', marginBottom: 14, overflow: 'hidden' }}>
             <summary style={{ cursor: 'pointer', padding: '12px 14px', fontSize: 13, fontWeight: 700, color: '#1B4F72', background: 'linear-gradient(135deg, #EBF3FA, #F8FAFC)', listStyle: 'none' }}>
@@ -307,6 +309,7 @@ export default function PrositDetail() {
             </div>
           </details>
         )}
+        */}
 
         {/* Encart explication des 5 rôles CESI */}
         {(prosit.groupes?.length || 0) > 0 && (
@@ -382,10 +385,11 @@ export default function PrositDetail() {
           )}
         </section>
 
-        {/* F7 — Coach IA anti-blocage : étudiant en phase aller/recherche */}
+        {/* DÉSACTIVÉ pour PFE L3 — perspective d'évolution (F7 — Coach IA anti-blocage Prosit phase aller/recherche)
         {!isProf && myGroup && ['aller', 'recherche'].includes(prosit.status) && (
           <CoachAIPanel kind="prosit" id={prosit._id} prositContext={{ titre: prosit.titre }} />
         )}
+        */}
 
         {/* Espace collaboratif détaillé pour mon groupe (étudiant) */}
         {!isProf && myGroup && ['aller', 'recherche', 'retour'].includes(prosit.status) && (

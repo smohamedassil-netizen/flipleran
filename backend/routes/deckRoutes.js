@@ -27,12 +27,10 @@ router.route('/').get(getDecks).post(createDeck);
 // — soumise au quota mensuel (FREE = 5 / mois).
 router.post('/generate-ai', checkAiQuota('deckGeneration'), generateFlashcardsAI);
 
-// F6 — Auto-flashcards depuis vidéos vues. IMPORTANT : ces routes statiques
-// DOIVENT être déclarées AVANT la route /:id pour ne pas être interprétées
-// comme des deck IDs par Express.
-router.post('/auto-generate', checkAiQuota('deckGeneration'), autoGenerate);
-router.get('/auto-status', autoStatus);
-router.get('/due-today', dueToday);
+// DÉSACTIVÉ pour PFE L3 — perspective d'évolution (F6 — Auto-flashcards depuis vidéos vues, SM-2)
+// router.post('/auto-generate', checkAiQuota('deckGeneration'), autoGenerate);
+// router.get('/auto-status', autoStatus);
+// router.get('/due-today', dueToday);
 
 router.route('/:id').get(getDeckById).put(updateDeck).delete(deleteDeck);
 

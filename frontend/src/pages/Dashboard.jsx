@@ -223,13 +223,13 @@ export default function Dashboard() {
       .finally(() => setLoading(false));
   }, []);
 
-  // F6 — Cartes à réviser aujourd'hui (SM-2). Étudiant uniquement.
-  useEffect(() => {
-    if (user?.role && user.role !== 'etudiant') return;
-    api.get('/decks/due-today')
-      .then((r) => setDueCards(r.data || { count: 0, decks: [] }))
-      .catch(() => setDueCards(null));
-  }, [user?.role]);
+  // DÉSACTIVÉ pour PFE L3 — perspective d'évolution (F6 — Auto-flashcards SM-2)
+  // useEffect(() => {
+  //   if (user?.role && user.role !== 'etudiant') return;
+  //   api.get('/decks/due-today')
+  //     .then((r) => setDueCards(r.data || { count: 0, decks: [] }))
+  //     .catch(() => setDueCards(null));
+  // }, [user?.role]);
 
   // Section "Cette semaine" : deadlines J+0 à J+7. Réservé aux étudiants
   // (l'endpoint backend renvoie 403 sinon — fail silently côté UI).
@@ -378,7 +378,7 @@ export default function Dashboard() {
         <UpcomingDeadlines items={upcoming} loading={upcomingLoading} />
       )}
 
-      {/* ── F6 — Widget flashcards à réviser aujourd'hui (SM-2) ─────── */}
+      {/* DÉSACTIVÉ pour PFE L3 — perspective d'évolution (F6 — Widget flashcards à réviser aujourd'hui, SM-2 Wozniak 1990)
       {user?.role === 'etudiant' && dueCards !== null && (
         <button
           onClick={() => navigate('/decks')}
@@ -422,6 +422,7 @@ export default function Dashboard() {
           <ChevronRight size={18} style={{ opacity: 0.8, flexShrink: 0 }} />
         </button>
       )}
+      */}
 
       {/* ── Quick actions ─────────────────────────────────────────── */}
       <div>

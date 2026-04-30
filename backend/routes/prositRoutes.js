@@ -57,17 +57,17 @@ router.get('/:id/peer-assessments/summary',       requireRole('professeur', 'adm
 router.put('/:id/peer-assessments/deadline',      requireRole('professeur', 'admin'), extendPeerAssessmentDeadline);
 
 /* ─── Détection plagiat IA (F2 sprint-final, Mitchell et al. 2023) ─── */
-router.get('/:id/ai-report', requireRole('professeur', 'admin'), getAiReport);
+// DÉSACTIVÉ pour PFE L3 — perspective d'évolution (F2 — Détection plagiat IA)
+// router.get('/:id/ai-report', requireRole('professeur', 'admin'), getAiReport);
 
 /* ─── Composition de groupes (prof) ─── */
 router.get('/:id/eligible-students', requireRole('professeur', 'admin'), getEligibleStudents);
 
-/* ─── F7 — Coach IA anti-blocage (étudiant uniquement) ────────────────────
-   Pas de quota IA : Groq gratuit + usage ponctuel par étudiant en blocage.
-   Rate-limit global /api (300 req / 15min) reste appliqué côté server.js. */
+/* DÉSACTIVÉ pour PFE L3 — perspective d'évolution (F7 — Coach IA anti-blocage Prosit)
 router.get('/:id/coach/status',  requireRole('etudiant'), prositCoachStatus);
 router.post('/:id/coach/suggest', requireRole('etudiant'), prositCoachSuggest);
 router.post('/:id/coach/review',  requireRole('etudiant'), prositCoachReview);
 router.get('/:id/coach/sources',  requireRole('etudiant'), prositCoachSources);
+*/
 
 export default router;

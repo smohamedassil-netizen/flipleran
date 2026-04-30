@@ -6,7 +6,8 @@ import api from '../utils/api.js';
 import { ArrowLeft, AlertCircle, BookOpen, Home, ListOrdered, MessageCircle } from 'lucide-react';
 import Breadcrumb from '../components/Breadcrumb.jsx';
 import VideoAnalysis from '../components/VideoAnalysis.jsx';
-import AskVideoPanel from '../components/AskVideoPanel.jsx';
+// DÉSACTIVÉ pour PFE L3 — perspective d'évolution (F5 — Demande à la vidéo, RAG sur transcript)
+// import AskVideoPanel from '../components/AskVideoPanel.jsx';
 import { useGamification } from '../context/GamificationContext.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useToast } from '../context/ToastContext.jsx';
@@ -122,7 +123,7 @@ export default function WatchVideo() {
             onFlashcardsTriggered={handleFlashcardsTriggered}
           />
 
-          {/* "Demande à la vidéo" — bouton sous le player, étudiant uniquement */}
+          {/* DÉSACTIVÉ pour PFE L3 — perspective d'évolution (F5 — Demande à la vidéo, RAG sur transcript)
           {user?.role === 'etudiant' && (
             <div style={{ marginTop: 12, display: 'flex', justifyContent: 'flex-end' }}>
               <button
@@ -142,6 +143,7 @@ export default function WatchVideo() {
               </button>
             </div>
           )}
+          */}
 
           {/* Description */}
           {video.description && (
@@ -282,7 +284,7 @@ export default function WatchVideo() {
         </div>
       </div>
 
-      {/* Panneau "Demande à la vidéo" (RAG sur transcript Whisper) */}
+      {/* DÉSACTIVÉ pour PFE L3 — perspective d'évolution (F5 — Demande à la vidéo, RAG sur transcript Whisper)
       {askOpen && user?.role === 'etudiant' && (
         <AskVideoPanel
           videoId={video._id}
@@ -290,6 +292,7 @@ export default function WatchVideo() {
           onClose={() => setAskOpen(false)}
         />
       )}
+      */}
     </Layout>
   );
 }

@@ -502,6 +502,11 @@ export async function postContribution(req, res) {
     // Détection plagiat IA en arrière-plan (fail-soft, jamais bloquant)
     // F2 sprint-final : si la contribution texte est suffisamment longue,
     // on lance l'analyse en background avec timeout 5s.
+    // DÉSACTIVÉ pour PFE L3 — perspective d'évolution (F2 — Détection plagiat IA)
+    // Hook background qui scanne la contribution étudiante avec aiPlagiarismDetector.
+    // Le service backend/services/aiPlagiarismDetector.js est conservé comme code
+    // de référence pour le mémoire mais n'est plus appelé.
+    /*
     const txt = membre.contributionTexte || '';
     if (txt.length >= 80) {
       const prositId = prosit._id;
@@ -510,7 +515,6 @@ export async function postContribution(req, res) {
         try {
           const { detectAIGenerated } = await import('../services/aiPlagiarismDetector.js');
           const report = await detectAIGenerated(txt, { timeoutMs: 5000 });
-          // Re-fetch + update atomique pour éviter d'écraser des changements concurrents
           const fresh = await Prosit.findById(prositId);
           if (!fresh) return;
           const g = fresh.groupes[idx];
@@ -532,6 +536,7 @@ export async function postContribution(req, res) {
         }
       });
     }
+    */
 
     res.json(membre);
   } catch (err) {

@@ -17,8 +17,9 @@ router.use(authMiddleware);
 router.use(requireRole('etudiant'));
 
 router.post('/chat',             postChat);
-router.post('/ask-video',        postAskVideo);
-router.get('/ask-video/quota',   getAskVideoQuota);
+// DÉSACTIVÉ pour PFE L3 — perspective d'évolution (F5 — Demande à la vidéo, RAG)
+// router.post('/ask-video',        postAskVideo);
+// router.get('/ask-video/quota',   getAskVideoQuota);
 router.get('/suggestions',       getSuggestions);
 router.get('/context',           getContext);
 

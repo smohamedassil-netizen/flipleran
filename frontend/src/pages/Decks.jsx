@@ -134,13 +134,10 @@ export default function Decks() {
   const [regenMsg, setRegenMsg] = useState('');
   const navigate = useNavigate();
 
+  // DÉSACTIVÉ pour PFE L3 — perspective d'évolution (F6 — Auto-flashcards SM-2)
   // Charge le statut des decks auto-IA (cartes dues, dernière régen)
-  const fetchAutoStatus = () => {
-    api.get('/decks/auto-status')
-      .then(({ data }) => setAutoStatus(data))
-      .catch(() => setAutoStatus(null));
-  };
-  useEffect(() => { fetchAutoStatus(); }, []);
+  const fetchAutoStatus = () => { /* no-op while F6 is disabled */ };
+  // useEffect(() => { fetchAutoStatus(); }, []);
 
   const handleCreate = async (e) => {
     e.preventDefault();
@@ -215,8 +212,8 @@ export default function Decks() {
         <span><strong>Les decks</strong> sont des jeux de cartes mémoire (flashcards) : face avant = question, face arrière = réponse. Idéal pour réviser du vocabulaire, des définitions, des formules. Utilisez l'IA pour en générer automatiquement depuis vos vidéos de cours.</span>
       </div>
 
-      {/* ─── F6 — Section "Tes decks de révision auto-générés" ───────── */}
-      <div
+      {/* DÉSACTIVÉ pour PFE L3 — perspective d'évolution (F6 — Auto-flashcards SM-2) */}
+      {false && (<div
         style={{
           background: 'linear-gradient(135deg, #faf5ff 0%, #f0f9ff 100%)',
           border: '1px solid #e9d5ff',
@@ -315,7 +312,7 @@ export default function Decks() {
             Aucun deck auto pour l'instant. Termine une vidéo (≥80%) ou clique sur <strong>Mettre à jour</strong> pour en générer depuis tes cours suivis.
           </div>
         )}
-      </div>
+      </div>)}
 
       {/* Create form */}
       {showForm && (
@@ -360,7 +357,9 @@ export default function Decks() {
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '16px' }}>
           {decks.map((deck) => {
-            const auto = isAutoDeck(deck);
+            // DÉSACTIVÉ pour PFE L3 — perspective d'évolution (F6 — badge AUTO sur deck auto-IA)
+            // const auto = isAutoDeck(deck);
+            const auto = false;
             return (
               <div
                 key={deck._id}
