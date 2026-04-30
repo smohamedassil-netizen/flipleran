@@ -2,6 +2,7 @@ import express from 'express';
 import {
   getCourses, createCourse, getCourseById, updateCourse, deleteCourse,
   updateAiPersona, getCourseOutcomes, updateCourseOutcomes,
+  getCourseInsights, getStudentSuggestion,
 } from '../controllers/courseController.js';
 import authMiddleware from '../middleware/authMiddleware.js';
 import requireRole from '../middleware/roleMiddleware.js';
@@ -21,5 +22,9 @@ router.put('/:id/ai-persona', requireRole('professeur', 'admin'), updateAiPerson
 // Objectifs d'apprentissage Bloom (Anderson & Krathwohl, 2001 ; Biggs, 1996)
 router.get('/:id/outcomes', getCourseOutcomes);
 router.put('/:id/outcomes', requireRole('professeur', 'admin'), updateCourseOutcomes);
+
+// Insights pédagogiques IA (F3 sprint-final, Hattie 2009 + Black & Wiliam 1998)
+router.get('/:id/insights',                       requireRole('professeur', 'admin'), getCourseInsights);
+router.get('/:id/insights/student/:userId',       requireRole('professeur', 'admin'), getStudentSuggestion);
 
 export default router;

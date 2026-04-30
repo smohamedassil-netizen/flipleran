@@ -4,8 +4,9 @@ import Layout from '../components/Layout.jsx';
 import api from '../utils/api.js';
 import {
   ArrowLeft, BarChart3, Users, Video as VideoIcon, FileText,
-  Send, CheckCircle, Clock, AlertTriangle, Search, Bell, MessageCircle,
+  Send, CheckCircle, Clock, AlertTriangle, Search, Bell, MessageCircle, Sparkles,
 } from 'lucide-react';
+import StudentSuggestionModal from '../components/StudentSuggestionModal.jsx';
 
 function StatCard({ icon: Icon, label, value, suffix, color }) {
   return (
@@ -49,6 +50,9 @@ export default function ProfessorTracking() {
   const [fbModal, setFbModal] = useState(null); // { student }
   const [fbMessage, setFbMessage] = useState('');
   const [fbSending, setFbSending] = useState(false);
+
+  /* Suggestion IA personnalisée par étudiant (F3 sprint-final) */
+  const [suggestionFor, setSuggestionFor] = useState(null); // { student }
 
   /* ── Charger la liste des cours du prof ────────────────────────────── */
   useEffect(() => {
@@ -326,12 +330,36 @@ export default function ProfessorTracking() {
                       >
                         <MessageCircle size={12} /> Retour
                       </button>
+                      <button
+                        onClick={() => setSuggestionFor({ student: row.student })}
+                        aria-label={`Suggestion IA pour ${row.student.prenom} ${row.student.nom}`}
+                        title="Mini-plan d'action IA personnalisé"
+                        style={{
+                          display: 'inline-flex', alignItems: 'center', gap: 4,
+                          padding: '6px 10px', borderRadius: 6,
+                          background: 'linear-gradient(135deg, #9333EA, #C084FC)',
+                          color: '#fff', border: 'none',
+                          fontSize: 12, fontWeight: 600, cursor: 'pointer',
+                        }}
+                      >
+                        <Sparkles size={12} /> IA
+                      </button>
                     </div>
                   </div>
                 );
               })}
             </div>
           </>
+        )}
+
+        {/* Modal Suggestion IA personnalisée */}
+        {suggestionFor && (
+          <StudentSuggestionModal
+            courseId={selectedCourseId}
+            userId={suggestionFor.student._id}
+            studentName={`${suggestionFor.student.prenom} ${suggestionFor.student.nom}`}
+            onClose={() => setSuggestionFor(null)}
+          />
         )}
 
         {/* Modal de rappel personnalisé */}

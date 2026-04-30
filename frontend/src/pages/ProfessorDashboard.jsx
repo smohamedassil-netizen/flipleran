@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import Layout from '../components/Layout.jsx';
 import api from '../utils/api.js';
+import TeacherInsightsWidget from '../components/TeacherInsightsWidget.jsx';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid,
   Tooltip, ResponsiveContainer, Cell, ReferenceLine,
@@ -366,6 +367,9 @@ export default function ProfessorDashboard() {
 
       {/* ── Alertes urgentes (visibles sans sélection de cours) ── */}
       {alertsBlock}
+
+      {/* ── Insights IA (F3 sprint-final, Hattie 2009 + Black & Wiliam 1998) ── */}
+      <TeacherInsightsWidget courseId={courseId} />
 
       {/* ── Header ────────────────────────────────────────── */}
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 24, gap: 16, flexWrap: 'wrap' }}>

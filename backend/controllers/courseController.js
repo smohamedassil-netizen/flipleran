@@ -1,5 +1,6 @@
 import Course from '../models/Course.js';
 import { BLOOM_LEVELS } from '../models/LearningOutcome.js';
+import { generateInsights, generateStudentSuggestion, clearCache as clearInsightsCache } from '../services/teacherInsights.js';
 
 export const getCourses = async (req, res) => {
   try {
@@ -184,6 +185,47 @@ export const updateAiPersona = async (req, res) => {
     if (!course) return res.status(404).json({ message: 'Cours introuvable ou accès refusé' });
     res.json(course);
   } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+/**
+ * GET /api/courses/:id/insights
+ * Insights pédagogiques IA pour le prof (Hattie 2009, Black & Wiliam 1998).
+ * Cache 1h ; ?refresh=true bypass le cache.
+ */
+export const getCourseInsights = async (req, res) => {
+  try {
+    const course = await Course.findById(req.params.id).select('professorId');
+    if (!course) return res.status(404).json({ message: 'Cours introuvable' });
+    if (req.user.role !== 'admin' && course.professorId.toString() !== req.user.id) {
+      return res.status(403).json({ message: 'Accès refusé' });
+    }
+    const bypassCache = req.query.refresh === 'true';
+    const payload = await generateInsights(req.params.id, { bypassCache });
+    res.json(payload);
+  } catch (err) {
+    console.error('[insights] getCourseInsights:', err);
+    res.status(500).json({ message: err.message });
+  }
+};
+
+/**
+ * GET /api/courses/:id/insights/student/:userId
+ * Suggestion IA pour un étudiant spécifique.
+ */
+export const getStudentSuggestion = async (req, res) => {
+  try {
+    const { id: courseId, userId } = req.params;
+    const course = await Course.findById(courseId).select('professorId');
+    if (!course) return res.status(404).json({ message: 'Cours introuvable' });
+    if (req.user.role !== 'admin' && course.professorId.toString() !== req.user.id) {
+      return res.status(403).json({ message: 'Accès refusé' });
+    }
+    const payload = await generateStudentSuggestion(courseId, userId);
+    res.json(payload);
+  } catch (err) {
+    console.error('[insights] getStudentSuggestion:', err);
     res.status(500).json({ message: err.message });
   }
 };
