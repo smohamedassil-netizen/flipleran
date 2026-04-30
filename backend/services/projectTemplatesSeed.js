@@ -280,4 +280,5 @@ export async function seedOfficialTemplates() {
   return { created, skipped };
 }
 
+export { TEMPLATES };
 export default { seedOfficialTemplates, TEMPLATES };
