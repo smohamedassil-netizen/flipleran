@@ -21,6 +21,9 @@ import {
   addIdea,
   deleteIdea,
 } from '../controllers/projectController.js';
+import {
+  projectCoachStatus, projectCoachSuggest, projectCoachReview, projectCoachSources,
+} from '../controllers/coachController.js';
 
 const router = express.Router();
 router.use(authMiddleware);
@@ -57,5 +60,12 @@ router.get('/:id/evaluations',  requireRole('professeur', 'admin'), getEvaluatio
 
 // Aide IA
 router.post('/:id/ai-help', requireRole('etudiant', 'professeur'), getAiHelp);
+
+/* ─── F7 — Coach IA anti-blocage (étudiant uniquement) ───────────────────
+   Pas de quota IA : Groq gratuit + usage ponctuel par étudiant en blocage. */
+router.get('/:id/coach/status',  requireRole('etudiant'), projectCoachStatus);
+router.post('/:id/coach/suggest', requireRole('etudiant'), projectCoachSuggest);
+router.post('/:id/coach/review',  requireRole('etudiant'), projectCoachReview);
+router.get('/:id/coach/sources',  requireRole('etudiant'), projectCoachSources);
 
 export default router;

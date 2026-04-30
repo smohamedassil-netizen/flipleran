@@ -14,6 +14,9 @@ import {
   getAiReport,
   getEligibleStudents,
 } from '../controllers/prositController.js';
+import {
+  prositCoachStatus, prositCoachSuggest, prositCoachReview, prositCoachSources,
+} from '../controllers/coachController.js';
 
 const router = express.Router();
 router.use(authMiddleware);
@@ -58,5 +61,13 @@ router.get('/:id/ai-report', requireRole('professeur', 'admin'), getAiReport);
 
 /* ─── Composition de groupes (prof) ─── */
 router.get('/:id/eligible-students', requireRole('professeur', 'admin'), getEligibleStudents);
+
+/* ─── F7 — Coach IA anti-blocage (étudiant uniquement) ────────────────────
+   Pas de quota IA : Groq gratuit + usage ponctuel par étudiant en blocage.
+   Rate-limit global /api (300 req / 15min) reste appliqué côté server.js. */
+router.get('/:id/coach/status',  requireRole('etudiant'), prositCoachStatus);
+router.post('/:id/coach/suggest', requireRole('etudiant'), prositCoachSuggest);
+router.post('/:id/coach/review',  requireRole('etudiant'), prositCoachReview);
+router.get('/:id/coach/sources',  requireRole('etudiant'), prositCoachSources);
 
 export default router;
