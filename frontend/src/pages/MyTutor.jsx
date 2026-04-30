@@ -62,6 +62,17 @@ export default function MyTutor() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
+  /* ── F7 — Pré-remplissage depuis le Coach IA (deeplink) ─────────── */
+  useEffect(() => {
+    try {
+      const prefill = sessionStorage.getItem('tutor.prefill');
+      if (prefill) {
+        setInput(prefill);
+        sessionStorage.removeItem('tutor.prefill');
+      }
+    } catch { /* sessionStorage indisponible */ }
+  }, []);
+
   /* ── Envoi d'un message ──────────────────────────────────────────── */
   const sendMessage = async (text) => {
     const msg = (text ?? input).trim();

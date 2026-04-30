@@ -11,6 +11,7 @@ import {
 } from '../components/PrositPeerAssessmentBlocks.jsx';
 import PrositAiReport from '../components/PrositAiReport.jsx';
 import PrositGroupComposer from '../components/PrositGroupComposer.jsx';
+import CoachAIPanel from '../components/CoachAIPanel.jsx';
 import {
   ArrowLeft, Lightbulb, Edit2, Trash2, ChevronRight, Calendar, Send,
   CheckCircle, Save, FileText, Hash, Sparkles, BookOpen, Trophy, AlertTriangle,
@@ -380,6 +381,11 @@ export default function PrositDetail() {
             </div>
           )}
         </section>
+
+        {/* F7 — Coach IA anti-blocage : étudiant en phase aller/recherche */}
+        {!isProf && myGroup && ['aller', 'recherche'].includes(prosit.status) && (
+          <CoachAIPanel kind="prosit" id={prosit._id} prositContext={{ titre: prosit.titre }} />
+        )}
 
         {/* Espace collaboratif détaillé pour mon groupe (étudiant) */}
         {!isProf && myGroup && ['aller', 'recherche', 'retour'].includes(prosit.status) && (
