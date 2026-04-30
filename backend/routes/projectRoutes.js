@@ -30,6 +30,13 @@ import {
 import {
   projectCoachStatus, projectCoachSuggest, projectCoachReview, projectCoachSources,
 } from '../controllers/coachController.js';
+// F9 — Forum + Peer Review
+import {
+  listThreads, createThread, replyToThread, updateThread, deleteThread,
+} from '../controllers/projectForumController.js';
+import {
+  assignPeerReviewers, getMyAssignments, submitPeerReview, getPeerReviewSummary,
+} from '../controllers/projectPeerReviewController.js';
 
 const router = express.Router();
 router.use(authMiddleware);
@@ -84,5 +91,18 @@ router.post('/:id/livrables/:livrableId/feedback', requireRole('professeur', 'ad
 router.get('/:id/progress',  getProjectProgress);
 router.get('/:id/rubric',    getProjectRubric);
 router.put('/:id/rubric',    requireRole('professeur', 'admin'), setProjectRubric);
+
+/* ─── F9 — Forum (threads + replies + pin/résolu) ───────────────────────── */
+router.get('/:id/threads',                                   listThreads);
+router.post('/:id/threads',                                  createThread);
+router.post('/:id/threads/:threadId/replies',                replyToThread);
+router.patch('/:id/threads/:threadId',                       updateThread);
+router.delete('/:id/threads/:threadId',                      deleteThread);
+
+/* ─── F9 — Peer Review (auto-pairing + soumission + summary) ───────────── */
+router.post('/:id/peer-reviews/assign',                      requireRole('professeur', 'admin'), assignPeerReviewers);
+router.get('/:id/peer-reviews/mine',                         requireRole('etudiant'), getMyAssignments);
+router.post('/:id/peer-reviews/:reviewId/submit',            requireRole('etudiant'), submitPeerReview);
+router.get('/:id/peer-reviews/summary',                      requireRole('professeur', 'admin'), getPeerReviewSummary);
 
 export default router;
