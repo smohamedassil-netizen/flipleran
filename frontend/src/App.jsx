@@ -36,6 +36,7 @@ import LandingPage          from './pages/LandingPage.jsx';
 import ProjectList          from './pages/ProjectList.jsx';
 import ProjectDetail        from './pages/ProjectDetail.jsx';
 import ProjectCreate        from './pages/ProjectCreate.jsx';
+import ProjectTemplateLibrary from './pages/ProjectTemplateLibrary.jsx';
 import PrositList           from './pages/PrositList.jsx';
 import PrositCreate         from './pages/PrositCreate.jsx';
 import PrositDetail         from './pages/PrositDetail.jsx';
@@ -154,6 +155,7 @@ export default function App() {
             <Route path="/professor/qcm"                       element={<ProfessorQCMHub />} />
             <Route path="/professor/badges"                    element={<BadgeManagement />} />
             <Route path="/professor/projects/create"            element={<ProjectCreate />} />
+            <Route path="/professor/templates"                  element={<ProjectTemplateLibrary />} />
             <Route path="/prosits/new"                          element={<PrositCreate />} />
             <Route path="/professor/tracking"                   element={<ProfessorTracking />} />
             <Route path="/professor/tracking/:courseId"         element={<ProfessorTracking />} />

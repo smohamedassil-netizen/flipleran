@@ -4,7 +4,7 @@ import Layout from '../components/Layout.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
 import api from '../utils/api.js';
 import {
-  ArrowLeft, Plus, Trash2, Save, AlertCircle, X,
+  ArrowLeft, Plus, Trash2, Save, AlertCircle, X, BookOpen, Wand2,
 } from 'lucide-react';
 
 /* Phases par défaut (utilisé en fallback si l'API templates est indisponible) */
@@ -45,6 +45,7 @@ export default function ProjectCreate() {
   const [phases, setPhases] = useState(DEFAULT_PHASES.map(t => ({ titre: t })));
   const [phasesTouched, setPhasesTouched] = useState(false); // F8 : si l'utilisateur a édité, on n'écrase plus
   const [rubricFromTemplate, setRubricFromTemplate] = useState([]); // F8 : payload envoyé au backend
+  const [fromTemplateName, setFromTemplateName] = useState(''); // F10 : badge "Issu de template X"
 
   const [saving, setSaving] = useState(false);
   const [error, setError]   = useState('');
@@ -53,6 +54,36 @@ export default function ProjectCreate() {
     api.get('/courses')
       .then(({ data }) => setCourses(data))
       .catch(console.error);
+  }, []);
+
+  /* F10 — Pré-remplissage depuis ProjectTemplateLibrary via sessionStorage */
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem('projectCreate.prefill');
+      if (!raw) return;
+      const tpl = JSON.parse(raw);
+      sessionStorage.removeItem('projectCreate.prefill');
+      // Pré-remplit les champs principaux. Le user reste libre d'éditer.
+      if (tpl.title) setTitre(tpl.title);
+      if (tpl.description) setDescription(tpl.description);
+      if (tpl.enonce) setEnonce(tpl.enonce);
+      if (Array.isArray(tpl.motsCles)) setMotsCles(tpl.motsCles);
+      if (tpl.type) setType(tpl.type);
+      if (Array.isArray(tpl.phases) && tpl.phases.length) {
+        setPhases(tpl.phases.map((p) => ({
+          titre: p.titre,
+          description: p.description || '',
+          weight: p.weight,
+          livrableSpec: p.livrableSpec || null,
+        })));
+        // empêche le useEffect F8 de réécrire ces phases avec le template générique
+        setPhasesTouched(true);
+      }
+      if (Array.isArray(tpl.rubric) && tpl.rubric.length) {
+        setRubricFromTemplate(tpl.rubric);
+      }
+      setFromTemplateName(tpl.title || '');
+    } catch (e) { console.error('prefill error:', e); }
   }, []);
 
   /* F8 — Charge le template phases + rubric à chaque changement de type,
@@ -165,12 +196,43 @@ export default function ProjectCreate() {
   return (
     <Layout title="Nouveau projet">
       <div style={{ maxWidth: 720, margin: '0 auto' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
-          <button className="btn btn-ghost btn-sm" onClick={() => navigate(-1)}>
-            <ArrowLeft size={15} />
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 20, flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <button className="btn btn-ghost btn-sm" onClick={() => navigate(-1)}>
+              <ArrowLeft size={15} />
+            </button>
+            <h1 className="page-title" style={{ margin: 0 }}>Créer un nouveau projet</h1>
+          </div>
+          {/* F10 — bouton "Partir d'un template" */}
+          <button
+            type="button"
+            onClick={() => navigate('/professor/templates')}
+            className="btn btn-sm"
+            style={{
+              background: 'linear-gradient(135deg, #7c3aed 0%, #4338ca 100%)',
+              color: 'white', border: 'none', display: 'inline-flex', alignItems: 'center', gap: 6,
+            }}
+          >
+            <BookOpen size={13} /> Partir d'un template
           </button>
-          <h1 className="page-title">Créer un nouveau projet</h1>
         </div>
+
+        {/* F10 — bandeau "Issu d'un template" */}
+        {fromTemplateName && (
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 10,
+            padding: '10px 14px', marginBottom: 16,
+            background: 'linear-gradient(135deg, #faf5ff 0%, #eff6ff 100%)',
+            border: '1px solid #e9d5ff', borderRadius: 10,
+            fontSize: 12.5, color: '#1e1b4b',
+          }}>
+            <Wand2 size={14} color="#7c3aed" />
+            <span>
+              <strong>Pré-rempli depuis le template :</strong> {fromTemplateName}.
+              Tu peux tout éditer librement avant de publier.
+            </span>
+          </div>
+        )}
 
         <form onSubmit={handleSubmit}>
           {error && (
