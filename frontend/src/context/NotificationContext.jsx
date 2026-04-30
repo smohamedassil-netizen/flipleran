@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
 import { io } from 'socket.io-client';
+import { SOCKET_URL, makeSocketConfig } from '../utils/socketConfig.js';
 import api from '../utils/api.js';
 import { useToast } from './ToastContext.jsx';
 
@@ -91,11 +92,7 @@ export function NotificationProvider({ children }) {
     // Charger l'historique au démarrage
     fetchNotifications();
 
-    const socketUrl = import.meta.env.VITE_SOCKET_URL || (import.meta.env.PROD ? '' : 'http://localhost:5000');
-    const socket = io(socketUrl, {
-      auth: { token: user.token },
-      transports: ['websocket', 'polling'],
-    });
+    const socket = io(SOCKET_URL, makeSocketConfig(user.token));
     socketRef.current = socket;
 
     socket.on('connect', () => {

@@ -2,6 +2,11 @@ import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import jwt from 'jsonwebtoken';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
+import mongoSanitize from 'express-mongo-sanitize';
+import hpp from 'hpp';
+import cookieParser from 'cookie-parser';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
 import path from 'path';
@@ -38,13 +43,12 @@ import feedbackRoutes      from './routes/feedbackRoutes.js';
 import battleRoutes        from './routes/battleRoutes.js';
 import prositRoutes        from './routes/prositRoutes.js';
 import userRoutes          from './routes/userRoutes.js';
-import { seedBadges }   from './services/points.js';
-import { seedRewards }  from './services/rewardsSeed.js';
+import videoQuestionRoutes from './routes/videoQuestionRoutes.js';
+import learningPathRoutes  from './routes/learningPathRoutes.js';
 import { seedDemoContent } from './services/contentSeed.js';
 import { seedDemoData } from './services/demoSeed.js';
 import { seedProsits }  from './services/prositsSeed.js';
 import { seedUsers } from './services/usersSeed.js';
-import { migrateBrokenVideos } from './services/videoMigration.js';
 
 // Migration : les comptes créés avant le système d'approval n'ont pas de status,
 // on les considère actifs par défaut (sinon ils ne pourraient plus se connecter).
@@ -61,6 +65,35 @@ async function migrateUserStatus() {
     console.error('[migration] userStatus:', err.message);
   }
 }
+
+/**
+ * Seeds de contenu de démonstration (utilisateurs fictifs, cours, vidéos,
+ * Prosits…). Strictement opt-in en dev/staging via SEED_CONTENT='true'.
+ * Ne tourne JAMAIS en production : Render redémarre fréquemment et un seed
+ * automatique pourrait écraser des données réelles.
+ *
+ * Pour les seeds idempotents essentiels (badges, rewards), voir le script
+ * dédié backend/scripts/seed-prod.js, à exécuter manuellement après le
+ * premier déploiement.
+ */
+async function runDemoSeedsIfEnabled() {
+  if (process.env.NODE_ENV === 'production') {
+    return; // garde-fou explicite : jamais en prod, même si SEED_CONTENT=true
+  }
+  if (process.env.SEED_CONTENT !== 'true') {
+    return; // opt-in strict (pas opt-out comme avant)
+  }
+  console.log('[seed] SEED_CONTENT=true détecté en dev/staging — exécution des seeds de démo…');
+  try {
+    await seedUsers();
+    await seedDemoContent();
+    await seedDemoData();
+    await seedProsits();
+    console.log('[seed] Seeds de démo terminés.');
+  } catch (err) {
+    console.error('[seed]', err.message);
+  }
+}
 import { startNotificationScheduler } from './services/notificationScheduler.js';
 
 const app = express();
@@ -74,6 +107,7 @@ const io = new Server(httpServer, {
   cors: {
     origin: allowedOrigins,
     methods: ['GET', 'POST'],
+    credentials: true,
   },
 });
 
@@ -85,31 +119,55 @@ app.set('io', io);
 if (process.env.NODE_ENV !== 'test') {
   connectDB().then(async () => {
     await migrateUserStatus();
-    // [DÉSACTIVÉ 28/04/2026] migrateBrokenVideos() écrasait silencieusement les vidéos
-    // YouTube par des MP4 samples au démarrage, ce qui détruisait les uploads légitimes.
-    // À ne JAMAIS réactiver tel quel.
-    // await migrateBrokenVideos().catch(err => console.error('[videoMigration]', err.message));
-
-    seedBadges().catch(console.error);
-    seedRewards().catch(console.error);
-    if (process.env.SEED_CONTENT !== 'false') {
-      try {
-        await seedUsers();
-        await seedDemoContent();
-        await seedDemoData();
-        await seedProsits();
-      } catch (err) {
-        console.error('[seed]', err.message);
-      }
-    }
+    await runDemoSeedsIfEnabled();
     startNotificationScheduler(io);
   });
 }
 
-// Middleware
-app.use(cors({ origin: allowedOrigins }));
-app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+// ── Security middleware ──────────────────────────────────────────────────
+app.use(helmet({ contentSecurityPolicy: false }));
+app.use(mongoSanitize());
+app.use(hpp());
+app.use(cookieParser());
+app.use(cors({
+  origin: allowedOrigins,
+  credentials: true,               // needed for httpOnly refresh cookie
+}));
+app.use(express.json({ limit: '1mb' }));
+app.use(express.urlencoded({ extended: true, limit: '1mb' }));
+
+// ── Rate limiters ───────────────────────────────────────────────────────
+const globalLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,        // 15 min
+  max: 300,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { message: 'Trop de requêtes, réessayez dans 15 minutes.' },
+});
+app.use('/api', globalLimiter);
+
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  skipSuccessfulRequests: false,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { message: 'Trop de tentatives, réessayez dans 15 minutes.' },
+});
+app.use('/api/auth/login', authLimiter);
+app.use('/api/auth/register', authLimiter);
+
+const aiLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,        // 1 hour
+  max: 30,
+  keyGenerator: (req) => req.user?.id || 'anon',
+  validate: { xForwardedForHeader: false },
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { message: 'Limite IA atteinte (30/h), réessayez plus tard.' },
+});
+app.use('/api/chatbot', aiLimiter);
+app.use('/api/qcm/generate-ai', aiLimiter);
 
 // Sert les vidéos locales déposées par le prof dans backend/public/videos/
 // URL : http://.../videos/<filename>.mp4
@@ -143,6 +201,8 @@ app.use('/api/feedback',   feedbackRoutes);
 app.use('/api/battle',     battleRoutes);
 app.use('/api/prosits',    prositRoutes);
 app.use('/api/users',      userRoutes);
+app.use('/api/video-questions', videoQuestionRoutes);
+app.use('/api/learning-paths', learningPathRoutes);
 
 // ── En production : servir le frontend buildé ──────────────────────────────
 if (process.env.NODE_ENV === 'production') {
@@ -189,6 +249,72 @@ const battleRooms = new Map();
 /* ── roomUsers: roomId → Map<socketId, userInfo> ──────────────────────── */
 const roomUsers = new Map();
 
+/* ═══════════════════════════════════════════════════════════════════════
+   Socket Room ACL — canJoinRoom(socket, roomId)
+   Returns true if the user is allowed to join the room.
+═══════════════════════════════════════════════════════════════════════ */
+async function canJoinRoom(socket, roomId) {
+  const { id: userId, role } = socket.user;
+  if (role === 'admin') return true;
+
+  // user_<id> — personal notification room
+  if (roomId.startsWith('user_')) {
+    return roomId === `user_${userId}`;
+  }
+
+  // course_<courseId> — enrolled student OR course professor
+  if (roomId.startsWith('course_')) {
+    const courseId = roomId.replace('course_', '');
+    const [progress, course] = await Promise.all([
+      (await import('./models/Progress.js')).default.exists({ userId, courseId }),
+      (await import('./models/Course.js')).default.exists({ _id: courseId, professorId: userId }),
+    ]);
+    return !!(progress || course);
+  }
+
+  // prosit_<prositId>
+  if (roomId.startsWith('prosit_')) {
+    const prositId = roomId.replace('prosit_', '');
+    const Prosit = (await import('./models/Prosit.js')).default;
+    const found = await Prosit.exists({
+      _id: prositId,
+      $or: [
+        { createdBy: userId },
+        { 'groupes.membres.userId': userId },
+      ],
+    });
+    return !!found;
+  }
+
+  // project_<projectId>
+  if (roomId.startsWith('project_')) {
+    const projectId = roomId.replace('project_', '');
+    const Project = (await import('./models/Project.js')).default;
+    const found = await Project.exists({
+      _id: projectId,
+      $or: [
+        { createdBy: userId },
+        { 'groupes.membres.userId': userId },
+      ],
+    });
+    return !!found;
+  }
+
+  // BATTLE-<roomId> — only players already registered via battle:create/join
+  if (roomId.startsWith('BATTLE-')) {
+    const room = battleRooms.get(roomId);
+    return !!room && room.players.some(p => p.odgerId === userId);
+  }
+
+  // bot_<…>, private chat rooms — allow (authenticated users only)
+  if (roomId.startsWith('bot_') || roomId.startsWith('private_')) {
+    return true;
+  }
+
+  // Unknown prefix → deny
+  return false;
+}
+
 function getRoomParticipants(roomId) {
   const room = roomUsers.get(roomId);
   if (!room) return [];
@@ -214,17 +340,38 @@ function leaveRoom(socket, roomId) {
 io.on('connection', (socket) => {
   const user = socket.user;
 
-  // Auto-join personal notification room
+  // Auto-join personal notification room (server-side, no user input)
   socket.join(`user_${user.id}`);
 
-  /* ── join (generic room join for notifications) ─────────────────────── */
-  socket.on('join', (room) => {
-    if (room) socket.join(room);
+  /* ── join — validated room join (replaces old generic handler) ────── */
+  socket.on('join', async (roomId) => {
+    if (!roomId) return;
+    try {
+      if (!(await canJoinRoom(socket, roomId))) {
+        console.warn(`[ACL] DENIED join room=${roomId} user=${user.id} role=${user.role}`);
+        socket.emit('error', { message: 'Accès refusé à cette salle.' });
+        return;
+      }
+      socket.join(roomId);
+    } catch (err) {
+      console.error(`[ACL] Error checking room=${roomId}:`, err.message);
+    }
   });
 
-  /* ── join_room ─────────────────────────────────────────────────────── */
+  /* ── join_room — chat room join with ACL ─────────────────────────── */
   socket.on('join_room', async (roomId) => {
     if (!roomId) return;
+
+    try {
+      if (!(await canJoinRoom(socket, roomId))) {
+        console.warn(`[ACL] DENIED join_room room=${roomId} user=${user.id} role=${user.role}`);
+        socket.emit('error', { message: 'Accès refusé à cette salle.' });
+        return;
+      }
+    } catch (err) {
+      console.error(`[ACL] Error checking room=${roomId}:`, err.message);
+      return;
+    }
 
     // Quitter la salle précédente
     if (socket.currentRoom && socket.currentRoom !== roomId) {

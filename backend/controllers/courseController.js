@@ -1,4 +1,5 @@
 import Course from '../models/Course.js';
+import { BLOOM_LEVELS } from '../models/LearningOutcome.js';
 
 export const getCourses = async (req, res) => {
   try {
@@ -82,6 +83,78 @@ export const deleteCourse = async (req, res) => {
     const course = await Course.findOneAndDelete({ _id: req.params.id, professorId: req.user.id });
     if (!course) return res.status(404).json({ message: 'Cours introuvable' });
     res.json({ message: 'Cours supprime' });
+  } catch (err) { res.status(500).json({ message: err.message }); }
+};
+
+/**
+ * GET /api/courses/:id/outcomes
+ * Renvoie les objectifs d'apprentissage et le contrat pédagogique d'un cours.
+ *
+ * Accessible à tous les rôles authentifiés. Les étudiants doivent appartenir
+ * à la filière/promotion du cours (cohérent avec getCourseById).
+ *
+ * @see Anderson & Krathwohl (2001) ; Biggs (1996) — alignement constructif.
+ */
+export const getCourseOutcomes = async (req, res) => {
+  try {
+    const course = await Course.findById(req.params.id)
+      .select('titre filiere promotion learningOutcomes pedagogicalContract');
+    if (!course) return res.status(404).json({ message: 'Cours introuvable' });
+    if (req.user.role === 'etudiant' &&
+        (course.filiere !== req.user.filiere || course.promotion !== req.user.promotion)) {
+      return res.status(403).json({ message: 'Ce cours ne fait pas partie de ta filière.' });
+    }
+    res.json({
+      _id: course._id,
+      titre: course.titre,
+      learningOutcomes: course.learningOutcomes || [],
+      pedagogicalContract: course.pedagogicalContract || '',
+    });
+  } catch (err) { res.status(500).json({ message: err.message }); }
+};
+
+/**
+ * PUT /api/courses/:id/outcomes
+ * Met à jour les objectifs d'apprentissage et le contrat pédagogique.
+ * Réservé au professeur du cours (ou admin).
+ *
+ * Body : { learningOutcomes: [{ statement, bloomLevel, estimatedMinutes }],
+ *          pedagogicalContract: 'markdown…' }
+ */
+export const updateCourseOutcomes = async (req, res) => {
+  try {
+    const filter = req.user.role === 'admin'
+      ? { _id: req.params.id }
+      : { _id: req.params.id, professorId: req.user.id };
+
+    const course = await Course.findOne(filter);
+    if (!course) return res.status(404).json({ message: 'Cours introuvable ou accès refusé' });
+
+    const { learningOutcomes, pedagogicalContract } = req.body;
+
+    if (Array.isArray(learningOutcomes)) {
+      // On préserve les _id existants pour ne pas casser les Video.coversOutcomes
+      const sanitized = learningOutcomes
+        .filter((o) => o && typeof o.statement === 'string' && o.statement.trim())
+        .filter((o) => BLOOM_LEVELS.includes(o.bloomLevel))
+        .map((o) => ({
+          ...(o._id ? { _id: o._id } : {}),
+          statement:        o.statement.trim(),
+          bloomLevel:       o.bloomLevel,
+          estimatedMinutes: Math.max(0, Number(o.estimatedMinutes) || 30),
+        }));
+      course.learningOutcomes = sanitized;
+    }
+    if (typeof pedagogicalContract === 'string') {
+      course.pedagogicalContract = pedagogicalContract.slice(0, 2000);
+    }
+
+    await course.save();
+    res.json({
+      _id: course._id,
+      learningOutcomes: course.learningOutcomes,
+      pedagogicalContract: course.pedagogicalContract,
+    });
   } catch (err) { res.status(500).json({ message: err.message }); }
 };
 

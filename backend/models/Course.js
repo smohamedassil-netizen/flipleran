@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import learningOutcomeSchema from './LearningOutcome.js';
 
 /**
  * Persona de l'agent IA spécialisé pour ce module.
@@ -14,6 +15,15 @@ const aiPersonaSchema = new mongoose.Schema({
   couleur:     { type: String, default: '#1B4F72' }, // couleur UI
 }, { _id: false });
 
+/**
+ * Course schema — module pédagogique d'une promotion.
+ *
+ * Le couple (`learningOutcomes`, `pedagogicalContract`) implémente
+ * l'**alignement constructif** (Biggs, 1996) : le prof rend explicite ce que
+ * l'étudiant saura faire (objectifs Bloom) et l'engagement réciproque qui
+ * encadre le module (contrat pédagogique). Ce socle déclaratif sert ensuite
+ * d'ancre pour les vidéos (`Video.coversOutcomes`), les QCM et le parcours.
+ */
 const courseSchema = new mongoose.Schema(
   {
     titre:       { type: String, required: true, trim: true },
@@ -23,6 +33,12 @@ const courseSchema = new mongoose.Schema(
     promotion:   { type: String, required: true },
     isActive:    { type: Boolean, default: true },
     aiPersona:   { type: aiPersonaSchema, default: () => ({}) },
+
+    // Objectifs d'apprentissage (Anderson & Krathwohl, 2001)
+    learningOutcomes:    { type: [learningOutcomeSchema], default: [] },
+
+    // Contrat pédagogique (Markdown, max 2000 chars) — Biggs (1996)
+    pedagogicalContract: { type: String, default: '', maxlength: 2000 },
   },
   { timestamps: true }
 );

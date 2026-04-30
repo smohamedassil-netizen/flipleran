@@ -11,6 +11,7 @@ const API_ROOT = import.meta.env.VITE_API_URL
 const api = axios.create({
   baseURL: API_ROOT,
   timeout: 15000,
+  withCredentials: true,            // send httpOnly refresh cookie
 });
 
 /* ── Request: injecte le token JWT ──────────────────────────────────────── */
@@ -24,20 +25,86 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-/* ── Response: gère les erreurs globales ────────────────────────────────── */
+/* ── Response: auto-refresh on 401, then redirect if still failing ─────── */
+let isRefreshing = false;
+let refreshQueue = [];
+
+function processQueue(error, token) {
+  refreshQueue.forEach(({ resolve, reject }) => {
+    if (error) reject(error);
+    else resolve(token);
+  });
+  refreshQueue = [];
+}
+
 api.interceptors.response.use(
   (response) => response,
-  (error) => {
-    if (error.response?.status === 401) {
+  async (error) => {
+    const originalRequest = error.config;
+
+    // Don't retry the refresh endpoint itself or already-retried requests
+    if (
+      error.response?.status !== 401 ||
+      originalRequest._retry ||
+      originalRequest.url === '/auth/refresh' ||
+      originalRequest.url === '/auth/login'
+    ) {
+      // Hard redirect on non-retryable 401
+      if (error.response?.status === 401 && !originalRequest._retry) {
+        sessionStorage.removeItem(STORAGE_KEY);
+        const p = window.location.pathname;
+        if (!p.startsWith('/login') && !p.startsWith('/register') && !p.startsWith('/welcome')) {
+          window.location.href = '/login';
+        }
+      }
+      return Promise.reject(error);
+    }
+
+    // Queue concurrent requests while a refresh is in progress
+    if (isRefreshing) {
+      return new Promise((resolve, reject) => {
+        refreshQueue.push({ resolve, reject });
+      }).then((token) => {
+        originalRequest.headers.Authorization = `Bearer ${token}`;
+        return api(originalRequest);
+      });
+    }
+
+    originalRequest._retry = true;
+    isRefreshing = true;
+
+    try {
+      const { data } = await axios.post(
+        `${API_ROOT}/auth/refresh`,
+        {},
+        { withCredentials: true }
+      );
+
+      const newToken = data.token;
+
+      // Update stored user with new access token
+      try {
+        const stored = JSON.parse(sessionStorage.getItem(STORAGE_KEY) || 'null');
+        if (stored) {
+          stored.token = newToken;
+          sessionStorage.setItem(STORAGE_KEY, JSON.stringify(stored));
+        }
+      } catch { /* ignore */ }
+
+      originalRequest.headers.Authorization = `Bearer ${newToken}`;
+      processQueue(null, newToken);
+      return api(originalRequest);
+    } catch (refreshError) {
+      processQueue(refreshError, null);
       sessionStorage.removeItem(STORAGE_KEY);
-      // Ne pas rediriger si déjà sur /login ou /register
-      if (!window.location.pathname.startsWith('/login') &&
-          !window.location.pathname.startsWith('/register') &&
-          !window.location.pathname.startsWith('/welcome')) {
+      const p = window.location.pathname;
+      if (!p.startsWith('/login') && !p.startsWith('/register') && !p.startsWith('/welcome')) {
         window.location.href = '/login';
       }
+      return Promise.reject(refreshError);
+    } finally {
+      isRefreshing = false;
     }
-    return Promise.reject(error);
   }
 );
 

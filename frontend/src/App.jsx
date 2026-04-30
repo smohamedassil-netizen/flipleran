@@ -18,6 +18,7 @@ import WatchVideo           from './pages/WatchVideo.jsx';
 import QCMPage              from './pages/QCMPage.jsx';
 import ProfessorUpload      from './pages/ProfessorUpload.jsx';
 import ProfessorCreateQCM   from './pages/ProfessorCreateQCM.jsx';
+import ProfessorVideoQuestions from './pages/ProfessorVideoQuestions.jsx';
 import ProfessorDashboard   from './pages/ProfessorDashboard.jsx';
 import Leaderboard          from './pages/Leaderboard.jsx';
 import StudentProfile       from './pages/StudentProfile.jsx';
@@ -38,10 +39,14 @@ import ProjectCreate        from './pages/ProjectCreate.jsx';
 import PrositList           from './pages/PrositList.jsx';
 import PrositCreate         from './pages/PrositCreate.jsx';
 import PrositDetail         from './pages/PrositDetail.jsx';
+import PrositPeerAssessment from './pages/PrositPeerAssessment.jsx';
 import NotificationsPage    from './pages/NotificationsPage.jsx';
 import ProfessorTracking    from './pages/ProfessorTracking.jsx';
 import ModuleAssistant      from './pages/ModuleAssistant.jsx';
 import Rewards              from './pages/Rewards.jsx';
+import LearningPathBuilder  from './pages/LearningPathBuilder.jsx';
+import CourseLearningOutcomes from './pages/CourseLearningOutcomes.jsx';
+import CesiMethodGuide       from './pages/CesiMethodGuide.jsx';
 
 /* ── Pages d'erreur ────────────────────────────────────────────────────────── */
 function ErrorPage({ code, title, description }) {
@@ -113,9 +118,11 @@ export default function App() {
             <Route path="/projects/:projectId"         element={<ProjectDetail />} />
             <Route path="/prosits"                     element={<PrositList />} />
             <Route path="/prosits/:id"                 element={<PrositDetail />} />
+            <Route path="/prosits/:id/peer-assessment" element={<PrositPeerAssessment />} />
             <Route path="/notifications"               element={<NotificationsPage />} />
             <Route path="/my-tickets"                  element={<Navigate to="/support" replace />} />
             <Route path="/courses/:courseId/assistant" element={<ModuleAssistant />} />
+            <Route path="/method-guide"                element={<CesiMethodGuide />} />
           </Route>
 
           {/* Étudiant uniquement — apprentissage actif & gamification */}
@@ -135,7 +142,10 @@ export default function App() {
             <Route path="/professor/dashboard/:courseId"         element={<ProfessorDashboard />} />
             <Route path="/professor/dashboard"                   element={<ProfessorDashboard />} />
             <Route path="/professor/courses/:courseId/upload"    element={<ProfessorUpload />} />
+            <Route path="/professor/courses/:courseId/path-builder" element={<LearningPathBuilder />} />
+            <Route path="/professor/courses/:courseId/outcomes"     element={<CourseLearningOutcomes />} />
             <Route path="/professor/videos/:videoId/qcm"        element={<ProfessorCreateQCM />} />
+            <Route path="/professor/videos/:videoId/questions"  element={<ProfessorVideoQuestions />} />
             <Route path="/professor/qcm/create"                 element={<ProfessorCreateQCM />} />
             <Route path="/professor/qcm"                       element={<ProfessorQCMHub />} />
             <Route path="/professor/badges"                    element={<BadgeManagement />} />

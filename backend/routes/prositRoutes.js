@@ -9,6 +9,8 @@ import {
   transitionPhase, evaluateGroupe,
   getMyRolesProgress,
   getAiHelp,
+  postSelfAssessment, postPeerAssessment, getMyAssessmentsStatus,
+  getPeerAssessmentSummary, extendPeerAssessmentDeadline,
 } from '../controllers/prositController.js';
 
 const router = express.Router();
@@ -41,5 +43,12 @@ router.put('/:id/groupes/:gIdx/evaluation', requireRole('professeur', 'admin'), 
 
 /* ─── Aide IA Prosit (prof + étudiant) ─── */
 router.post('/:id/ai-help', getAiHelp);
+
+/* ─── Évaluation par les pairs (Falchikov 2005, Topping 1998) ─── */
+router.post('/:id/groupes/:gIdx/self-assessment', requireRole('etudiant'), postSelfAssessment);
+router.post('/:id/groupes/:gIdx/peer-assessment', requireRole('etudiant'), postPeerAssessment);
+router.get('/:id/my-assessments-status',          requireRole('etudiant'), getMyAssessmentsStatus);
+router.get('/:id/peer-assessments/summary',       requireRole('professeur', 'admin'), getPeerAssessmentSummary);
+router.put('/:id/peer-assessments/deadline',      requireRole('professeur', 'admin'), extendPeerAssessmentDeadline);
 
 export default router;

@@ -53,7 +53,11 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   /* ── logout ────────────────────────────────────────────────────────────── */
-  const logout = useCallback(() => setUser(null), []);
+  const logout = useCallback(() => {
+    // Ask backend to clear the httpOnly refresh cookie
+    api.post('/auth/logout').catch(() => {});
+    setUser(null);
+  }, []);
 
   /* ── refreshMe — sync latest data from server ──────────────────────────── */
   const refreshMe = useCallback(async () => {
