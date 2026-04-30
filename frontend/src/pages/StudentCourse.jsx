@@ -10,7 +10,7 @@ import {
   Play, CheckCircle, Clock, Lock, Home,
   BookOpen, AlertCircle, ChevronRight, MessageSquare,
   ArrowLeft, Upload, FileText, PenTool, Edit3, Trash2,
-  HelpCircle, Route, Settings as SettingsIcon, Target,
+  HelpCircle, Route, Settings as SettingsIcon, Target, Sparkles,
 } from 'lucide-react';
 
 /* ─── Status helpers ──────────────────────────────────────────────────────── */
@@ -122,6 +122,18 @@ function VideoRow({ video, index, onSelect, isActive, isProfOrAdmin, navigate, o
       {/* Action buttons for professors */}
       {isProfOrAdmin && (
         <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
+          <button
+            className="btn btn-sm"
+            title="Préparer ce cours avec l'IA (questions, QCM, outcomes, Prosit, flashcards)"
+            onClick={(e) => { e.stopPropagation(); navigate(`/professor/courses/${video.courseId}/videos/${video._id}/auto-prep`); }}
+            style={{
+              background: 'linear-gradient(135deg, #9333EA, #C084FC)',
+              color: '#fff', border: 'none', fontWeight: 700,
+              padding: '4px 10px',
+            }}
+          >
+            <Sparkles size={13} /> IA
+          </button>
           <button
             className="btn btn-ghost btn-sm"
             title="Créer / Modifier QCM"

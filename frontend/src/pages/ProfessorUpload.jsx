@@ -4,7 +4,7 @@ import Layout from '../components/Layout.jsx';
 import api from '../utils/api.js';
 import {
   Upload, FileVideo, X, CheckCircle, AlertCircle, ArrowLeft,
-  Youtube, Link as LinkIcon,
+  Youtube, Link as LinkIcon, Sparkles,
 } from 'lucide-react';
 
 const MAX_SIZE_MB = 100; // Limite Cloudinary gratuit
@@ -236,9 +236,32 @@ export default function ProfessorUpload() {
             <p style={{ fontSize: 'var(--font-size-lg)', fontWeight: 700, marginBottom: 8 }}>
               Vidéo uploadée avec succès
             </p>
-            <p className="text-small" style={{ marginBottom: 28 }}>
+            <p className="text-small" style={{ marginBottom: 20 }}>
               La vidéo est maintenant disponible dans le cours.
             </p>
+            <div style={{
+              padding: 14, marginBottom: 24, borderRadius: 12,
+              background: 'linear-gradient(135deg, #F3E8FF, #FDF4FF)',
+              border: '1px solid #C084FC',
+            }}>
+              <p style={{ margin: '0 0 10px', fontSize: 13, color: '#6B21A8', lineHeight: 1.5 }}>
+                <Sparkles size={14} style={{ display: 'inline', marginRight: 6, verticalAlign: 'middle' }} />
+                <strong>Astuce :</strong> dès que la transcription est terminée (~2 min), tu pourras
+                générer en 1 clic les questions in-video, le QCM, les outcomes Bloom, une suggestion
+                Prosit et des flashcards.
+              </p>
+              <button
+                onClick={() => navigate(`/courses/${courseId}`)}
+                style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 6,
+                  padding: '8px 14px', borderRadius: 8,
+                  background: 'linear-gradient(135deg, #9333EA, #7E22CE)',
+                  color: '#fff', border: 'none', fontSize: 13, fontWeight: 700, cursor: 'pointer',
+                }}
+              >
+                <Sparkles size={14} /> Voir mes vidéos pour préparer avec l'IA
+              </button>
+            </div>
             <div style={{ display: 'flex', gap: 10, justifyContent: 'center' }}>
               <button className="btn btn-primary" onClick={reset}>
                 <Upload size={15} /> Ajouter une autre vidéo
