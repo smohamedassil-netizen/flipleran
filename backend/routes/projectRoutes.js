@@ -20,6 +20,12 @@ import {
   deleteChecklistItem,
   addIdea,
   deleteIdea,
+  // F8 — feedback livrable + progress + rubric + templates
+  addLivrableFeedback,
+  getProjectProgress,
+  setProjectRubric,
+  getProjectRubric,
+  getProjectTemplate,
 } from '../controllers/projectController.js';
 import {
   projectCoachStatus, projectCoachSuggest, projectCoachReview, projectCoachSources,
@@ -67,5 +73,16 @@ router.get('/:id/coach/status',  requireRole('etudiant'), projectCoachStatus);
 router.post('/:id/coach/suggest', requireRole('etudiant'), projectCoachSuggest);
 router.post('/:id/coach/review',  requireRole('etudiant'), projectCoachReview);
 router.get('/:id/coach/sources',  requireRole('etudiant'), projectCoachSources);
+
+/* ─── F8 — Templates phases/rubric par type (route avec préfixe statique) ──
+   IMPORTANT : ces routes utilisent /templates/:type qui ne conflicte pas
+   avec /:id (mongoid 24 chars), mais on les laisse en haut du bloc pour clarté. */
+router.get('/templates/:type', getProjectTemplate);
+
+/* ─── F8 — Feedback livrable / progress / rubric ───────────────────────── */
+router.post('/:id/livrables/:livrableId/feedback', requireRole('professeur', 'admin'), addLivrableFeedback);
+router.get('/:id/progress',  getProjectProgress);
+router.get('/:id/rubric',    getProjectRubric);
+router.put('/:id/rubric',    requireRole('professeur', 'admin'), setProjectRubric);
 
 export default router;
