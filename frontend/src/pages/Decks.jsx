@@ -1,10 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout.jsx';
 import Breadcrumb from '../components/Breadcrumb.jsx';
 import { useDecks } from '../hooks/useDecks.js';
 import api from '../utils/api.js';
-import { Plus, Trash2, Play, BookOpen, ArrowLeft, Sparkles, X, Loader } from 'lucide-react';
+import { Plus, Trash2, Play, BookOpen, ArrowLeft, Sparkles, X, Loader, Wand2, Clock, RefreshCw } from 'lucide-react';
 
 /* ─── AI Generate Modal ─────────────────────────────────────────────────── */
 function AIGenerateModal({ onSuccess, onClose }) {
@@ -110,13 +110,37 @@ function AIGenerateModal({ onSuccess, onClose }) {
   );
 }
 
+/* ─── Helpers ───────────────────────────────────────────────────────────── */
+const isAutoDeck = (deck) => Array.isArray(deck?.tags) && deck.tags.includes('auto-ai');
+
+const fmtAgo = (date) => {
+  if (!date) return 'jamais';
+  const ms = Date.now() - new Date(date).getTime();
+  const d = Math.floor(ms / 86400000);
+  if (d === 0) return "aujourd'hui";
+  if (d === 1) return 'hier';
+  if (d < 7) return `il y a ${d} jours`;
+  return `il y a ${Math.floor(d / 7)} sem.`;
+};
+
 /* ─── Main Page ─────────────────────────────────────────────────────────── */
 export default function Decks() {
   const { decks, loading, createDeck, deleteDeck } = useDecks();
   const [showForm, setShowForm] = useState(false);
   const [showAI, setShowAI] = useState(false);
   const [form, setForm] = useState({ title: '', description: '', category: 'General' });
+  const [autoStatus, setAutoStatus] = useState(null);
+  const [regenerating, setRegenerating] = useState(false);
+  const [regenMsg, setRegenMsg] = useState('');
   const navigate = useNavigate();
+
+  // Charge le statut des decks auto-IA (cartes dues, dernière régen)
+  const fetchAutoStatus = () => {
+    api.get('/decks/auto-status')
+      .then(({ data }) => setAutoStatus(data))
+      .catch(() => setAutoStatus(null));
+  };
+  useEffect(() => { fetchAutoStatus(); }, []);
 
   const handleCreate = async (e) => {
     e.preventDefault();
@@ -129,6 +153,38 @@ export default function Decks() {
     setShowAI(false);
     navigate(`/study/${deck._id}`);
   };
+
+  // F6 — Régénération à la demande des decks depuis les vidéos vues
+  const handleRegenAuto = async () => {
+    setRegenerating(true);
+    setRegenMsg('');
+    try {
+      const { data } = await api.post('/decks/auto-generate', {});
+      const created = data.totalCreated ?? 0;
+      const skipped = data.totalSkipped ?? 0;
+      const processed = data.processedVideos ?? 0;
+      if (processed === 0) {
+        setRegenMsg("Aucune vidéo complétée pour le moment. Regarde une vidéo à 80%+ et reviens !");
+      } else if (created === 0) {
+        setRegenMsg(`✓ Tes decks sont déjà à jour (${skipped} cartes existaient déjà sur ${processed} vidéo${processed > 1 ? 's' : ''}).`);
+      } else {
+        setRegenMsg(`✨ ${created} nouvelle${created > 1 ? 's' : ''} carte${created > 1 ? 's' : ''} générée${created > 1 ? 's' : ''} sur ${processed} vidéo${processed > 1 ? 's' : ''}.`);
+      }
+      fetchAutoStatus();
+      // Recharge la liste des decks pour voir les nouveaux/màj cardCount
+      window.location.reload();
+    } catch (err) {
+      const msg = err.response?.data?.message || 'Erreur lors de la génération';
+      const upgrade = err.response?.data?.upgrade;
+      setRegenMsg(upgrade ? `${msg} (quota atteint, réinitialisation mensuelle)` : msg);
+    } finally {
+      setRegenerating(false);
+    }
+  };
+
+  // Decks auto-IA : utilisés dans la section "raccourcis" en haut. Le grid
+  // principal affiche TOUS les decks (avec badge AUTO sur ceux-là).
+  const autoDecks = useMemo(() => decks.filter(isAutoDeck), [decks]);
 
   return (
     <Layout title="Mes decks">
@@ -157,6 +213,108 @@ export default function Decks() {
       <div style={{ background: '#f0f9ff', border: '1px solid #bae6fd', borderRadius: 10, padding: '12px 16px', marginBottom: 20, display: 'flex', gap: 10, alignItems: 'flex-start', fontSize: 13, color: '#0369a1' }}>
         <BookOpen size={16} style={{ marginTop: 1, flexShrink: 0 }} />
         <span><strong>Les decks</strong> sont des jeux de cartes mémoire (flashcards) : face avant = question, face arrière = réponse. Idéal pour réviser du vocabulaire, des définitions, des formules. Utilisez l'IA pour en générer automatiquement depuis vos vidéos de cours.</span>
+      </div>
+
+      {/* ─── F6 — Section "Tes decks de révision auto-générés" ───────── */}
+      <div
+        style={{
+          background: 'linear-gradient(135deg, #faf5ff 0%, #f0f9ff 100%)',
+          border: '1px solid #e9d5ff',
+          borderRadius: 14,
+          padding: '18px 20px',
+          marginBottom: 24,
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
+          <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start', minWidth: 0, flex: 1 }}>
+            <div style={{
+              width: 40, height: 40, borderRadius: 10,
+              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+            }}>
+              <Wand2 size={20} color="white" />
+            </div>
+            <div style={{ minWidth: 0 }}>
+              <h2 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: '#1e1b4b', display: 'flex', alignItems: 'center', gap: 6 }}>
+                ✨ Tes decks de révision auto-générés
+              </h2>
+              <p style={{ margin: '4px 0 0', fontSize: 12.5, color: '#475569' }}>
+                Chaque vidéo terminée à 80%+ produit automatiquement un deck SM-2.
+                {autoStatus?.lastRegenAt && (
+                  <> Dernière mise à jour : <strong>{fmtAgo(autoStatus.lastRegenAt)}</strong>.</>
+                )}
+              </p>
+
+              {/* Stats compactes */}
+              {autoStatus && (
+                <div style={{ display: 'flex', gap: 14, marginTop: 8, flexWrap: 'wrap' }}>
+                  <span style={{ fontSize: 12, color: '#475569' }}>
+                    <strong style={{ color: '#7c3aed' }}>{autoStatus.autoDecksCount}</strong> deck{autoStatus.autoDecksCount > 1 ? 's' : ''} auto
+                  </span>
+                  <span style={{ fontSize: 12, color: '#475569' }}>
+                    <strong style={{ color: '#7c3aed' }}>{autoStatus.autoCardsCount}</strong> carte{autoStatus.autoCardsCount > 1 ? 's' : ''} générée{autoStatus.autoCardsCount > 1 ? 's' : ''}
+                  </span>
+                  <span style={{ fontSize: 12, color: '#475569', display: 'flex', alignItems: 'center', gap: 4 }}>
+                    <Clock size={11} /> <strong style={{ color: autoStatus.dueToday > 0 ? '#dc2626' : '#10b981' }}>{autoStatus.dueToday}</strong> à réviser aujourd'hui
+                  </span>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <button
+            onClick={handleRegenAuto}
+            disabled={regenerating}
+            className="btn btn-sm"
+            style={{
+              background: regenerating ? '#cbd5e1' : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+              color: 'white', border: 'none', display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0,
+            }}
+          >
+            {regenerating
+              ? <><Loader size={13} style={{ animation: 'spin 1s linear infinite' }} /> Génération...</>
+              : <><RefreshCw size={13} /> Mettre à jour</>}
+          </button>
+        </div>
+
+        {regenMsg && (
+          <div style={{ marginTop: 12, padding: '8px 12px', background: 'white', border: '1px solid #e9d5ff', borderRadius: 8, fontSize: 12.5, color: '#1e1b4b' }}>
+            {regenMsg}
+          </div>
+        )}
+
+        {/* Cards "Réviser maintenant" pour chaque deck auto */}
+        {autoDecks.length > 0 && (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 10, marginTop: 14 }}>
+            {autoDecks.map((deck) => (
+              <button
+                key={deck._id}
+                onClick={() => navigate(`/study/${deck._id}`)}
+                style={{
+                  background: 'white', border: '1px solid #e9d5ff', borderRadius: 10,
+                  padding: 12, textAlign: 'left', cursor: 'pointer',
+                  display: 'flex', flexDirection: 'column', gap: 6,
+                }}
+              >
+                <div style={{ fontSize: 13, fontWeight: 600, color: '#1e1b4b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {deck.title.replace(/^Révision auto — /, '')}
+                </div>
+                <div style={{ fontSize: 11, color: '#64748b' }}>
+                  {deck.cardCount ?? 0} carte{(deck.cardCount ?? 0) > 1 ? 's' : ''}
+                </div>
+                <div style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11, color: '#7c3aed', fontWeight: 600 }}>
+                  <Play size={11} /> Réviser maintenant
+                </div>
+              </button>
+            ))}
+          </div>
+        )}
+
+        {!autoDecks.length && !regenerating && (
+          <div style={{ marginTop: 12, padding: '10px 12px', background: 'rgba(255,255,255,0.6)', borderRadius: 8, fontSize: 12.5, color: '#475569' }}>
+            Aucun deck auto pour l'instant. Termine une vidéo (≥80%) ou clique sur <strong>Mettre à jour</strong> pour en générer depuis tes cours suivis.
+          </div>
+        )}
       </div>
 
       {/* Create form */}
@@ -201,28 +359,60 @@ export default function Decks() {
         </div>
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '16px' }}>
-          {decks.map((deck) => (
-            <div key={deck._id} className="card" style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
-                <div style={{ width: 40, height: 40, borderRadius: 10, background: '#f0f9ff', border: '1px solid #bae6fd', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  <BookOpen size={18} color="#0369a1" />
+          {decks.map((deck) => {
+            const auto = isAutoDeck(deck);
+            return (
+              <div
+                key={deck._id}
+                className="card"
+                style={{
+                  display: 'flex', flexDirection: 'column', gap: 8,
+                  border: auto ? '1px solid #e9d5ff' : undefined,
+                  background: auto ? 'linear-gradient(135deg, #faf5ff 0%, #ffffff 100%)' : undefined,
+                  position: 'relative',
+                }}
+              >
+                {auto && (
+                  <span
+                    title="Deck généré automatiquement par l'IA depuis le transcript d'une vidéo"
+                    style={{
+                      position: 'absolute', top: 10, right: 10,
+                      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                      color: 'white', fontSize: 10, fontWeight: 700,
+                      padding: '3px 8px', borderRadius: 999,
+                      display: 'inline-flex', alignItems: 'center', gap: 4,
+                      letterSpacing: 0.3,
+                    }}
+                  >
+                    <Wand2 size={9} /> AUTO
+                  </span>
+                )}
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+                  <div style={{
+                    width: 40, height: 40, borderRadius: 10,
+                    background: auto ? '#ede9fe' : '#f0f9ff',
+                    border: auto ? '1px solid #ddd6fe' : '1px solid #bae6fd',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                  }}>
+                    {auto ? <Wand2 size={18} color="#7c3aed" /> : <BookOpen size={18} color="#0369a1" />}
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0, paddingRight: auto ? 50 : 0 }}>
+                    <p style={{ fontWeight: 600, fontSize: 14, marginBottom: 2, color: '#1e293b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{deck.title}</p>
+                    <p className="text-small" style={{ marginBottom: 0 }}>{deck.cardCount ?? 0} carte{deck.cardCount !== 1 ? 's' : ''} · {deck.category}</p>
+                  </div>
                 </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <p style={{ fontWeight: 600, fontSize: 14, marginBottom: 2, color: '#1e293b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{deck.title}</p>
-                  <p className="text-small" style={{ marginBottom: 0 }}>{deck.cardCount ?? 0} carte{deck.cardCount !== 1 ? 's' : ''} · {deck.category}</p>
+                {deck.description && <p style={{ fontSize: 12, color: '#64748b', margin: 0 }}>{deck.description}</p>}
+                <div style={{ display: 'flex', gap: '8px', marginTop: 4 }}>
+                  <button onClick={() => navigate(`/study/${deck._id}`)} className="btn btn-primary btn-sm" style={{ flex: 1 }}>
+                    <Play size={13} /> Etudier
+                  </button>
+                  <button onClick={() => deleteDeck(deck._id)} className="btn btn-danger btn-sm">
+                    <Trash2 size={13} />
+                  </button>
                 </div>
               </div>
-              {deck.description && <p style={{ fontSize: 12, color: '#64748b', margin: 0 }}>{deck.description}</p>}
-              <div style={{ display: 'flex', gap: '8px', marginTop: 4 }}>
-                <button onClick={() => navigate(`/study/${deck._id}`)} className="btn btn-primary btn-sm" style={{ flex: 1 }}>
-                  <Play size={13} /> Etudier
-                </button>
-                <button onClick={() => deleteDeck(deck._id)} className="btn btn-danger btn-sm">
-                  <Trash2 size={13} />
-                </button>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
