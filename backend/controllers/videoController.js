@@ -281,10 +281,40 @@ export const saveProgress = async (req, res) => {
       }
     }
 
+    // F6 — Génération auto de flashcards de révision lors de la 1re
+    // complétion (>= 80%). Fire-and-forget : le client reçoit le flag pour
+    // afficher un toast immédiatement, et une notification socket arrive
+    // quelques secondes plus tard avec le deck prêt à l'usage.
+    const flashcardsAutoTriggered = justCompleted && !wasAlreadyCompleted;
+    if (flashcardsAutoTriggered) {
+      const userId = req.user.id;
+      const videoTitre = video.titre;
+      const io = req.app.get('io');
+      import('../services/autoFlashcards.js')
+        .then(async ({ generateForVideo }) => {
+          try {
+            const result = await generateForVideo({ userId, videoId: video._id });
+            if (io && result.createdCount > 0 && result.deck) {
+              io.to(`user_${userId}`).emit('notification', {
+                type: 'flashcards_ready',
+                priority: 'normal',
+                message: `✨ ${result.createdCount} flashcards créées pour "${videoTitre}"`,
+                link: `/study/${result.deck._id}`,
+                createdAt: new Date().toISOString(),
+              });
+            }
+          } catch (err) {
+            console.error('[autoFlashcards/post-completion]', err.message);
+          }
+        })
+        .catch(() => { /* non-bloquant */ });
+    }
+
     const updatedEntry = getUserEntry(video, req.user.id);
     res.json({
       watchedPercent: updatedEntry.watchedPercent,
       completed:      updatedEntry.completed,
+      flashcardsAutoTriggered,
       points:         pointsResult ? { earned: 5, total: pointsResult.newPoints, newBadges: pointsResult.newBadges } : undefined,
     });
   } catch (err) {
