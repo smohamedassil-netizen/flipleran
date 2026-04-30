@@ -5,6 +5,8 @@ import Breadcrumb from '../components/Breadcrumb.jsx';
 import ProjectActivityFeed from '../components/ProjectActivityFeed.jsx';
 import { ProjectProgressWidget, PhaseChecklist, IdeasPanel } from '../components/ProjectProgressPanel.jsx';
 import CoachAIPanel from '../components/CoachAIPanel.jsx';
+import ProjectForum from '../components/ProjectForum.jsx';
+import ProjectPeerReviewPanel from '../components/ProjectPeerReviewPanel.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
 import api from '../utils/api.js';
 import { capitalizeWords, formatFullName } from '../utils/format.js';
@@ -823,6 +825,23 @@ export default function ProjectDetail() {
               </div>
             )}
           </div>
+
+          {/* ── F9 — Forum + Peer Review (membres seulement, projet non-brouillon) ── */}
+          {project?.status !== 'brouillon' && (myGroup || isProfOrAdmin) && (
+            <>
+              <ProjectForum
+                projectId={project._id}
+                canPin={isProfOrAdmin}
+                canAnnounce={isProfOrAdmin}
+                currentUserId={user?._id}
+              />
+              <ProjectPeerReviewPanel
+                projectId={project._id}
+                userRole={role}
+                livrables={project.livrables || []}
+              />
+            </>
+          )}
 
           {/* ── Activity feed temps réel ─────────────────────────────────── */}
           {project?.status === 'brouillon' ? (
