@@ -47,6 +47,7 @@ import Rewards              from './pages/Rewards.jsx';
 import LearningPathBuilder  from './pages/LearningPathBuilder.jsx';
 import CourseLearningOutcomes from './pages/CourseLearningOutcomes.jsx';
 import CesiMethodGuide       from './pages/CesiMethodGuide.jsx';
+import AutoPrepReview        from './pages/AutoPrepReview.jsx';
 
 /* ── Pages d'erreur ────────────────────────────────────────────────────────── */
 function ErrorPage({ code, title, description }) {
@@ -144,6 +145,7 @@ export default function App() {
             <Route path="/professor/courses/:courseId/upload"    element={<ProfessorUpload />} />
             <Route path="/professor/courses/:courseId/path-builder" element={<LearningPathBuilder />} />
             <Route path="/professor/courses/:courseId/outcomes"     element={<CourseLearningOutcomes />} />
+            <Route path="/professor/courses/:courseId/videos/:videoId/auto-prep" element={<AutoPrepReview />} />
             <Route path="/professor/videos/:videoId/qcm"        element={<ProfessorCreateQCM />} />
             <Route path="/professor/videos/:videoId/questions"  element={<ProfessorVideoQuestions />} />
             <Route path="/professor/qcm/create"                 element={<ProfessorCreateQCM />} />
