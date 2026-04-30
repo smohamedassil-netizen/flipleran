@@ -6,6 +6,7 @@ import { useAuth } from '../context/AuthContext.jsx';
 import Breadcrumb from '../components/Breadcrumb.jsx';
 import LearningPathTimeline from '../components/LearningPathTimeline.jsx';
 import PedagogicalHeader from '../components/PedagogicalHeader.jsx';
+import HonorBoard from '../components/HonorBoard.jsx';
 import {
   Play, CheckCircle, Clock, Lock, Home,
   BookOpen, AlertCircle, ChevronRight, MessageSquare,
@@ -341,6 +342,13 @@ export default function StudentCourse() {
         { label: 'Mes cours', to: '/courses' },
         { label: course?.titre ?? 'Cours' },
       ]} />
+
+      {/* F11B — Tableau d'honneur du mois (top 3 XP) */}
+      {courseId && !isProfOrAdmin && (
+        <div style={{ marginBottom: 20 }}>
+          <HonorBoard courseId={courseId} />
+        </div>
+      )}
 
       <div className="page-header">
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
