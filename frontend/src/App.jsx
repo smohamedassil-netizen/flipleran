@@ -43,6 +43,7 @@ import NotificationsPage    from './pages/NotificationsPage.jsx';
 import ProfessorTracking    from './pages/ProfessorTracking.jsx';
 import ModuleAssistant      from './pages/ModuleAssistant.jsx';
 import Rewards              from './pages/Rewards.jsx';
+import LearningPathBuilder  from './pages/LearningPathBuilder.jsx';
 
 /* ── Pages d'erreur ────────────────────────────────────────────────────────── */
 function ErrorPage({ code, title, description }) {
@@ -136,6 +137,7 @@ export default function App() {
             <Route path="/professor/dashboard/:courseId"         element={<ProfessorDashboard />} />
             <Route path="/professor/dashboard"                   element={<ProfessorDashboard />} />
             <Route path="/professor/courses/:courseId/upload"    element={<ProfessorUpload />} />
+            <Route path="/professor/courses/:courseId/path-builder" element={<LearningPathBuilder />} />
             <Route path="/professor/videos/:videoId/qcm"        element={<ProfessorCreateQCM />} />
             <Route path="/professor/videos/:videoId/questions"  element={<ProfessorVideoQuestions />} />
             <Route path="/professor/qcm/create"                 element={<ProfessorCreateQCM />} />

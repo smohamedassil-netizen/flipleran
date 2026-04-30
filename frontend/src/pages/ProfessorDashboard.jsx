@@ -9,7 +9,7 @@ import {
 import {
   Users, Video, CheckCircle, BarChart2,
   AlertTriangle, ChevronUp, RefreshCw, Upload,
-  BookOpen, ArrowLeft, HelpCircle,
+  BookOpen, ArrowLeft, HelpCircle, Route,
 } from 'lucide-react';
 
 /* ══════════════════════════════════════════════════════════
@@ -398,6 +398,13 @@ export default function ProfessorDashboard() {
             <RefreshCw size={14} style={{ animation: refreshing ? 'spin 0.8s linear infinite' : 'none' }} />
           </button>
 
+          <Link
+            to={`/professor/courses/${courseId}/path-builder`}
+            className="btn btn-secondary btn-sm"
+            title="Organiser les vidéos, QCM et Prosits en parcours guidé"
+          >
+            <Route size={14} /> Parcours pédagogique
+          </Link>
           <Link
             to={`/professor/courses/${courseId}/upload`}
             className="btn btn-primary btn-sm"

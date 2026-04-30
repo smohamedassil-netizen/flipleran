@@ -4,11 +4,12 @@ import Layout from '../components/Layout.jsx';
 import api from '../utils/api.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import Breadcrumb from '../components/Breadcrumb.jsx';
+import LearningPathTimeline from '../components/LearningPathTimeline.jsx';
 import {
   Play, CheckCircle, Clock, Lock, Home,
   BookOpen, AlertCircle, ChevronRight, MessageSquare,
   ArrowLeft, Upload, FileText, PenTool, Edit3, Trash2,
-  HelpCircle,
+  HelpCircle, Route, Settings as SettingsIcon,
 } from 'lucide-react';
 
 /* ─── Status helpers ──────────────────────────────────────────────────────── */
@@ -173,6 +174,8 @@ export default function StudentCourse() {
   const [editForm, setEditForm] = useState({ titre: '', description: '', order: 0, chapters: [] });
   const [deleteConfirm, setDeleteConfirm] = useState(null);
   const [questionCounts, setQuestionCounts] = useState({});  // { videoId: count }
+  const [learningPath, setLearningPath] = useState(null);    // null = pas chargé, false = aucun
+  const [freeMode, setFreeMode] = useState(false);            // toggle prof : vue libre
 
   const formatTime = (s) => {
     const m = Math.floor(s / 60);
@@ -234,6 +237,18 @@ export default function StudentCourse() {
     }
   };
 
+  // Chargement du parcours pédagogique (peut être absent → fallback liste de vidéos)
+  const fetchLearningPath = async (useFreeMode = freeMode) => {
+    try {
+      const url = `/learning-paths/course/${courseId}${useFreeMode ? '?free=true' : ''}`;
+      const { data } = await api.get(url);
+      setLearningPath(data);
+    } catch (err) {
+      // 404 = pas de parcours configuré → on garde le fallback liste de vidéos
+      setLearningPath(false);
+    }
+  };
+
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -253,6 +268,8 @@ export default function StudentCourse() {
           } catch { counts[v._id] = 0; }
         }));
         setQuestionCounts(counts);
+
+        await fetchLearningPath(false);
       } catch (err) {
         setError(err.response?.data?.message ?? 'Erreur de chargement.');
       } finally {
@@ -261,6 +278,11 @@ export default function StudentCourse() {
     };
     fetchData();
   }, [courseId, isProfOrAdmin]);
+
+  const handleToggleFreeMode = async (next) => {
+    setFreeMode(next);
+    await fetchLearningPath(next);
+  };
 
   /* ── Stats ────────────────────────────────────────────────────────────────── */
   const completed   = videos.filter((v) => getStatus(v.myProgress) === 'completed').length;
@@ -308,10 +330,13 @@ export default function StudentCourse() {
           {/* Professor action buttons */}
           {isProfOrAdmin && (
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              <button className="btn btn-primary btn-sm" onClick={() => navigate(`/professor/courses/${courseId}/upload`)}>
+              <button className="btn btn-primary btn-sm" onClick={() => navigate(`/professor/courses/${courseId}/path-builder`)}>
+                <Route size={14} /> Parcours pédagogique
+              </button>
+              <button className="btn btn-secondary btn-sm" onClick={() => navigate(`/professor/courses/${courseId}/upload`)}>
                 <Upload size={14} /> Ajouter vidéo
               </button>
-              <button className="btn btn-secondary btn-sm" onClick={() => navigate(`/courses/${courseId}/resources`)}>
+              <button className="btn btn-ghost btn-sm" onClick={() => navigate(`/courses/${courseId}/resources`)}>
                 <FileText size={14} /> Ressources
               </button>
             </div>
@@ -321,35 +346,77 @@ export default function StudentCourse() {
 
       <div className="responsive-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: 24, alignItems: 'start' }}>
 
-        {/* ── Video list ────────────────────────────────────────────────── */}
+        {/* ── Path scénarisé OU fallback liste de vidéos ───────────────── */}
         <div>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
-            <h2 className="text-subtitle">{videos.length} vidéo{videos.length !== 1 ? 's' : ''}</h2>
-          </div>
-
-          {videos.length === 0 ? (
-            <div className="empty-state">
-              <BookOpen size={32} className="empty-state-icon" />
-              <p className="empty-state-title">Aucune vidéo dans ce cours</p>
-              <p className="empty-state-desc">Le professeur n'a pas encore ajouté de vidéos.</p>
-            </div>
+          {learningPath ? (
+            <LearningPathTimeline
+              path={learningPath}
+              freeMode={freeMode}
+              canToggleFreeMode={isProfOrAdmin}
+              onToggleFreeMode={handleToggleFreeMode}
+            />
           ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {videos.map((video, i) => (
-                <VideoRow
-                  key={video._id}
-                  video={video}
-                  index={i}
-                  isActive={false}
-                  isProfOrAdmin={isProfOrAdmin}
-                  navigate={navigate}
-                  onSelect={(v) => navigate(`/watch/${v._id}`)}
-                  onEdit={handleEditVideo}
-                  onDelete={(v) => setDeleteConfirm(v)}
-                  questionCount={questionCounts[video._id] ?? 0}
-                />
-              ))}
-            </div>
+            <>
+              {/* Encart prof : invite à configurer le parcours */}
+              {isProfOrAdmin && (
+                <div style={{
+                  padding: '12px 14px', marginBottom: 16, borderRadius: 10,
+                  background: 'linear-gradient(135deg, #FFFBEB, #FFFEFA)',
+                  borderLeft: '3px solid #D4952A', fontSize: 13, color: '#1E293B',
+                }}>
+                  <strong style={{ color: '#D4952A' }}>📚 Parcours pédagogique non configuré</strong> —
+                  vous pouvez organiser les vidéos, QCM et Prosits en une séquence guidée pour vos étudiants.
+                  <button
+                    type="button"
+                    className="btn btn-ghost btn-sm"
+                    style={{ marginLeft: 8, color: '#D4952A', fontWeight: 600 }}
+                    onClick={() => navigate(`/professor/courses/${courseId}/path-builder`)}
+                  >
+                    Configurer le parcours →
+                  </button>
+                </div>
+              )}
+              {!isProfOrAdmin && (
+                <div style={{
+                  padding: '12px 14px', marginBottom: 16, borderRadius: 10,
+                  background: 'var(--color-bg)',
+                  border: '1px solid var(--color-border)',
+                  fontSize: 13, color: 'var(--color-text-secondary)',
+                  fontStyle: 'italic',
+                }}>
+                  Le prof n'a pas encore configuré de parcours pour ce cours. Voici la liste des vidéos disponibles.
+                </div>
+              )}
+
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+                <h2 className="text-subtitle">{videos.length} vidéo{videos.length !== 1 ? 's' : ''}</h2>
+              </div>
+
+              {videos.length === 0 ? (
+                <div className="empty-state">
+                  <BookOpen size={32} className="empty-state-icon" />
+                  <p className="empty-state-title">Aucune vidéo dans ce cours</p>
+                  <p className="empty-state-desc">Le professeur n'a pas encore ajouté de vidéos.</p>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {videos.map((video, i) => (
+                    <VideoRow
+                      key={video._id}
+                      video={video}
+                      index={i}
+                      isActive={false}
+                      isProfOrAdmin={isProfOrAdmin}
+                      navigate={navigate}
+                      onSelect={(v) => navigate(`/watch/${v._id}`)}
+                      onEdit={handleEditVideo}
+                      onDelete={(v) => setDeleteConfirm(v)}
+                      questionCount={questionCounts[video._id] ?? 0}
+                    />
+                  ))}
+                </div>
+              )}
+            </>
           )}
         </div>
 
