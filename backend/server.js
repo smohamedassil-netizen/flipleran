@@ -46,6 +46,7 @@ import userRoutes          from './routes/userRoutes.js';
 import videoQuestionRoutes from './routes/videoQuestionRoutes.js';
 import learningPathRoutes  from './routes/learningPathRoutes.js';
 import courseAutoPrepRoutes, { autoPrepJobRouter } from './routes/courseAutoPrepRoutes.js';
+import tutorRoutes from './routes/tutorRoutes.js';
 import { seedDemoContent } from './services/contentSeed.js';
 import { seedDemoData } from './services/demoSeed.js';
 import { seedProsits }  from './services/prositsSeed.js';
@@ -207,6 +208,7 @@ app.use('/api/learning-paths', learningPathRoutes);
 // IMPORTANT : monter auto-prep-jobs AVANT courseRoutes pour éviter que `/:id` intercepte
 app.use('/api/auto-prep-jobs', autoPrepJobRouter);
 app.use('/api/courses', courseAutoPrepRoutes);  // ce router définit /:courseId/videos/:videoId/auto-prep — ne conflicte pas avec courseRoutes /:id
+app.use('/api/tutor', tutorRoutes);
 
 // ── En production : servir le frontend buildé ──────────────────────────────
 if (process.env.NODE_ENV === 'production') {

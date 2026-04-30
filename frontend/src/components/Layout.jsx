@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext.jsx';
 import { useNotifications } from '../context/NotificationContext.jsx';
 import Logo from './Logo.jsx';
 import TeacherCoursesSubNav from './TeacherCoursesSubNav.jsx';
+import TutorBubble from './TutorBubble.jsx';
 import { capitalizeWords } from '../utils/format.js';
 import {
   LayoutDashboard,
@@ -49,6 +50,7 @@ const NAV = {
       items: [
         { label: 'Tableau de bord', icon: LayoutDashboard, to: '/' },
         { label: 'Mes cours',       icon: BookOpen,        to: '/courses' },
+        { label: 'Mon tuteur IA',   icon: Sparkles,        to: '/my-tutor', badge: 'IA' },
         { label: 'Ressources',      icon: FolderOpen,      to: '/resources' },
         { label: 'Mes decks',       icon: Layers,          to: '/decks' },
         { label: 'Projets',         icon: FolderKanban,    to: '/projects' },
@@ -694,6 +696,9 @@ export default function Layout({ children, title = 'FlipLearn' }) {
           <div style={{ marginTop: 2 }}>Fait par Mohamed Assil SERAY</div>
         </footer>
       </div>
+
+      {/* Bulle flottante du tuteur IA — visible uniquement pour les étudiants */}
+      <TutorBubble />
     </div>
   );
 }
