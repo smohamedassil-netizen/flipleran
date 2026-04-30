@@ -48,6 +48,7 @@ import LearningPathBuilder  from './pages/LearningPathBuilder.jsx';
 import CourseLearningOutcomes from './pages/CourseLearningOutcomes.jsx';
 import CesiMethodGuide       from './pages/CesiMethodGuide.jsx';
 import AutoPrepReview        from './pages/AutoPrepReview.jsx';
+import MyTutor               from './pages/MyTutor.jsx';
 
 /* ── Pages d'erreur ────────────────────────────────────────────────────────── */
 function ErrorPage({ code, title, description }) {
@@ -136,6 +137,7 @@ export default function App() {
             <Route path="/quiz-battle"            element={<QuizBattle />} />
             <Route path="/rewards"                element={<Rewards />} />
             <Route path="/my-feedback"            element={<Navigate to="/chat?tab=feedback" replace />} />
+            <Route path="/my-tutor"               element={<MyTutor />} />
           </Route>
 
           {/* Professeur + Admin only */}
