@@ -10,6 +10,7 @@ import {
   PeerAssessmentMonitor,
 } from '../components/PrositPeerAssessmentBlocks.jsx';
 import PrositAiReport from '../components/PrositAiReport.jsx';
+import PrositGroupComposer from '../components/PrositGroupComposer.jsx';
 import {
   ArrowLeft, Lightbulb, Edit2, Trash2, ChevronRight, Calendar, Send,
   CheckCircle, Save, FileText, Hash, Sparkles, BookOpen, Trophy, AlertTriangle,
@@ -46,6 +47,7 @@ export default function PrositDetail() {
   const [error, setError] = useState('');
   const [transitioning, setTransitioning] = useState(false);
   const [showFirstTimeModal, setShowFirstTimeModal] = useState(false);
+  const [showGroupComposer, setShowGroupComposer] = useState(false);
 
   const load = useCallback(() => {
     setLoading(true);
@@ -168,7 +170,7 @@ export default function PrositDetail() {
             {prosit.status === 'brouillon' && (
               <>
                 <button
-                  onClick={() => alert('Composition manuelle des groupes : à implémenter en V1.5 (UI dédiée).')}
+                  onClick={() => setShowGroupComposer(true)}
                   style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '9px 14px', borderRadius: 8, background: 'white', color: '#475569', border: '1px solid #E5E7EB', fontWeight: 600, fontSize: 13, cursor: 'pointer' }}
                 >
                   <Edit2 size={13} /> Composer les groupes
@@ -461,6 +463,15 @@ export default function PrositDetail() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Modal de composition des groupes (prof, phase brouillon) */}
+      {showGroupComposer && (
+        <PrositGroupComposer
+          prosit={prosit}
+          onClose={() => setShowGroupComposer(false)}
+          onUpdated={load}
+        />
       )}
     </Layout>
   );
