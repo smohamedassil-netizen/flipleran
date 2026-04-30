@@ -39,6 +39,7 @@ import ProjectCreate        from './pages/ProjectCreate.jsx';
 import PrositList           from './pages/PrositList.jsx';
 import PrositCreate         from './pages/PrositCreate.jsx';
 import PrositDetail         from './pages/PrositDetail.jsx';
+import PrositPeerAssessment from './pages/PrositPeerAssessment.jsx';
 import NotificationsPage    from './pages/NotificationsPage.jsx';
 import ProfessorTracking    from './pages/ProfessorTracking.jsx';
 import ModuleAssistant      from './pages/ModuleAssistant.jsx';
@@ -115,6 +116,7 @@ export default function App() {
             <Route path="/projects/:projectId"         element={<ProjectDetail />} />
             <Route path="/prosits"                     element={<PrositList />} />
             <Route path="/prosits/:id"                 element={<PrositDetail />} />
+            <Route path="/prosits/:id/peer-assessment" element={<PrositPeerAssessment />} />
             <Route path="/notifications"               element={<NotificationsPage />} />
             <Route path="/my-tickets"                  element={<Navigate to="/support" replace />} />
             <Route path="/courses/:courseId/assistant" element={<ModuleAssistant />} />

@@ -5,6 +5,11 @@ import api from '../utils/api.js';
 import PrositPhaseStepper from '../components/PrositPhaseStepper.jsx';
 import PrositGroupCard from '../components/PrositGroupCard.jsx';
 import {
+  PeerAssessmentBanner,
+  FinalScoreCard,
+  PeerAssessmentMonitor,
+} from '../components/PrositPeerAssessmentBlocks.jsx';
+import {
   ArrowLeft, Lightbulb, Edit2, Trash2, ChevronRight, Calendar, Send,
   CheckCircle, Save, FileText, Hash, Sparkles, BookOpen, Trophy, AlertTriangle,
 } from 'lucide-react';
@@ -249,6 +254,21 @@ export default function PrositDetail() {
           <div style={{ padding: 12, marginBottom: 14, background: '#EFF6FF', borderLeft: '3px solid #3B82F6', borderRadius: 6, fontSize: 12, color: '#1E40AF', lineHeight: 1.5 }}>
             ℹ️ Pendant les phases en cours, tu ne vois <strong>que ton groupe</strong>. Les travaux des autres groupes deviendront visibles une fois que le prof aura publié les évaluations.
           </div>
+        )}
+
+        {/* Encart peer assessment (étudiant, phase retour) */}
+        {!isProf && prosit.status === 'retour' && myGroup && prosit.peerAssessmentEnabled && (
+          <PeerAssessmentBanner prosit={prosit} navigate={navigate} />
+        )}
+
+        {/* Notes finales individuelles (étudiant, phase evalue/archive) */}
+        {!isProf && ['evalue', 'archive'].includes(prosit.status) && myGroup && (
+          <FinalScoreCard groupe={myGroup} userId={user?._id} />
+        )}
+
+        {/* Suivi peer assessment (prof, phase retour/evalue) */}
+        {isProf && ['retour', 'evalue'].includes(prosit.status) && prosit.peerAssessmentEnabled && (
+          <PeerAssessmentMonitor prosit={prosit} onUpdated={load} />
         )}
 
         {/* Encart explication des 5 rôles CESI */}
@@ -641,3 +661,4 @@ function ProfEvaluationPanel({ prosit, onUpdated }) {
     </section>
   );
 }
+

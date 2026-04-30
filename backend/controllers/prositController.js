@@ -4,6 +4,7 @@ import Prosit, { PROSIT_ROLES } from '../models/Prosit.js';
 import User from '../models/User.js';
 import Course from '../models/Course.js';
 import { pushNotification } from '../services/notificationService.js';
+import { finalizeProsit, canTransitionToEvalue } from '../services/prositXP.js';
 
 let groq;
 function getGroq() {
@@ -532,6 +533,28 @@ export async function transitionPhase(req, res) {
       return res.status(400).json({ message: 'Au moins un groupe requis avant publication' });
     }
 
+    // retour → evalue : bloqué tant que tous les peer assessments ne sont
+    // pas faits OU que la deadline n'est pas dépassée (Falchikov 2005).
+    if (prosit.status === 'retour' && next === 'evalue') {
+      const allEvaluated = (prosit.groupes || []).length > 0 &&
+        (prosit.groupes || []).every((g) => g.evaluation?.noteGlobale != null);
+      if (!allEvaluated) {
+        return res.status(400).json({
+          message: 'Évaluez tous les groupes avant de passer en phase Évaluée.',
+        });
+      }
+      const gate = canTransitionToEvalue(prosit);
+      if (!gate.ok) {
+        return res.status(400).json({
+          message: `Évaluations par les pairs incomplètes (${gate.completed}/${gate.expected} dans "${gate.groupName}"). Attendez la deadline ou relancez les étudiants.`,
+          peerAssessmentDeadline: prosit.peerAssessmentDeadline,
+          ...gate,
+        });
+      }
+      // Tout est prêt : on finalise (calcul scores + XP individualisées)
+      await finalizeProsit(prosit._id);
+    }
+
     prosit.status = next;
     await prosit.save();
 
@@ -592,91 +615,92 @@ export async function evaluateGroupe(req, res) {
       evalueAt: new Date(),
     };
 
-    // Trigger XP +150 + mise à jour de l'historique des rôles (rotation)
-    const { addPoints, triggerAutoBadge } = await import('../services/points.js');
-
+    // Rotation des rôles : enregistrer le rôle joué dans le cycle courant
+    // (effectif dès l'évaluation prof, indépendamment du peer assessment)
+    const { triggerAutoBadge } = await import('../services/points.js');
     for (const membre of groupe.membres) {
       const userId = memberUserIdString(membre);
       if (!userId) continue;
-      // XP +150
-      await addPoints(userId, 150, 'prosit_completed').catch(err => {
-        console.error(`[prosit] addPoints failed for ${userId}:`, err.message);
+      const user = await User.findById(userId);
+      if (!user) continue;
+
+      if (!Array.isArray(user.prositRolesDoneInCycle)) user.prositRolesDoneInCycle = [];
+      if (typeof user.prositRolesCycle !== 'number')   user.prositRolesCycle = 0;
+      if (!Array.isArray(user.prositRolesHistory))     user.prositRolesHistory = [];
+
+      user.prositRolesHistory.push({
+        role: membre.role,
+        prositId: prosit._id,
+        completedAt: new Date(),
       });
 
-      // Rotation des rôles : enregistrer le rôle joué dans le cycle courant
-      const user = await User.findById(userId);
-      if (user) {
-        if (!Array.isArray(user.prositRolesDoneInCycle)) user.prositRolesDoneInCycle = [];
-        if (typeof user.prositRolesCycle !== 'number')   user.prositRolesCycle = 0;
-        if (!Array.isArray(user.prositRolesHistory))     user.prositRolesHistory = [];
+      if (!user.prositRolesDoneInCycle.includes(membre.role)) {
+        user.prositRolesDoneInCycle.push(membre.role);
+      }
+      if (user.prositRolesDoneInCycle.length >= PROSIT_ROLES.length) {
+        user.prositRolesCycle += 1;
+        user.prositRolesDoneInCycle = [];
+      }
+      await user.save();
 
-        user.prositRolesHistory.push({
-          role: membre.role,
-          prositId: prosit._id,
-          completedAt: new Date(),
-        });
-
-        if (!user.prositRolesDoneInCycle.includes(membre.role)) {
-          user.prositRolesDoneInCycle.push(membre.role);
-        }
-
-        // Cycle complet : tous les rôles CESI faits → reset + incrément
-        if (user.prositRolesDoneInCycle.length >= PROSIT_ROLES.length) {
-          user.prositRolesCycle += 1;
-          user.prositRolesDoneInCycle = [];
-        }
-
-        await user.save();
-
-        // Badges spécifiques Prosit
-        await triggerAutoBadge(userId, 'prosit_completed').catch(() => {});
-        if (membre.role === 'animateur') {
-          const animatorCount = user.prositRolesHistory.filter(h => h.role === 'animateur').length;
-          if (animatorCount >= 3) {
-            await triggerAutoBadge(userId, 'prosit_animator').catch(() => {});
-          }
-        }
-        if (noteGlobale >= 18) {
-          await triggerAutoBadge(userId, 'prosit_perfect').catch(() => {});
+      if (membre.role === 'animateur') {
+        const animatorCount = user.prositRolesHistory.filter((h) => h.role === 'animateur').length;
+        if (animatorCount >= 3) {
+          await triggerAutoBadge(userId, 'prosit_animator').catch(() => {});
         }
       }
     }
 
-    // Auto-transition retour → evalue dès que TOUS les groupes ont une note.
-    // Permet de basculer la visibilité publique entre groupes sans demander
-    // au prof de cliquer une transition supplémentaire.
+    // Auto-finalisation : si tous les groupes ont une note ET (peer assessments
+    // complets OU deadline dépassée), on calcule les notes individuelles +
+    // XP individualisées et on transitionne en 'evalue'. Sinon on attend.
     const allEvaluated = prosit.groupes.length > 0 &&
-      prosit.groupes.every(g => g.evaluation?.noteGlobale != null);
+      prosit.groupes.every((g) => g.evaluation?.noteGlobale != null);
+
+    let didFinalize = false;
     if (allEvaluated && prosit.status === 'retour') {
-      prosit.status = 'evalue';
+      const gate = canTransitionToEvalue(prosit);
+      if (gate.ok) {
+        await prosit.save();           // persiste l'évaluation prof avant finalize
+        await finalizeProsit(prosit._id);
+        const fresh = await Prosit.findById(prosit._id);
+        fresh.status = 'evalue';
+        await fresh.save();
+        Object.assign(prosit, fresh.toObject());
+        didFinalize = true;
+      }
     }
 
-    await prosit.save();
+    if (!didFinalize) {
+      await prosit.save();
+    }
 
     // Notification temps réel aux membres du groupe évalué
     const io = req.app.get('io');
     if (io) {
+      const xpMessage = didFinalize
+        ? 'Note de groupe et notes individuelles publiées (XP attribuées selon ton implication).'
+        : 'Note de groupe enregistrée — les XP individualisées seront attribuées à la clôture des évaluations par les pairs.';
+
       await Promise.all(groupe.membres.map(m =>
         pushNotification(io, {
           userId: memberUserIdString(m),
           type: 'prosit_evaluated',
           priority: 'high',
           title: `✅ Prosit évalué : ${noteGlobale}/20`,
-          message: `Le Prosit "${prosit.titre}" a été évalué par ton tuteur. +150 XP attribués !`,
+          message: `Le Prosit "${prosit.titre}" a été évalué par ton tuteur. ${xpMessage}`,
           link: `/prosits/${prosit._id}`,
           relatedType: 'prosit',
           relatedId: prosit._id,
         }).catch(err => console.error('[prosit evaluate notify]', err.message))
       ));
 
-      // Si on vient juste de basculer en 'evalue', notifier aussi tous les
-      // autres membres : ils peuvent maintenant voir les autres groupes.
-      if (allEvaluated) {
+      if (didFinalize) {
         await notifyPrositMembers(req, prosit, {
           type: 'prosit_phase',
           priority: 'normal',
           title: '💡 Phase Évaluée',
-          message: `Le Prosit "${prosit.titre}" est entièrement évalué. Tu peux désormais consulter les solutions des autres groupes.`,
+          message: `Le Prosit "${prosit.titre}" est entièrement évalué. Tu peux désormais consulter les solutions des autres groupes et ta note finale.`,
           link: `/prosits/${prosit._id}`,
         });
       }
@@ -783,6 +807,271 @@ Formate ta réponse avec des sections claires.`;
     console.error('[prosit] getAiHelp error:', err.message);
     res.status(500).json({ message: 'Erreur lors de la génération de suggestions IA.' });
   }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   ÉVALUATION PAR LES PAIRS (Falchikov 2005, Topping 1998)
+───────────────────────────────────────────────────────────────────────── */
+
+/**
+ * Auto-évaluation d'un membre : il note son propre travail (effort, quality,
+ * communication) et rédige une réflexion métacognitive ("Qu'as-tu appris ?").
+ *
+ * Idempotent : si l'utilisateur a déjà soumis, on remplace l'entrée existante.
+ */
+export async function postSelfAssessment(req, res) {
+  try {
+    const { id, gIdx } = req.params;
+    const idx = parseInt(gIdx, 10);
+    const prosit = await Prosit.findById(id);
+    if (!prosit) return res.status(404).json({ message: 'Prosit introuvable' });
+    if (!prosit.peerAssessmentEnabled) return res.status(400).json({ message: 'Évaluation par les pairs désactivée pour ce Prosit' });
+    const groupe = prosit.groupes[idx];
+    if (!groupe) return res.status(404).json({ message: 'Groupe introuvable' });
+
+    if (!['retour', 'evalue'].includes(prosit.status)) {
+      return res.status(400).json({ message: 'Auto-évaluation ouverte en phase Retour uniquement' });
+    }
+
+    const isMember = groupe.membres.some((m) => memberUserIdString(m) === req.user.id);
+    if (!isMember) return res.status(403).json({ message: 'Non membre de ce groupe' });
+
+    const deadline = prosit.peerAssessmentDeadline;
+    if (deadline && new Date(deadline) < new Date()) {
+      return res.status(400).json({ message: 'Deadline d\'auto-évaluation dépassée. Contacte ton prof.' });
+    }
+
+    const { criteria = {}, reflection = '' } = req.body;
+    const cleanCriteria = {
+      effort:        clampStar(criteria.effort),
+      quality:       clampStar(criteria.quality),
+      communication: clampStar(criteria.communication),
+    };
+
+    // Remplace l'entrée existante (idempotence)
+    groupe.selfAssessments = (groupe.selfAssessments || []).filter(
+      (s) => s.userId?.toString() !== req.user.id
+    );
+    groupe.selfAssessments.push({
+      userId:      req.user.id,
+      criteria:    cleanCriteria,
+      reflection:  String(reflection || '').slice(0, 1000),
+      completedAt: new Date(),
+    });
+
+    await prosit.save();
+    res.json({ ok: true, selfAssessment: groupe.selfAssessments.find(s => s.userId.toString() === req.user.id) });
+  } catch (err) {
+    console.error('[prosit] postSelfAssessment:', err);
+    res.status(500).json({ message: 'Erreur auto-évaluation' });
+  }
+}
+
+/**
+ * Évaluation d'un coéquipier (peer assessment).
+ *
+ * Anonymat par défaut (Topping, 1998) : `isAnonymous = true` cache l'identité
+ * de l'évaluateur côté étudiant ; le prof voit toujours qui a noté qui pour
+ * détecter les comportements problématiques.
+ *
+ * Idempotent : un même évaluateur ne peut noter qu'une seule fois chaque
+ * cible. Une nouvelle soumission remplace l'ancienne.
+ */
+export async function postPeerAssessment(req, res) {
+  try {
+    const { id, gIdx } = req.params;
+    const idx = parseInt(gIdx, 10);
+    const prosit = await Prosit.findById(id);
+    if (!prosit) return res.status(404).json({ message: 'Prosit introuvable' });
+    if (!prosit.peerAssessmentEnabled) return res.status(400).json({ message: 'Évaluation par les pairs désactivée pour ce Prosit' });
+    const groupe = prosit.groupes[idx];
+    if (!groupe) return res.status(404).json({ message: 'Groupe introuvable' });
+
+    if (!['retour', 'evalue'].includes(prosit.status)) {
+      return res.status(400).json({ message: 'Évaluation par les pairs ouverte en phase Retour uniquement' });
+    }
+
+    const isMember = groupe.membres.some((m) => memberUserIdString(m) === req.user.id);
+    if (!isMember) return res.status(403).json({ message: 'Non membre de ce groupe' });
+
+    const deadline = prosit.peerAssessmentDeadline;
+    if (deadline && new Date(deadline) < new Date()) {
+      return res.status(400).json({ message: 'Deadline d\'évaluation par les pairs dépassée.' });
+    }
+
+    const { targetId, criteria = {}, comment = '', isAnonymous = true } = req.body;
+    if (!targetId) return res.status(400).json({ message: 'targetId requis' });
+    if (targetId === req.user.id) return res.status(400).json({ message: 'Utilisez l\'auto-évaluation pour vous noter vous-même' });
+
+    const targetIsMember = groupe.membres.some((m) => memberUserIdString(m) === targetId);
+    if (!targetIsMember) return res.status(400).json({ message: 'La cible n\'appartient pas à ton groupe' });
+
+    const cleanCriteria = {
+      participation:   clampStar(criteria.participation),
+      contribution:    clampStar(criteria.contribution),
+      teamSpirit:      clampStar(criteria.teamSpirit),
+      deadlineRespect: clampStar(criteria.deadlineRespect),
+      listening:       clampStar(criteria.listening),
+    };
+
+    // Remplace l'évaluation existante (evaluator → target)
+    groupe.peerAssessments = (groupe.peerAssessments || []).filter(
+      (p) => !(p.evaluatorId?.toString() === req.user.id && p.targetId?.toString() === targetId)
+    );
+    groupe.peerAssessments.push({
+      evaluatorId: req.user.id,
+      targetId,
+      criteria:    cleanCriteria,
+      comment:     String(comment || '').slice(0, 500),
+      isAnonymous: isAnonymous !== false,
+      completedAt: new Date(),
+    });
+
+    await prosit.save();
+    res.json({ ok: true, count: groupe.peerAssessments.filter((p) => p.evaluatorId.toString() === req.user.id).length });
+  } catch (err) {
+    console.error('[prosit] postPeerAssessment:', err);
+    res.status(500).json({ message: 'Erreur évaluation par les pairs' });
+  }
+}
+
+/**
+ * Récapitule pour l'étudiant authentifié :
+ *   - le statut de son auto-évaluation
+ *   - la liste de ses coéquipiers + statut d'évaluation pour chacun
+ *   - la deadline et si elle est passée
+ *
+ * Endpoint clé pour piloter l'UI de la page peer-assessment.
+ */
+export async function getMyAssessmentsStatus(req, res) {
+  try {
+    const prosit = await Prosit.findById(req.params.id)
+      .populate('groupes.membres.userId', 'prenom nom');
+    if (!prosit) return res.status(404).json({ message: 'Prosit introuvable' });
+    if (!prosit.peerAssessmentEnabled) {
+      return res.json({ enabled: false, message: 'Évaluation par les pairs désactivée' });
+    }
+
+    const myGroupIdx = findUserGroupIndex(prosit, req.user.id);
+    if (myGroupIdx < 0) {
+      return res.json({ enabled: true, inGroup: false });
+    }
+    const groupe = prosit.groupes[myGroupIdx];
+
+    const teammates = (groupe.membres || [])
+      .filter((m) => memberUserIdString(m) !== req.user.id)
+      .map((m) => {
+        const uid = memberUserIdString(m);
+        const u = m.userId && typeof m.userId === 'object' ? m.userId : null;
+        const evaluated = (groupe.peerAssessments || []).some(
+          (p) => p.evaluatorId?.toString() === req.user.id && p.targetId?.toString() === uid
+        );
+        return {
+          userId: uid,
+          prenom: u?.prenom || '',
+          nom:    u?.nom    || '',
+          role:   m.role,
+          evaluated,
+        };
+      });
+
+    const selfDone = (groupe.selfAssessments || []).some(
+      (s) => s.userId?.toString() === req.user.id
+    );
+
+    const deadline = prosit.peerAssessmentDeadline;
+    const deadlinePassed = deadline ? new Date(deadline) < new Date() : false;
+
+    res.json({
+      enabled:         true,
+      inGroup:         true,
+      groupIndex:      myGroupIdx,
+      selfDone,
+      teammates,
+      totalTeammates:  teammates.length,
+      evaluatedCount:  teammates.filter((t) => t.evaluated).length,
+      deadline,
+      deadlinePassed,
+      phase:           prosit.status,
+      canSubmit:       !deadlinePassed && ['retour', 'evalue'].includes(prosit.status),
+    });
+  } catch (err) {
+    console.error('[prosit] getMyAssessmentsStatus:', err);
+    res.status(500).json({ message: 'Erreur statut évaluations' });
+  }
+}
+
+/**
+ * Vue prof : compteur d'évaluations par les pairs effectuées vs attendues
+ * pour chaque groupe. Permet de relancer ou d'étendre la deadline.
+ */
+export async function getPeerAssessmentSummary(req, res) {
+  try {
+    const prosit = await Prosit.findById(req.params.id);
+    if (!prosit) return res.status(404).json({ message: 'Prosit introuvable' });
+    if (prosit.createdBy.toString() !== req.user.id && req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'Non autorisé' });
+    }
+
+    const summary = (prosit.groupes || []).map((g, i) => {
+      const memberIds = (g.membres || []).map((m) => memberUserIdString(m)).filter(Boolean);
+      const expected  = memberIds.length >= 2 ? memberIds.length * (memberIds.length - 1) : 0;
+      const completed = (g.peerAssessments || []).filter(
+        (p) => memberIds.includes(p.evaluatorId?.toString()) &&
+               memberIds.includes(p.targetId?.toString())
+      ).length;
+      const selfDone  = (g.selfAssessments || []).length;
+      return {
+        groupIndex: i,
+        nom:        g.nom,
+        memberCount: memberIds.length,
+        expected,
+        completed,
+        selfDone,
+        selfExpected: memberIds.length,
+      };
+    });
+
+    res.json({
+      enabled:  prosit.peerAssessmentEnabled,
+      deadline: prosit.peerAssessmentDeadline,
+      summary,
+    });
+  } catch (err) {
+    console.error('[prosit] getPeerAssessmentSummary:', err);
+    res.status(500).json({ message: 'Erreur résumé peer assessment' });
+  }
+}
+
+/**
+ * Le prof étend (ou raccourcit) la deadline d'évaluation par les pairs.
+ * Body : { deadline: ISO date string }
+ */
+export async function extendPeerAssessmentDeadline(req, res) {
+  try {
+    const prosit = await Prosit.findById(req.params.id);
+    if (!prosit) return res.status(404).json({ message: 'Prosit introuvable' });
+    if (prosit.createdBy.toString() !== req.user.id && req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'Non autorisé' });
+    }
+    const { deadline } = req.body;
+    if (!deadline) return res.status(400).json({ message: 'deadline requise (ISO)' });
+    const d = new Date(deadline);
+    if (isNaN(d.getTime())) return res.status(400).json({ message: 'deadline invalide' });
+    prosit.peerAssessmentDeadline = d;
+    await prosit.save();
+    res.json({ ok: true, peerAssessmentDeadline: prosit.peerAssessmentDeadline });
+  } catch (err) {
+    console.error('[prosit] extendPeerAssessmentDeadline:', err);
+    res.status(500).json({ message: 'Erreur prolongation deadline' });
+  }
+}
+
+/* Helpers locaux */
+function clampStar(v) {
+  const n = Number(v);
+  if (!Number.isFinite(n)) return undefined;
+  return Math.max(1, Math.min(5, Math.round(n)));
 }
 
 export async function getMyRolesProgress(req, res) {
