@@ -36,6 +36,10 @@ const videoSchema = new mongoose.Schema(
     watchedBy:    [watchedEntrySchema],
     deadline:     { type: Date, default: null },
     corruptedByMigration: { type: Boolean, default: false },
+    // Objectifs d'apprentissage couverts par cette vidéo (Anderson & Krathwohl,
+    // 2001 ; alignement constructif Biggs, 1996). Référence vers les _id des
+    // sous-documents dans Course.learningOutcomes.
+    coversOutcomes: { type: [mongoose.Schema.Types.ObjectId], default: [] },
   },
   { timestamps: true }
 );

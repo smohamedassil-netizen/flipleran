@@ -3,6 +3,7 @@ import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useNotifications } from '../context/NotificationContext.jsx';
 import Logo from './Logo.jsx';
+import TeacherCoursesSubNav from './TeacherCoursesSubNav.jsx';
 import { capitalizeWords } from '../utils/format.js';
 import {
   LayoutDashboard,
@@ -37,6 +38,7 @@ import {
   Bot,
   Video,
   Lightbulb,
+  Target,
 } from 'lucide-react';
 
 /* ─── Nav config per role ───────────────────────────────────────────────────── */
@@ -240,29 +242,34 @@ function Sidebar({ collapsed, onToggle, role, user, mobileOpen, setMobileOpen })
               <div className="nav-section-label">{section.section}</div>
             )}
             {section.items.map(({ label, icon: Icon, to, badge, tooltip }) => (
-              <NavLink
-                key={`${section.section}-${label}`}
-                to={to}
-                end={to === '/'}
-                className={() => `nav-item${isNavItemActive(to) ? ' active' : ''}`}
-                title={tooltip || (collapsed ? label : undefined)}
-                style={{ justifyContent: collapsed ? 'center' : undefined }}
-                onClick={handleNavClick}
-              >
-                <Icon size={17} style={{ flexShrink: 0 }} />
-                {!collapsed && (
-                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, flex: 1 }}>
-                    {label}
-                    {badge && (
-                      <span style={{
-                        marginLeft: 'auto', padding: '1px 6px', fontSize: 9, fontWeight: 800,
-                        background: 'linear-gradient(135deg, #9333EA, #C084FC)',
-                        color: 'white', borderRadius: 999, letterSpacing: 0.3,
-                      }}>{badge}</span>
-                    )}
-                  </span>
+              <div key={`${section.section}-${label}`}>
+                <NavLink
+                  to={to}
+                  end={to === '/'}
+                  className={() => `nav-item${isNavItemActive(to) ? ' active' : ''}`}
+                  title={tooltip || (collapsed ? label : undefined)}
+                  style={{ justifyContent: collapsed ? 'center' : undefined }}
+                  onClick={handleNavClick}
+                >
+                  <Icon size={17} style={{ flexShrink: 0 }} />
+                  {!collapsed && (
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, flex: 1 }}>
+                      {label}
+                      {badge && (
+                        <span style={{
+                          marginLeft: 'auto', padding: '1px 6px', fontSize: 9, fontWeight: 800,
+                          background: 'linear-gradient(135deg, #9333EA, #C084FC)',
+                          color: 'white', borderRadius: 999, letterSpacing: 0.3,
+                        }}>{badge}</span>
+                      )}
+                    </span>
+                  )}
+                </NavLink>
+                {/* Sous-menu dynamique : Objectifs Bloom par cours pour le prof */}
+                {role === 'professeur' && to === '/courses' && (
+                  <TeacherCoursesSubNav collapsed={collapsed} />
                 )}
-              </NavLink>
+              </div>
             ))}
           </div>
         ))}

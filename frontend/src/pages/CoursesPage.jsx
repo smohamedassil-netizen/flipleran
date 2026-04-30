@@ -5,7 +5,7 @@ import { useAuth } from '../context/AuthContext.jsx';
 import api from '../utils/api.js';
 import {
   BookOpen, Users, Video, ChevronRight, Search,
-  Plus, Upload, BarChart2, FileText, Route,
+  Plus, Upload, BarChart2, FileText, Route, Target,
 } from 'lucide-react';
 
 /* ─── Course card ──────────────────────────────────────────────────────────── */
@@ -76,6 +76,13 @@ function CourseCard({ course, role, onOpen }) {
       {/* Professor actions */}
       {role === 'professeur' && (
         <div style={{ display: 'flex', gap: 8, marginTop: 14, borderTop: '1px solid var(--color-border)', paddingTop: 12, flexWrap: 'wrap' }}>
+          <button
+            className="btn btn-ghost btn-sm"
+            onClick={(e) => { e.stopPropagation(); navigate(`/professor/courses/${course._id}/outcomes`); }}
+            title="Objectifs Bloom + contrat pédagogique"
+          >
+            <Target size={13} /> Objectifs
+          </button>
           <button
             className="btn btn-ghost btn-sm"
             onClick={(e) => { e.stopPropagation(); navigate(`/professor/courses/${course._id}/path-builder`); }}

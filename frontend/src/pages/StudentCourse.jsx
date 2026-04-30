@@ -5,11 +5,12 @@ import api from '../utils/api.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import Breadcrumb from '../components/Breadcrumb.jsx';
 import LearningPathTimeline from '../components/LearningPathTimeline.jsx';
+import PedagogicalHeader from '../components/PedagogicalHeader.jsx';
 import {
   Play, CheckCircle, Clock, Lock, Home,
   BookOpen, AlertCircle, ChevronRight, MessageSquare,
   ArrowLeft, Upload, FileText, PenTool, Edit3, Trash2,
-  HelpCircle, Route, Settings as SettingsIcon,
+  HelpCircle, Route, Settings as SettingsIcon, Target,
 } from 'lucide-react';
 
 /* ─── Status helpers ──────────────────────────────────────────────────────── */
@@ -176,6 +177,7 @@ export default function StudentCourse() {
   const [questionCounts, setQuestionCounts] = useState({});  // { videoId: count }
   const [learningPath, setLearningPath] = useState(null);    // null = pas chargé, false = aucun
   const [freeMode, setFreeMode] = useState(false);            // toggle prof : vue libre
+  const [outcomesData, setOutcomesData] = useState({ learningOutcomes: [], pedagogicalContract: '' });
 
   const formatTime = (s) => {
     const m = Math.floor(s / 60);
@@ -270,6 +272,15 @@ export default function StudentCourse() {
         setQuestionCounts(counts);
 
         await fetchLearningPath(false);
+
+        // Objectifs Bloom + contrat pédagogique (silencieux si endpoint absent)
+        try {
+          const { data } = await api.get(`/courses/${courseId}/outcomes`);
+          setOutcomesData({
+            learningOutcomes: data.learningOutcomes || [],
+            pedagogicalContract: data.pedagogicalContract || '',
+          });
+        } catch { /* ignore */ }
       } catch (err) {
         setError(err.response?.data?.message ?? 'Erreur de chargement.');
       } finally {
@@ -330,6 +341,9 @@ export default function StudentCourse() {
           {/* Professor action buttons */}
           {isProfOrAdmin && (
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              <button className="btn btn-secondary btn-sm" onClick={() => navigate(`/professor/courses/${courseId}/outcomes`)}>
+                <Target size={14} /> Objectifs Bloom
+              </button>
               <button className="btn btn-primary btn-sm" onClick={() => navigate(`/professor/courses/${courseId}/path-builder`)}>
                 <Route size={14} /> Parcours pédagogique
               </button>
@@ -343,6 +357,15 @@ export default function StudentCourse() {
           )}
         </div>
       </div>
+
+      {/* ── Contrat pédagogique + Objectifs Bloom (Biggs 1996, Anderson & Krathwohl 2001) ── */}
+      {(outcomesData.pedagogicalContract || outcomesData.learningOutcomes.length > 0) && (
+        <PedagogicalHeader
+          contract={outcomesData.pedagogicalContract}
+          outcomes={outcomesData.learningOutcomes}
+          videos={videos}
+        />
+      )}
 
       <div className="responsive-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: 24, alignItems: 'start' }}>
 
