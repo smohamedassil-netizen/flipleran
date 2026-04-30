@@ -12,12 +12,14 @@ import {
   Home, FolderKanban, Users, Calendar, Clock, FileText, Upload,
   Star, Send, CheckCircle, AlertCircle, ChevronDown, ChevronRight,
   Sparkles, Edit3, Shuffle, Plus, Trash2, Link as LinkIcon, Video, X,
+  Trophy, MessageSquare, Save,
 } from 'lucide-react';
 
 /* ─── Helpers ────────────────────────────────────────────────────────────── */
 const TYPE_BADGE = {
   mono:   { label: 'Mono-module',     bg: '#F1F5F9', color: '#475569' },
   groupe: { label: 'Multi-modules',   bg: '#F1F5F9', color: '#475569' },
+  pfe:    { label: 'PFE',             bg: '#F3E8FF', color: '#7c3aed' },
 };
 const STATUS_BADGE = {
   brouillon: { label: 'Brouillon', bg: '#F1F5F9', color: '#64748B' },
@@ -146,6 +148,113 @@ function getInitials(user) {
   const p = user.prenom?.[0] ?? '';
   const n = user.nom?.[0] ?? '';
   return (p + n).toUpperCase() || '?';
+}
+
+/* ─── F8 — Bloc feedback prof sur livrable (read-only étudiant, edit prof) ── */
+function LivrableFeedbackBlock({ projectId, livrable, canEdit, onSaved }) {
+  const [editing, setEditing] = useState(false);
+  const [text, setText] = useState(livrable.feedback?.text || '');
+  const [rating, setRating] = useState(livrable.feedback?.rating ?? 4);
+  const [saving, setSaving] = useState(false);
+  const [err, setErr] = useState('');
+
+  const fb = livrable.feedback;
+
+  const save = async () => {
+    setSaving(true);
+    setErr('');
+    try {
+      await api.post(`/projects/${projectId}/livrables/${livrable._id}/feedback`, { text: text.trim(), rating });
+      setEditing(false);
+      onSaved?.();
+    } catch (e) {
+      setErr(e.response?.data?.message || 'Erreur lors de la sauvegarde');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // Affichage lecture si feedback existe et pas en édition
+  if (fb && !editing) {
+    return (
+      <div style={{ marginTop: 10, padding: '10px 12px', background: '#f0f9ff', border: '1px solid #bae6fd', borderRadius: 8 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, fontWeight: 700, color: '#0369a1' }}>
+            <MessageSquare size={12} /> FEEDBACK PROF
+            {fb.rating && (
+              <span style={{ color: '#f59e0b', marginLeft: 6 }}>
+                {'★'.repeat(fb.rating)}<span style={{ color: '#cbd5e1' }}>{'★'.repeat(5 - fb.rating)}</span>
+              </span>
+            )}
+          </div>
+          {canEdit && (
+            <button onClick={() => setEditing(true)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#0369a1', fontSize: 11, fontWeight: 600 }}>
+              <Edit3 size={11} style={{ verticalAlign: -1 }} /> Modifier
+            </button>
+          )}
+        </div>
+        {fb.text && <div style={{ fontSize: 12.5, color: '#1e293b', lineHeight: 1.5 }}>{fb.text}</div>}
+      </div>
+    );
+  }
+
+  // Affichage formulaire (prof seulement)
+  if (canEdit && editing) {
+    return (
+      <div style={{ marginTop: 10, padding: 12, background: '#fefce8', border: '1px solid #fde68a', borderRadius: 8 }}>
+        <div style={{ fontSize: 11, fontWeight: 700, color: '#92400e', marginBottom: 8 }}>
+          ✏️ Donner un feedback
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 8 }}>
+          {[1, 2, 3, 4, 5].map((n) => (
+            <button
+              key={n}
+              type="button"
+              onClick={() => setRating(n)}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 18, color: n <= rating ? '#f59e0b' : '#cbd5e1', padding: 0 }}
+              aria-label={`${n} étoiles`}
+            >
+              ★
+            </button>
+          ))}
+          <span style={{ marginLeft: 6, fontSize: 11, color: '#92400e' }}>{rating}/5</span>
+        </div>
+        <textarea
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          placeholder="1 force, 1 axe d'amélioration, ton bienveillant…"
+          rows={3}
+          style={{
+            width: '100%', padding: 8, fontSize: 12.5, lineHeight: 1.4,
+            border: '1px solid #fde68a', borderRadius: 6, resize: 'vertical', fontFamily: 'inherit',
+          }}
+        />
+        {err && <div style={{ marginTop: 6, fontSize: 11, color: '#dc2626' }}>{err}</div>}
+        <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
+          <button onClick={save} disabled={saving} className="btn btn-primary btn-sm" style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+            <Save size={12} /> {saving ? 'Enregistrement…' : 'Enregistrer'}
+          </button>
+          <button onClick={() => { setEditing(false); setText(fb?.text || ''); setRating(fb?.rating ?? 4); }} className="btn btn-ghost btn-sm">
+            Annuler
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // Pas de feedback + prof → bouton pour démarrer
+  if (canEdit && !fb && !editing) {
+    return (
+      <div style={{ marginTop: 8 }}>
+        <button onClick={() => setEditing(true)} className="btn btn-ghost btn-sm" style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11 }}>
+          <MessageSquare size={11} /> Donner un feedback
+        </button>
+      </div>
+    );
+  }
+
+  // Étudiant + pas de feedback → discret message
+  return null;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -490,7 +599,8 @@ export default function ProjectDetail() {
       }}>
         <strong style={{ color: '#1B4F72' }}>À propos de ce projet&nbsp;:</strong>
         {' '}c'est un travail en groupe pour les étudiants — exercice approfondi qui mobilise
-        {project.type === 'groupe' ? ' plusieurs modules.' : ' un module.'}
+        {project.type === 'pfe' ? ' plusieurs modules sur tout le semestre (PFE).' :
+         project.type === 'groupe' ? ' plusieurs modules.' : ' un module.'}
         {' '}Chaque membre a un rôle (chef de projet, scribe, animateur, chrono, analyste — voir la légende à droite).
         Le travail s'organise par phases avec une checklist, des livrables et une auto-évaluation entre pairs en fin de projet.
       </div>
@@ -520,6 +630,44 @@ export default function ProjectDetail() {
             </div>
           )}
         </div>
+      )}
+
+      {/* ── F8 — Rubric d'évaluation transparente (Helle et al. 2006) ─── */}
+      {project.rubric && project.rubric.length > 0 && (
+        <details className="card" style={{ marginBottom: 20, padding: '14px 18px' }}>
+          <summary style={{
+            cursor: 'pointer', fontSize: 14, fontWeight: 700, color: '#1e1b4b',
+            display: 'flex', alignItems: 'center', gap: 8, listStyle: 'none',
+          }}>
+            <Trophy size={15} color="#7c3aed" />
+            Grille d'évaluation détaillée — {project.rubric.length} critère{project.rubric.length > 1 ? 's' : ''}
+            <span style={{ marginLeft: 'auto', fontSize: 11, color: '#64748b', fontWeight: 500 }}>
+              {project.rubric.reduce((s, c) => s + (c.maxPoints || 0), 0)} pts au total · clique pour déplier
+            </span>
+          </summary>
+          <div style={{ marginTop: 14, display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {project.rubric.map((c, ci) => (
+              <div key={ci} style={{ padding: 12, background: '#faf5ff', border: '1px solid #e9d5ff', borderRadius: 10 }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                  <strong style={{ fontSize: 13, color: '#1e1b4b' }}>{c.criterion}</strong>
+                  <span style={{ padding: '2px 10px', background: '#7c3aed', color: 'white', fontSize: 11, fontWeight: 700, borderRadius: 999 }}>
+                    {c.maxPoints} pts max
+                  </span>
+                </div>
+                {c.descriptors?.length > 0 && (
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: 8 }}>
+                    {c.descriptors.map((d, di) => (
+                      <div key={di} style={{ padding: '6px 10px', background: 'white', borderRadius: 8, border: '1px solid #e2e8f0' }}>
+                        <div style={{ fontSize: 11, fontWeight: 700, color: '#7c3aed', marginBottom: 2 }}>Niveau {d.level}/5</div>
+                        <div style={{ fontSize: 11, color: '#475569', lineHeight: 1.4 }}>{d.text}</div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </details>
       )}
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: 24, alignItems: 'start' }}>
@@ -647,19 +795,28 @@ export default function ProjectDetail() {
                   const Icon = LIVRABLE_ICONS[liv.type] ?? FileText;
                   return (
                     <div key={i} style={{
-                      display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px',
+                      padding: '10px 14px',
                       borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)',
                       backgroundColor: 'var(--color-surface)',
                     }}>
-                      <Icon size={18} color="var(--color-primary)" />
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <p style={{ fontWeight: 600, fontSize: 'var(--font-size-sm)', color: 'var(--color-text)', margin: 0 }}>
-                          {liv.titre}
-                        </p>
-                        <p style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-secondary)', margin: 0 }}>
-                          {(formatFullName(liv.uploadedBy) || formatFullName(liv.uploadePar)) || 'Moi'} {'·'} {liv.uploadedAt ? new Date(liv.uploadedAt).toLocaleDateString('fr-FR') : 'Maintenant'}
-                        </p>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                        <Icon size={18} color="var(--color-primary)" />
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <p style={{ fontWeight: 600, fontSize: 'var(--font-size-sm)', color: 'var(--color-text)', margin: 0 }}>
+                            {liv.titre}
+                          </p>
+                          <p style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-secondary)', margin: 0 }}>
+                            {(formatFullName(liv.uploadedBy) || formatFullName(liv.uploadePar)) || 'Moi'} {'·'} {liv.uploadedAt ? new Date(liv.uploadedAt).toLocaleDateString('fr-FR') : 'Maintenant'}
+                          </p>
+                        </div>
                       </div>
+                      {/* F8 — Feedback prof inline */}
+                      <LivrableFeedbackBlock
+                        projectId={project._id}
+                        livrable={liv}
+                        canEdit={isProfOrAdmin}
+                        onSaved={refreshProject}
+                      />
                     </div>
                   );
                 })}

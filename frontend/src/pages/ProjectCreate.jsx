@@ -7,7 +7,7 @@ import {
   ArrowLeft, Plus, Trash2, Save, AlertCircle, X,
 } from 'lucide-react';
 
-/* Phases par défaut (communes mono/groupé, modifiables) */
+/* Phases par défaut (utilisé en fallback si l'API templates est indisponible) */
 const DEFAULT_PHASES = [
   'Lancement',
   'Recherche',
@@ -16,11 +16,18 @@ const DEFAULT_PHASES = [
   'Soutenance',
 ];
 
+/* F8 — Métadonnées des 3 types pour le toggle */
+const TYPE_META = [
+  { key: 'mono',   label: 'Module unique',  hint: '1 module · 3 phases' },
+  { key: 'groupe', label: 'Multi-modules',  hint: '≥2 modules · 5 phases' },
+  { key: 'pfe',    label: 'PFE',            hint: 'Projet de fin d\'études · 7 phases' },
+];
+
 export default function ProjectCreate() {
   const navigate = useNavigate();
   const { user } = useAuth();
 
-  const [type, setType]               = useState('mono'); // 'mono' | 'groupe'
+  const [type, setType]               = useState('mono'); // 'mono' | 'groupe' | 'pfe'
   const [titre, setTitre]             = useState('');
   const [description, setDescription] = useState('');
   const [courseId, setCourseId]       = useState('');         // pour mono
@@ -36,6 +43,8 @@ export default function ProjectCreate() {
   const [dateSoutenance, setDateSoutenance] = useState('');
 
   const [phases, setPhases] = useState(DEFAULT_PHASES.map(t => ({ titre: t })));
+  const [phasesTouched, setPhasesTouched] = useState(false); // F8 : si l'utilisateur a édité, on n'écrase plus
+  const [rubricFromTemplate, setRubricFromTemplate] = useState([]); // F8 : payload envoyé au backend
 
   const [saving, setSaving] = useState(false);
   const [error, setError]   = useState('');
@@ -45,6 +54,28 @@ export default function ProjectCreate() {
       .then(({ data }) => setCourses(data))
       .catch(console.error);
   }, []);
+
+  /* F8 — Charge le template phases + rubric à chaque changement de type,
+     SAUF si l'utilisateur a déjà touché manuellement à la liste des phases. */
+  useEffect(() => {
+    if (phasesTouched) return;
+    api.get(`/projects/templates/${type}`)
+      .then(({ data }) => {
+        if (Array.isArray(data?.phases)) {
+          setPhases(data.phases.map((p) => ({
+            titre: p.titre,
+            description: p.description || '',
+            weight: p.weight,
+            livrableSpec: p.livrableSpec || null,
+          })));
+        }
+        if (Array.isArray(data?.rubric)) setRubricFromTemplate(data.rubric);
+      })
+      .catch(() => {
+        // Fallback : phases génériques anciennes
+        setPhases(DEFAULT_PHASES.map(t => ({ titre: t })));
+      });
+  }, [type, phasesTouched]);
 
   const toggleModule = (id) => {
     setModuleIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
@@ -62,15 +93,19 @@ export default function ProjectCreate() {
   };
 
   const addPhase = () => {
+    setPhasesTouched(true);
     setPhases(prev => [...prev, { titre: '' }]);
   };
   const removePhase = (index) => {
+    setPhasesTouched(true);
     setPhases(prev => prev.filter((_, i) => i !== index));
   };
   const updatePhase = (index, value) => {
+    setPhasesTouched(true);
     setPhases(prev => {
       const updated = [...prev];
-      updated[index] = { titre: value };
+      // Conserve les autres champs (description, weight, livrableSpec) du template
+      updated[index] = { ...updated[index], titre: value };
       return updated;
     });
   };
@@ -83,8 +118,8 @@ export default function ProjectCreate() {
     if (type === 'mono' && !courseId) {
       return setError('Sélectionnez le module rattaché au projet.');
     }
-    if (type === 'groupe' && moduleIds.length < 2) {
-      return setError('Un projet groupé doit être rattaché à au moins deux modules.');
+    if (['groupe', 'pfe'].includes(type) && moduleIds.length < 2) {
+      return setError(`Un projet ${type === 'pfe' ? 'PFE' : 'multi-modules'} doit être rattaché à au moins deux modules.`);
     }
     if (phases.length === 0) return setError('Ajoutez au moins une phase.');
     if (phases.some(p => !p.titre.trim())) return setError('Toutes les phases doivent avoir un titre.');
@@ -97,7 +132,16 @@ export default function ProjectCreate() {
         description: description.trim(),
         enonce: enonce.trim(),
         motsCles,
-        phases: phases.map(p => ({ titre: p.titre.trim(), statut: 'a_faire' })),
+        // F8 : on envoie phases enrichies (avec description/weight/livrableSpec quand fournies par le template)
+        phases: phases.map(p => ({
+          titre: p.titre.trim(),
+          description: p.description || '',
+          weight: p.weight ?? 0,
+          livrableSpec: p.livrableSpec || null,
+          statut: 'a_faire',
+        })),
+        // F8 : la rubric est issue du template (modifiable plus tard via PUT /rubric)
+        rubric: rubricFromTemplate,
       };
 
       if (type === 'mono') {
@@ -173,16 +217,14 @@ export default function ProjectCreate() {
                 Rattachement <span style={{ color: 'var(--color-error)' }}>*</span>
               </label>
 
-              {/* Toggle compact en ligne */}
-              <div style={{ display: 'inline-flex', gap: 0, marginBottom: 10, padding: 2, border: '1px solid var(--color-border)', borderRadius: 8, background: '#F8FAFC' }}>
-                {[
-                  { key: 'mono',   label: '1 seul module' },
-                  { key: 'groupe', label: 'Plusieurs modules' },
-                ].map(({ key, label }) => (
+              {/* Toggle 3 types : module unique / multi-modules / PFE (F8) */}
+              <div style={{ display: 'inline-flex', gap: 0, marginBottom: 10, padding: 2, border: '1px solid var(--color-border)', borderRadius: 8, background: '#F8FAFC', flexWrap: 'wrap' }}>
+                {TYPE_META.map(({ key, label, hint }) => (
                   <button
                     key={key}
                     type="button"
-                    onClick={() => setType(key)}
+                    onClick={() => { setType(key); setPhasesTouched(false); }}
+                    title={hint}
                     style={{
                       padding: '6px 14px',
                       borderRadius: 6,
@@ -199,6 +241,9 @@ export default function ProjectCreate() {
                   </button>
                 ))}
               </div>
+              <p style={{ fontSize: 11, color: 'var(--color-text-secondary)', marginTop: -2, marginBottom: 8 }}>
+                {TYPE_META.find((t) => t.key === type)?.hint} — les phases et la rubric sont pré-remplies, tu peux tout éditer en bas.
+              </p>
 
               {type === 'mono' ? (
                 <select
@@ -216,7 +261,7 @@ export default function ProjectCreate() {
               ) : (
                 <>
                   <p style={{ fontSize: 12, color: 'var(--color-text-secondary)', margin: '0 0 6px' }}>
-                    Sélectionner au moins 2 modules. Le projet sera transverse.
+                    Sélectionner au moins 2 modules. Le projet sera {type === 'pfe' ? 'un PFE multi-disciplines' : 'transverse'}.
                   </p>
                   <div style={{
                     border: '1px solid var(--color-border)', borderRadius: 8,

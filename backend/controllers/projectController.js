@@ -61,41 +61,40 @@ export const createProject = async (req, res) => {
       return res.status(403).json({ message: 'Seul un professeur peut créer un projet.' });
     }
 
-    const { titre, description, type, courseId, modules = [], enonce, motsCles, dateDebut, dateFin, dateSoutenance, phases } = req.body;
+    const { titre, description, type, courseId, modules = [], enonce, motsCles, dateDebut, dateFin, dateSoutenance, phases, rubric } = req.body;
     if (!titre || !type) {
       return res.status(400).json({ message: 'titre et type sont requis.' });
     }
-    if (!['mono', 'groupe'].includes(type)) {
-      return res.status(400).json({ message: 'type doit être "mono" ou "groupe".' });
+    if (!['mono', 'groupe', 'pfe'].includes(type)) {
+      return res.status(400).json({ message: 'type doit être "mono", "groupe" ou "pfe".' });
     }
     if (type === 'mono' && !courseId) {
       return res.status(400).json({ message: 'Un projet mono-module doit être rattaché à un cours.' });
     }
-    if (type === 'groupe' && (!Array.isArray(modules) || modules.length < 2)) {
-      return res.status(400).json({ message: 'Un projet groupé doit être rattaché à au moins deux modules.' });
+    // 'groupe' et 'pfe' nécessitent ≥2 modules
+    if (['groupe', 'pfe'].includes(type) && (!Array.isArray(modules) || modules.length < 2)) {
+      return res.status(400).json({ message: `Un projet ${type === 'pfe' ? 'PFE' : 'multi-modules'} doit être rattaché à au moins deux modules.` });
     }
 
-    // Phases par défaut (communes à mono et groupé)
-    const defaultPhases = [
-      { titre: 'Lancement' },
-      { titre: 'Recherche' },
-      { titre: 'Développement' },
-      { titre: 'Livrable' },
-      { titre: 'Soutenance' },
-    ];
+    // F8 — Auto-load templates phases + rubric selon le type, si non fournis.
+    // Le service est tolérant aux types existants (mono/groupe) pour rétrocompat.
+    const { getPhasesTemplate, getRubricTemplate } = await import('../services/projectTemplates.js');
+    const finalPhases = (Array.isArray(phases) && phases.length) ? phases : getPhasesTemplate(type);
+    const finalRubric = (Array.isArray(rubric) && rubric.length) ? rubric : getRubricTemplate();
 
     const data = {
       titre,
       description: description ?? '',
       type,
       courseId: type === 'mono' ? courseId : (courseId || undefined),
-      modules: type === 'groupe' ? modules : [],
+      modules: ['groupe', 'pfe'].includes(type) ? modules : [],
       enonce: enonce ?? '',
       motsCles: motsCles ?? [],
       dateDebut,
       dateFin,
       dateSoutenance,
-      phases: Array.isArray(phases) && phases.length ? phases : defaultPhases,
+      phases: finalPhases,
+      rubric: finalRubric,
       createdBy: req.user.id,
     };
 
@@ -692,5 +691,183 @@ Formate ta réponse avec des sections claires.`;
   } catch (err) {
     console.error('getAiHelp error:', err.message);
     res.status(500).json({ message: 'Erreur lors de la génération de suggestions IA.' });
+  }
+};
+
+/* ─────────────────────────────────────────────────────────────────────────
+   F8 — Feedback structuré sur livrable + progress + rubric CRUD
+───────────────────────────────────────────────────────────────────────── */
+
+/**
+ * POST /api/projects/:id/livrables/:livrableId/feedback
+ * Le prof (ou admin) donne un feedback structuré sur un livrable étudiant :
+ * texte coaching + note 1-5 étoiles. Distinct des `evaluations[]` (peer-review).
+ */
+export const addLivrableFeedback = async (req, res) => {
+  try {
+    if (!['professeur', 'admin'].includes(req.user.role)) {
+      return res.status(403).json({ message: 'Seul un professeur peut donner un feedback.' });
+    }
+    const { id, livrableId } = req.params;
+    const { text, rating } = req.body;
+
+    const project = await Project.findById(id);
+    if (!project) return res.status(404).json({ message: 'Projet introuvable.' });
+
+    const livrable = project.livrables.id(livrableId);
+    if (!livrable) return res.status(404).json({ message: 'Livrable introuvable.' });
+
+    livrable.feedback = {
+      from:      req.user.id,
+      text:      String(text || '').slice(0, 2000),
+      rating:    Number.isFinite(Number(rating)) ? Math.max(1, Math.min(5, Math.round(Number(rating)))) : null,
+      createdAt: new Date(),
+    };
+
+    project.activity.push({
+      type:        'livrable_feedback',
+      authorId:    req.user.id,
+      description: `Feedback ajouté sur le livrable "${livrable.titre}" (note ${livrable.feedback.rating ?? '—'}/5).`,
+      meta:        { livrableId: livrable._id },
+    });
+
+    await project.save();
+    await project.populate('livrables.feedback.from', 'nom prenom');
+    res.json({ feedback: livrable.feedback, livrableId: livrable._id });
+  } catch (err) {
+    console.error('addLivrableFeedback error:', err.message);
+    res.status(500).json({ message: err.message });
+  }
+};
+
+/**
+ * GET /api/projects/:id/progress
+ * Calcule pour chaque membre du projet :
+ *   - phasesCompleted (statut === 'termine' parmi celles concernant son groupe)
+ *   - phasesTotal
+ *   - livrablesUploaded (par lui-même)
+ *   - livrablesWithFeedback
+ *   - completionPercent (basé sur phases termine / phases total)
+ */
+export const getProjectProgress = async (req, res) => {
+  try {
+    const project = await Project.findById(req.params.id)
+      .populate('groupes.membres.userId', 'nom prenom')
+      .lean();
+    if (!project) return res.status(404).json({ message: 'Projet introuvable.' });
+
+    const phasesTotal = (project.phases || []).length;
+    const phasesTermine = (project.phases || []).filter((p) => p.statut === 'termine').length;
+    const projectCompletion = phasesTotal > 0 ? Math.round((phasesTermine / phasesTotal) * 100) : 0;
+
+    const memberStats = [];
+    for (const groupe of project.groupes || []) {
+      for (const membre of groupe.membres || []) {
+        const userId = membre.userId?._id ?? membre.userId;
+        if (!userId) continue;
+        const myLivrables = (project.livrables || []).filter((l) => String(l.uploadedBy) === String(userId));
+        const myFeedbacks = myLivrables.filter((l) => l.feedback);
+        memberStats.push({
+          userId,
+          user: membre.userId,
+          role: membre.role,
+          groupeNom: groupe.nom,
+          livrablesUploaded: myLivrables.length,
+          livrablesWithFeedback: myFeedbacks.length,
+        });
+      }
+    }
+
+    res.json({
+      phasesTotal,
+      phasesTermine,
+      projectCompletionPercent: projectCompletion,
+      groupesCount: (project.groupes || []).length,
+      livrablesTotal: (project.livrables || []).length,
+      livrablesWithFeedback: (project.livrables || []).filter((l) => l.feedback).length,
+      members: memberStats,
+    });
+  } catch (err) {
+    console.error('getProjectProgress error:', err.message);
+    res.status(500).json({ message: err.message });
+  }
+};
+
+/**
+ * PUT /api/projects/:id/rubric
+ * Le prof remplace la rubric complète. On valide la forme (criterion + maxPoints + descriptors).
+ */
+export const setProjectRubric = async (req, res) => {
+  try {
+    if (!['professeur', 'admin'].includes(req.user.role)) {
+      return res.status(403).json({ message: 'Seul un professeur peut modifier la rubric.' });
+    }
+    const { rubric } = req.body;
+    if (!Array.isArray(rubric)) {
+      return res.status(400).json({ message: 'rubric doit être un tableau.' });
+    }
+
+    const project = await Project.findById(req.params.id);
+    if (!project) return res.status(404).json({ message: 'Projet introuvable.' });
+
+    project.rubric = rubric.map((c) => ({
+      criterion:   String(c.criterion || '').slice(0, 200),
+      maxPoints:   Math.max(0, Math.min(100, Number(c.maxPoints) || 20)),
+      descriptors: Array.isArray(c.descriptors)
+        ? c.descriptors
+            .filter((d) => d && Number.isFinite(Number(d.level)))
+            .map((d) => ({
+              level: Math.max(1, Math.min(5, Math.round(Number(d.level)))),
+              text:  String(d.text || '').slice(0, 500),
+            }))
+        : [],
+    })).filter((c) => c.criterion);
+
+    project.activity.push({
+      type:        'rubric_updated',
+      authorId:    req.user.id,
+      description: `Rubric mise à jour (${project.rubric.length} critères).`,
+    });
+
+    await project.save();
+    res.json({ rubric: project.rubric });
+  } catch (err) {
+    console.error('setProjectRubric error:', err.message);
+    res.status(500).json({ message: err.message });
+  }
+};
+
+/**
+ * GET /api/projects/:id/rubric — renvoie la rubric (publique aux membres et au prof).
+ */
+export const getProjectRubric = async (req, res) => {
+  try {
+    const project = await Project.findById(req.params.id).select('rubric titre').lean();
+    if (!project) return res.status(404).json({ message: 'Projet introuvable.' });
+    res.json({ rubric: project.rubric || [], titre: project.titre });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+/**
+ * GET /api/projects/templates/:type
+ * Renvoie le template phases + rubric pour un type donné — utilisé par
+ * ProjectCreate.jsx pour pré-remplir le formulaire à la sélection du type.
+ */
+export const getProjectTemplate = async (req, res) => {
+  try {
+    const { type } = req.params;
+    if (!['mono', 'groupe', 'pfe'].includes(type)) {
+      return res.status(400).json({ message: 'type invalide.' });
+    }
+    const { getPhasesTemplate, getRubricTemplate } = await import('../services/projectTemplates.js');
+    res.json({
+      type,
+      phases: getPhasesTemplate(type),
+      rubric: getRubricTemplate(),
+    });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
   }
 };

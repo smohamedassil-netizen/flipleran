@@ -22,6 +22,18 @@ const checklistItemSchema = new mongoose.Schema({
   assignedGroupe: { type: Number, default: null }, // si null, tous les groupes
 }, { _id: true });
 
+/**
+ * Spécification de livrable attendu pour une phase (F8 sprint-final).
+ * Permet au prof d'indiquer ce que le groupe doit produire pour valider
+ * la phase (document / vidéo / présentation / démo). Sans casser les
+ * projets existants : tous les champs sont optionnels avec défauts.
+ */
+const livrableSpecSchema = new mongoose.Schema({
+  type:       { type: String, enum: ['document', 'video', 'presentation', 'demo', 'libre'], default: 'libre' },
+  isRequired: { type: Boolean, default: false },
+  consigne:   { type: String, default: '', maxlength: 1000 },
+}, { _id: false });
+
 const phaseSchema = new mongoose.Schema({
   titre: { type: String, required: true },
   description: { type: String, default: '' },
@@ -33,6 +45,10 @@ const phaseSchema = new mongoose.Schema({
     default: 'a_faire'
   },
   checklist: [checklistItemSchema],
+  // F8 — poids de la phase dans la note finale (0-100, optionnel)
+  weight:       { type: Number, min: 0, max: 100, default: 0 },
+  // F8 — spécification du livrable attendu
+  livrableSpec: { type: livrableSpecSchema, default: null },
 }, { _id: true });
 
 /**
@@ -48,6 +64,19 @@ const ideaSchema = new mongoose.Schema({
   addedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
 }, { _id: true, timestamps: true });
 
+/**
+ * Feedback structuré du prof sur un livrable étudiant (F8 sprint-final).
+ * Note 1-5 étoiles (Helle, Tynjälä, Olkinuora 2006 — Project-based learning
+ * in post-secondary education). Distinct des `evaluations[]` qui sont des
+ * peer-reviews entre étudiants.
+ */
+const livrableFeedbackSchema = new mongoose.Schema({
+  from:      { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  text:      { type: String, default: '', maxlength: 2000 },
+  rating:    { type: Number, min: 1, max: 5, default: null },
+  createdAt: { type: Date, default: Date.now },
+}, { _id: false });
+
 const livrableSchema = new mongoose.Schema({
   groupeIndex: { type: Number, required: true },
   type: {
@@ -59,7 +88,13 @@ const livrableSchema = new mongoose.Schema({
   url: String,
   publicId: String,
   uploadedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-  uploadedAt: { type: Date, default: Date.now }
+  uploadedAt: { type: Date, default: Date.now },
+  // F8 — rattachement optionnel à une phase (ID du sous-doc phaseSchema)
+  phaseId:     { type: mongoose.Schema.Types.ObjectId, default: null },
+  // F8 — texte libre déposé en complément du fichier (notes, commentaire)
+  textContent: { type: String, default: '' },
+  // F8 — feedback structuré du prof
+  feedback:    { type: livrableFeedbackSchema, default: null },
 }, { _id: true });
 
 const critereSchema = new mongoose.Schema({
@@ -89,15 +124,39 @@ const activitySchema = new mongoose.Schema({
   at:          { type: Date, default: Date.now },
 }, { _id: true });
 
+/**
+ * Rubric d'évaluation détaillée (F8 sprint-final).
+ *
+ * @see Helle, L., Tynjälä, P., & Olkinuora, E. (2006). Project-based
+ *      learning in post-secondary education — theory, practice and rubber
+ *      sling shots. *Higher Education*, 51(2), 287-314.
+ *
+ * Chaque critère contient des descripteurs par niveau (1=insuffisant à
+ * 5=excellent) pour rendre l'évaluation transparente et reproductible.
+ */
+const rubricDescriptorSchema = new mongoose.Schema({
+  level: { type: Number, min: 1, max: 5, required: true },
+  text:  { type: String, default: '', maxlength: 500 },
+}, { _id: false });
+
+const rubricCriterionSchema = new mongoose.Schema({
+  criterion:   { type: String, required: true, maxlength: 200 },
+  maxPoints:   { type: Number, default: 20, min: 0, max: 100 },
+  descriptors: { type: [rubricDescriptorSchema], default: [] },
+}, { _id: true });
+
 const projectSchema = new mongoose.Schema({
   titre: { type: String, required: true },
   description: String,
   // Type d'organisation du projet :
-  //   'mono'   = rattaché à un seul module (courseId)
-  //   'groupe' = rattaché à plusieurs modules (modules[]), travail transverse
+  //   'mono'   = rattaché à un seul module (courseId) — alias UI "Module unique"
+  //   'groupe' = rattaché à plusieurs modules (modules[]) — alias UI "Multi-modules"
+  //   'pfe'    = projet de fin d'études (F8 sprint-final) — multi-modules + soutenance
+  // Les valeurs 'mono' et 'groupe' restent valides pour rétrocompat ;
+  // 'pfe' a été ajoutée pour distinguer les PFE (jalons + rubric obligatoires).
   type: {
     type: String,
-    enum: ['mono', 'groupe'],
+    enum: ['mono', 'groupe', 'pfe'],
     required: true,
     default: 'mono',
   },
@@ -118,7 +177,7 @@ const projectSchema = new mongoose.Schema({
   dateFin: Date,
   dateSoutenance: Date,
 
-  // Modules associés (utilisé pour les projets de type 'groupe')
+  // Modules associés (utilisé pour les projets de type 'groupe' et 'pfe')
   modules: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Course' }],
 
   // Structure
@@ -128,6 +187,9 @@ const projectSchema = new mongoose.Schema({
   evaluations: [evaluationSchema],
   activity: [activitySchema],
   ideas: [ideaSchema],
+
+  // F8 — rubric d'évaluation transparente (Helle et al. 2006)
+  rubric: { type: [rubricCriterionSchema], default: [] },
 }, { timestamps: true });
 
 projectSchema.index({ courseId: 1, createdBy: 1 });
