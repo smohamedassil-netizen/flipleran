@@ -52,8 +52,8 @@ export function computePairings({ livrables, members }) {
   const pairings = [];
 
   for (const liv of livrables) {
+    if (!liv.uploadedBy) continue; // skip orphan livrables (no owner)
     const targetUserId = String(liv.uploadedBy);
-    if (!targetUserId) continue;
 
     // Exclus le target
     let candidates = members.filter((m) => String(m.userId) !== targetUserId);
