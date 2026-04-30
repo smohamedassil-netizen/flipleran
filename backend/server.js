@@ -178,6 +178,25 @@ app.use('/videos', express.static(path.join(__dirname, 'public', 'videos'), {
   fallthrough: true,
 }));
 
+/**
+ * /api/health — endpoint de santé léger pour les pings externes (UptimeRobot,
+ * Cloudflare workers, etc.). En production sur Render free tier, le serveur
+ * dort après 15 min d'inactivité ; un ping toutes les 5-14 min via cet
+ * endpoint maintient le processus chaud sans coût et sans logger les requêtes
+ * dans /api (rate-limit global appliqué).
+ *
+ * Volontairement minimaliste : pas de query DB, pas d'auth, pas de body —
+ * pour ne jamais échouer même quand la DB est down (signal "process up" ≠
+ * "DB up", c'est intentionnel).
+ */
+app.get('/api/health', (_req, res) => {
+  res.json({
+    status:    'ok',
+    uptime:    Math.round(process.uptime()),
+    timestamp: new Date().toISOString(),
+  });
+});
+
 // API routes
 app.use('/api/auth',     authRoutes);
 app.use('/api/decks',    deckRoutes);

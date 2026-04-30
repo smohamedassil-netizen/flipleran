@@ -215,6 +215,16 @@ export const updateProject = async (req, res) => {
       return res.status(403).json({ message: 'Seul le créateur peut modifier ce projet.' });
     }
 
+    // F8 — Le type d'un projet est conceptuellement immuable après création.
+    // Changer un 'mono' en 'pfe' laisserait des phases incohérentes (3 vs 7)
+    // et briserait le calcul des poids dans la rubric. Pour repartir de zéro
+    // sur un type différent, le prof doit créer un nouveau projet.
+    if (req.body.type && req.body.type !== project.type) {
+      return res.status(400).json({
+        message: `Le type d'un projet est immuable après création (actuellement "${project.type}"). Crée un nouveau projet pour repartir d'un autre template.`,
+      });
+    }
+
     const previousStatus = project.status;
     Object.assign(project, req.body);
     await project.save();
@@ -733,6 +743,34 @@ export const addLivrableFeedback = async (req, res) => {
 
     await project.save();
     await project.populate('livrables.feedback.from', 'nom prenom');
+
+    // F8 hotfix — Notification temps réel à l'étudiant qui a déposé le livrable.
+    // Le toast violet (type 'project_status') le prévient pour qu'il n'ait pas
+    // à recharger la page projet pour découvrir son feedback.
+    try {
+      const io = req.app.get('io');
+      if (io && livrable.uploadedBy) {
+        const ratingStars = livrable.feedback.rating
+          ? `${livrable.feedback.rating}/5 ★`
+          : '';
+        const { pushNotification } = await import('../services/notificationService.js');
+        await pushNotification(io, {
+          userId:      livrable.uploadedBy,
+          type:        'project_status',
+          priority:    livrable.feedback.rating && livrable.feedback.rating <= 2 ? 'high' : 'normal',
+          title:       '📝 Nouveau feedback prof',
+          message:     `Ton livrable "${livrable.titre}" a reçu un feedback ${ratingStars}`,
+          link:        `/projects/${project._id}`,
+          relatedType: 'project',
+          relatedId:   project._id,
+          dedupKey:    `livrable_feedback_${livrable._id}_${Date.now()}`,
+        });
+      }
+    } catch (notifErr) {
+      console.error('[livrableFeedback notif]', notifErr.message);
+      // Non-bloquant : le feedback est sauvé même si la notif échoue
+    }
+
     res.json({ feedback: livrable.feedback, livrableId: livrable._id });
   } catch (err) {
     console.error('addLivrableFeedback error:', err.message);
