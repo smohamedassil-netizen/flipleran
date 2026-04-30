@@ -105,12 +105,12 @@ function loadYouTubeAPI() {
 
 /* ─── Player YouTube via IFrame API : vrai tracking du temps regardé ────── */
 function YouTubeEmbedPlayer({
-  videoId, youtubeId, initialPercent, nextVideoPath, qcmPath, courseId, titre, userRole, onPointsEarned,
+  videoId, youtubeId, initialPercent, nextVideoPath, qcmPath, courseId, titre, userRole, onPointsEarned, onFlashcardsTriggered,
 }) {
   const navigate = useNavigate();
   const isStudent = userRole === 'etudiant';
   const { watchedPercent, completed, onTimeUpdate, sendProgress } =
-    useVideoProgress(videoId, initialPercent, { onPointsEarned });
+    useVideoProgress(videoId, initialPercent, { onPointsEarned, onFlashcardsTriggered });
 
   const playerRef    = useRef(null);
   const ytReady      = useRef(false);
@@ -255,6 +255,7 @@ export default function VideoPlayer({
   courseId,
   userRole,
   onPointsEarned,
+  onFlashcardsTriggered,
 }) {
   const isStudent = userRole === 'etudiant';
 
@@ -271,6 +272,7 @@ export default function VideoPlayer({
         courseId={courseId}
         userRole={userRole}
         onPointsEarned={onPointsEarned}
+        onFlashcardsTriggered={onFlashcardsTriggered}
       />
     );
   }
@@ -289,7 +291,7 @@ export default function VideoPlayer({
   const hideTimer = useRef(null);
 
   const { watchedPercent, completed, onTimeUpdate, sendProgress } =
-    useVideoProgress(videoId, initialPercent, { onPointsEarned });
+    useVideoProgress(videoId, initialPercent, { onPointsEarned, onFlashcardsTriggered });
 
   const [showQcmPrompt, closeQcmPrompt] = useQcmPrompt(videoId, watchedPercent, qcmPath, userRole);
 

@@ -347,6 +347,25 @@ export async function runAllDeadlineChecks(io) {
   }
 }
 
+/* ─── Cron hebdo : régénération des decks auto-IA (F6) ────────────────── */
+/**
+ * Chaque dimanche 09:00 (heure serveur) on ré-exécute autoFlashcards pour
+ * tous les étudiants actifs sur les 7 derniers jours. Le service est conçu
+ * idempotent (dédup par frontHash) — relancer ne crée jamais de doublons.
+ *
+ * Import dynamique : le service charge generateFlashcards qui charge le SDK
+ * Groq, on évite donc de l'avoir en chaîne d'import au démarrage du cron
+ * principal. Si le job échoue, on log mais on ne crash pas le scheduler.
+ */
+async function runWeeklyAutoFlashcardsRegen() {
+  try {
+    const { regenerateAllActiveStudents } = await import('./autoFlashcards.js');
+    await regenerateAllActiveStudents();
+  } catch (err) {
+    console.error('[Scheduler/auto-flashcards]', err.message);
+  }
+}
+
 /* ─── Initialisation des tâches cron ─────────────────────────────────── */
 export function startNotificationScheduler(io) {
   // Tous les jours à 08:00 (heure serveur)
@@ -354,8 +373,14 @@ export function startNotificationScheduler(io) {
     runAllDeadlineChecks(io);
   });
 
+  // F6 — Auto-flashcards hebdo : dimanche 09:00.
+  // Cf. services/autoFlashcards.js (Wozniak 1990 SM-2, Ebbinghaus 1885).
+  cron.schedule('0 9 * * 0', () => {
+    runWeeklyAutoFlashcardsRegen();
+  });
+
   // Un premier check 30s après démarrage (utile en dev)
   setTimeout(() => runAllDeadlineChecks(io), 30_000);
 
-  console.log('[Scheduler] Notification scheduler started (daily at 08:00)');
+  console.log('[Scheduler] Notification scheduler started (deadlines daily 08:00 + auto-flashcards Sun 09:00)');
 }
