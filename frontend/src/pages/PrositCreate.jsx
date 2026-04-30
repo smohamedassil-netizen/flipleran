@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import Layout from '../components/Layout.jsx';
 import api from '../utils/api.js';
 import {
-  ArrowLeft, Lightbulb, Save, X, Plus, Trash2, BookOpen, Calendar, Users, Target,
+  ArrowLeft, Lightbulb, Save, X, Plus, Trash2, BookOpen, Calendar, Users, Target, Sparkles,
 } from 'lucide-react';
 
 const FORMATION_MODES = [
@@ -17,7 +17,9 @@ const PROMOTIONS = ['L1', 'L2', 'L3'];
 
 export default function PrositCreate() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [courses, setCourses] = useState([]);
+  const [aiPrefilled, setAiPrefilled] = useState(false);
 
   // Champs principaux
   const [titre, setTitre] = useState('');
@@ -56,6 +58,28 @@ export default function PrositCreate() {
       .then(({ data }) => setCourses(Array.isArray(data) ? data : []))
       .catch(() => setCourses([]));
   }, []);
+
+  // Pré-remplissage depuis la suggestion IA (?prefill=<json>&courseId=<id>)
+  // Lien généré par AutoPrepReview après acceptation de la suggestion Prosit.
+  useEffect(() => {
+    const prefillParam = searchParams.get('prefill');
+    const courseIdParam = searchParams.get('courseId');
+    if (!prefillParam) return;
+    try {
+      const data = JSON.parse(prefillParam);
+      if (data.titre)         setTitre(String(data.titre));
+      if (data.enonce)        setEnonce(String(data.enonce));
+      if (data.problematique) setDescription(String(data.problematique));
+      if (Array.isArray(data.motsCles) && data.motsCles.length > 0) {
+        setMotsClesText(data.motsCles.join(', '));
+      }
+      if (courseIdParam) setCourseId(courseIdParam);
+      setAiPrefilled(true);
+    } catch (err) {
+      console.warn('[PrositCreate] prefill parse error:', err.message);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
 
   const updateGrille = (i, field, value) => {
     setGrille(g => g.map((c, idx) => idx === i ? { ...c, [field]: value } : c));
@@ -133,6 +157,21 @@ export default function PrositCreate() {
           <Lightbulb size={26} color="#F59E0B" />
           <h1 style={{ fontSize: '1.4rem', fontWeight: 700, color: '#1B4F72', margin: 0 }}>Nouveau Prosit</h1>
         </div>
+
+        {aiPrefilled && (
+          <div style={{
+            padding: '12px 16px', marginBottom: 14, borderRadius: 10,
+            background: 'linear-gradient(135deg, #F3E8FF, #FDF4FF)',
+            border: '1px solid #C084FC',
+            display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap',
+          }}>
+            <Sparkles size={16} color="#9333EA" style={{ flexShrink: 0 }} />
+            <span style={{ fontSize: 13, color: '#6B21A8', flex: 1 }}>
+              <strong>Brouillon pré-rempli par l'IA.</strong> Vérifie le titre, l'énoncé et les mots-clés,
+              ajuste les dates et la grille d'évaluation, puis publie.
+            </span>
+          </div>
+        )}
 
         {error && (
           <div role="alert" style={{ padding: '10px 14px', marginBottom: 14, background: '#FEF2F2', border: '1px solid #FECACA', borderRadius: 8, color: '#DC2626', fontSize: 13 }}>
