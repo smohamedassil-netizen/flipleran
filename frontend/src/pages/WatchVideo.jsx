@@ -9,16 +9,31 @@ import VideoAnalysis from '../components/VideoAnalysis.jsx';
 import AskVideoPanel from '../components/AskVideoPanel.jsx';
 import { useGamification } from '../context/GamificationContext.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
+import { useToast } from '../context/ToastContext.jsx';
 
 export default function WatchVideo() {
   const { videoId } = useParams();
   const navigate    = useNavigate();
   const { notify }  = useGamification();
   const { user }    = useAuth();
+  const { toast }   = useToast();
 
   const handlePointsEarned = useCallback((points) => {
     notify({ earned: points.earned, newBadges: points.newBadges ?? [] });
   }, [notify]);
+
+  // F6 — Toast immédiat à la complétion (>=80%) : on prévient l'étudiant
+  // que ses flashcards arrivent. Le deck prêt est annoncé séparément
+  // par une notification socket 'flashcards_ready' (cf. NotificationContext).
+  const handleFlashcardsTriggered = useCallback(() => {
+    toast({
+      type:    'achievement',
+      title:   '✨ Flashcards en cours de génération',
+      message: "L'IA prépare tes cartes de révision. Elles arrivent dans quelques secondes dans Mes decks.",
+      link:    '/decks',
+      priority: 'normal',
+    });
+  }, [toast]);
 
   const [video,   setVideo]   = useState(null);
   const [videos,  setVideos]  = useState([]);   // liste du cours pour navigation
@@ -104,6 +119,7 @@ export default function WatchVideo() {
             courseId={courseId}
             userRole={user?.role}
             onPointsEarned={handlePointsEarned}
+            onFlashcardsTriggered={handleFlashcardsTriggered}
           />
 
           {/* "Demande à la vidéo" — bouton sous le player, étudiant uniquement */}

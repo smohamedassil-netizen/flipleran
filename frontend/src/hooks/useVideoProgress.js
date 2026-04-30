@@ -12,7 +12,7 @@ import api from '../utils/api.js';
 const INTERVAL      = 10;    // secondes entre deux envois
 const THRESHOLD     = 80;    // % pour marquer comme complété
 
-export const useVideoProgress = (videoId, initialProgress = 0, { onPointsEarned } = {}) => {
+export const useVideoProgress = (videoId, initialProgress = 0, { onPointsEarned, onFlashcardsTriggered } = {}) => {
   const [watchedPercent, setWatchedPercent] = useState(initialProgress);
   const [completed, setCompleted]           = useState(initialProgress >= THRESHOLD);
 
@@ -31,10 +31,16 @@ export const useVideoProgress = (videoId, initialProgress = 0, { onPointsEarned 
         if (data.points && onPointsEarned) {
           onPointsEarned(data.points);
         }
+        // F6 — Auto-flashcards déclenchées en arrière-plan côté serveur.
+        // Le toast immédiat informe l'étudiant ; la notification socket
+        // 'flashcards_ready' arrivera ensuite avec le lien vers le deck.
+        if (data.flashcardsAutoTriggered && onFlashcardsTriggered) {
+          onFlashcardsTriggered();
+        }
       }
       lastSentRef.current = percent;
     } catch { /* silencieux */ }
-  }, [videoId, onPointsEarned]);
+  }, [videoId, onPointsEarned, onFlashcardsTriggered]);
 
   /**
    * Appelé depuis l'événement onTimeUpdate du player.

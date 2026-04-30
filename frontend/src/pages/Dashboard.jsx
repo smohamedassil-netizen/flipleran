@@ -9,6 +9,7 @@ import {
   ChevronRight, Video, Brain,
   MessageSquare, Trophy, Swords,
   Calendar, Clock, FileText, CheckCircle, AlertCircle,
+  Layers,
 } from 'lucide-react';
 
 /* ─── Quick action card ──────────────────────────────────────────────── */
@@ -207,6 +208,7 @@ export default function Dashboard() {
   const [loading,    setLoading]    = useState(true);
   const [upcoming,   setUpcoming]   = useState([]);
   const [upcomingLoading, setUpcomingLoading] = useState(true);
+  const [dueCards, setDueCards] = useState(null); // F6 — { count, decks }
 
   useEffect(() => {
     Promise.all([
@@ -220,6 +222,14 @@ export default function Dashboard() {
       .catch(console.error)
       .finally(() => setLoading(false));
   }, []);
+
+  // F6 — Cartes à réviser aujourd'hui (SM-2). Étudiant uniquement.
+  useEffect(() => {
+    if (user?.role && user.role !== 'etudiant') return;
+    api.get('/decks/due-today')
+      .then((r) => setDueCards(r.data || { count: 0, decks: [] }))
+      .catch(() => setDueCards(null));
+  }, [user?.role]);
 
   // Section "Cette semaine" : deadlines J+0 à J+7. Réservé aux étudiants
   // (l'endpoint backend renvoie 403 sinon — fail silently côté UI).
@@ -366,6 +376,51 @@ export default function Dashboard() {
       {/* ── Cette semaine — deadlines J+0 à J+7 ─────────────────────── */}
       {user?.role === 'etudiant' && (
         <UpcomingDeadlines items={upcoming} loading={upcomingLoading} />
+      )}
+
+      {/* ── F6 — Widget flashcards à réviser aujourd'hui (SM-2) ─────── */}
+      {user?.role === 'etudiant' && dueCards !== null && (
+        <button
+          onClick={() => navigate('/decks')}
+          aria-label="Voir mes flashcards à réviser"
+          style={{
+            width: '100%',
+            display: 'flex', alignItems: 'center', gap: 14,
+            padding: '16px 20px',
+            marginBottom: 24,
+            border: 'none',
+            borderRadius: 'var(--radius-md)',
+            background: dueCards.count > 0
+              ? 'linear-gradient(135deg, #7c3aed 0%, #4338ca 100%)'
+              : 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+            color: 'white',
+            cursor: 'pointer',
+            textAlign: 'left',
+            boxShadow: '0 2px 8px rgba(124, 58, 237, 0.15)',
+          }}
+        >
+          <div style={{
+            width: 44, height: 44, borderRadius: 'var(--radius-md)',
+            background: 'rgba(255,255,255,0.18)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            flexShrink: 0,
+          }}>
+            <Layers size={22} />
+          </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontWeight: 700, fontSize: 16 }}>
+              {dueCards.count > 0
+                ? `🃏 ${dueCards.count} carte${dueCards.count > 1 ? 's' : ''} à réviser aujourd'hui`
+                : '✅ Tu es à jour sur tes révisions'}
+            </div>
+            <div style={{ fontSize: 12, opacity: 0.9, marginTop: 2 }}>
+              {dueCards.count > 0
+                ? `Méthode SM-2 (Wozniak, 1990) — ${dueCards.decks.length} deck${dueCards.decks.length > 1 ? 's' : ''} concerné${dueCards.decks.length > 1 ? 's' : ''}. Démarre une session de révision !`
+                : 'Reviens demain pour de nouvelles cartes prêtes selon la courbe de l\'oubli.'}
+            </div>
+          </div>
+          <ChevronRight size={18} style={{ opacity: 0.8, flexShrink: 0 }} />
+        </button>
       )}
 
       {/* ── Quick actions ─────────────────────────────────────────── */}
