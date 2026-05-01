@@ -50,6 +50,7 @@ const NAV = {
     {
       section: 'Apprentissage',
       items: [
+        { label: 'Mon Parcours',    icon: Target,          to: '/my-journey', badge: 'CAI' },
         { label: 'Tableau de bord', icon: LayoutDashboard, to: '/' },
         { label: 'Mes cours',       icon: BookOpen,        to: '/courses' },
         { label: 'Mon tuteur IA',   icon: Sparkles,        to: '/my-tutor', badge: 'IA' },

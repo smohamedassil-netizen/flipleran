@@ -50,6 +50,7 @@ import CourseLearningOutcomes from './pages/CourseLearningOutcomes.jsx';
 import CesiMethodGuide       from './pages/CesiMethodGuide.jsx';
 import AutoPrepReview        from './pages/AutoPrepReview.jsx';
 import MyTutor               from './pages/MyTutor.jsx';
+import MyJourney             from './pages/MyJourney.jsx';
 
 /* ── Pages d'erreur ────────────────────────────────────────────────────────── */
 function ErrorPage({ code, title, description }) {
@@ -139,6 +140,7 @@ export default function App() {
             <Route path="/rewards"                element={<Rewards />} />
             <Route path="/my-feedback"            element={<Navigate to="/chat?tab=feedback" replace />} />
             <Route path="/my-tutor"               element={<MyTutor />} />
+            <Route path="/my-journey"             element={<MyJourney />} />
           </Route>
 
           {/* Professeur + Admin only */}
