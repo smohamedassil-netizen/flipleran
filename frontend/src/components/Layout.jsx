@@ -272,10 +272,14 @@ function Sidebar({ collapsed, onToggle, role, user, mobileOpen, setMobileOpen })
                     </span>
                   )}
                 </NavLink>
-                {/* Sous-menu dynamique : Objectifs Bloom par cours pour le prof */}
+                {/* Sous-menu Objectifs Bloom — désactivé pour la démo PFE.
+                   Concept conservé comme perspective d'évolution (cadre théorique
+                   alignement constructif Biggs 1996). Page /professor/courses/:id/outcomes
+                   reste accessible par URL directe. Pour réactiver : décommenter ci-dessous.
                 {role === 'professeur' && to === '/courses' && (
                   <TeacherCoursesSubNav collapsed={collapsed} />
                 )}
+                */}
               </div>
             ))}
           </div>
