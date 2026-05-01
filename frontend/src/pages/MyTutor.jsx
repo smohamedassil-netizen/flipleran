@@ -62,7 +62,10 @@ export default function MyTutor() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  /* ── F7 — Pré-remplissage depuis le Coach IA (deeplink) ─────────── */
+  /* ── Pré-remplissage du champ de saisie via sessionStorage ───────
+     Permet à n'importe quelle page de pré-remplir une question avant
+     de naviguer vers /my-tutor (ex: bouton "Demander au tuteur" depuis
+     une vidéo, un cours, une notification…). */
   useEffect(() => {
     try {
       const prefill = sessionStorage.getItem('tutor.prefill');

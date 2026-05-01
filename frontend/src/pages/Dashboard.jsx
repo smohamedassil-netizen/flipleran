@@ -9,7 +9,6 @@ import {
   ChevronRight, Video, Brain,
   MessageSquare, Trophy, Swords,
   Calendar, Clock, FileText, CheckCircle, AlertCircle,
-  Layers,
 } from 'lucide-react';
 
 /* ─── Quick action card ──────────────────────────────────────────────── */
@@ -208,7 +207,6 @@ export default function Dashboard() {
   const [loading,    setLoading]    = useState(true);
   const [upcoming,   setUpcoming]   = useState([]);
   const [upcomingLoading, setUpcomingLoading] = useState(true);
-  const [dueCards, setDueCards] = useState(null); // F6 — { count, decks }
 
   useEffect(() => {
     Promise.all([
@@ -223,13 +221,9 @@ export default function Dashboard() {
       .finally(() => setLoading(false));
   }, []);
 
-  // DÉSACTIVÉ pour PFE L3 — perspective d'évolution (F6 — Auto-flashcards SM-2)
-  // useEffect(() => {
-  //   if (user?.role && user.role !== 'etudiant') return;
-  //   api.get('/decks/due-today')
-  //     .then((r) => setDueCards(r.data || { count: 0, decks: [] }))
-  //     .catch(() => setDueCards(null));
-  // }, [user?.role]);
+  // F6 (Auto-flashcards SM-2) désactivée — voir docs/FEATURES-DISABLED.md
+  // pour la liste des éléments à restaurer (state dueCards, import Layers,
+  // useEffect /decks/due-today, widget JSX).
 
   // Section "Cette semaine" : deadlines J+0 à J+7. Réservé aux étudiants
   // (l'endpoint backend renvoie 403 sinon — fail silently côté UI).

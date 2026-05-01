@@ -40,7 +40,6 @@ export default function WatchVideo() {
   const [videos,  setVideos]  = useState([]);   // liste du cours pour navigation
   const [loading, setLoading] = useState(true);
   const [error,   setError]   = useState('');
-  const [askOpen, setAskOpen] = useState(false);    // Panneau "Demande à la vidéo"
 
   const formatTime = (s) => {
     const m = Math.floor(s / 60);

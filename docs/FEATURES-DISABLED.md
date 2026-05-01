@@ -79,6 +79,7 @@ Le tuteur IA personnel F4 (page `/my-tutor`) couvre déjà le besoin de question
 | Fichier | Ligne(s) | Action |
 |---|---|---|
 | `frontend/src/pages/WatchVideo.jsx` | ~9 | Décommenter `import AskVideoPanel from '../components/AskVideoPanel.jsx';` |
+| `frontend/src/pages/WatchVideo.jsx` | ~42 | **Re-créer la state** : `const [askOpen, setAskOpen] = useState(false);` (supprimée au cleanup audit étudiant) |
 | `frontend/src/pages/WatchVideo.jsx` | ~126-145 | Décommenter le bloc bouton "💬 Demande à la vidéo" |
 | `frontend/src/pages/WatchVideo.jsx` | ~287-295 | Décommenter le `<AskVideoPanel />` |
 | `backend/routes/tutorRoutes.js` | ~20-21 | Décommenter `router.post('/ask-video', postAskVideo);` et `router.get('/ask-video/quota', getAskVideoQuota);` |
@@ -101,7 +102,9 @@ Le système Decks classique (création manuelle de flashcards par l'étudiant) e
 | `frontend/src/pages/Decks.jsx` | ~138-143 | Décommenter `useEffect(() => { fetchAutoStatus(); }, []);` (et retirer le no-op) |
 | `frontend/src/pages/Decks.jsx` | ~218-318 | Décommenter le bloc JSX "Tes decks de révision auto-générés" |
 | `frontend/src/pages/Decks.jsx` | ~360-362 | Restaurer `const auto = isAutoDeck(deck);` (au lieu de `const auto = false;`) |
-| `frontend/src/pages/Dashboard.jsx` | ~226-232 | Décommenter `useEffect` qui fetch `/decks/due-today` |
+| `frontend/src/pages/Dashboard.jsx` | ~12 | **Restaurer l'import** : ajouter `Layers` dans la liste `lucide-react` (supprimé au cleanup audit étudiant) |
+| `frontend/src/pages/Dashboard.jsx` | ~211 | **Re-créer la state** : `const [dueCards, setDueCards] = useState(null);` (supprimée au cleanup audit étudiant) |
+| `frontend/src/pages/Dashboard.jsx` | ~226-232 | **Re-créer le `useEffect`** qui fetch `/decks/due-today` (supprimé au cleanup audit étudiant — voir historique git) |
 | `frontend/src/pages/Dashboard.jsx` | ~381-424 | Décommenter le widget "🃏 cards due today" |
 | `backend/routes/deckRoutes.js` | ~32-35 | Décommenter les 3 routes `/auto-generate`, `/auto-status`, `/due-today` |
 | `backend/services/notificationScheduler.js` | ~420-424 | Décommenter le cron `'0 9 * * 0'` runWeeklyAutoFlashcardsRegen |
