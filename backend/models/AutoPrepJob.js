@@ -53,7 +53,13 @@ const autoPrepJobSchema = new mongoose.Schema({
 
   startedAt:   { type: Date, default: Date.now },
   completedAt: { type: Date, default: null },
-}, { timestamps: true });
+}, {
+  timestamps: true,
+  // Le champ `errors` est un nom réservé Mongoose mais ici il représente
+  // sémantiquement les erreurs orchestrateur (cf. ligne 47-48). On supprime
+  // le warning car les controllers et le service savent y accéder via `job.errors`.
+  suppressReservedKeysWarning: true,
+});
 
 autoPrepJobSchema.index({ userId: 1, createdAt: -1 });
 

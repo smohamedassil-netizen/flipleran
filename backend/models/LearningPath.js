@@ -55,7 +55,8 @@ const stepSchema = new mongoose.Schema(
 
 const learningPathSchema = new mongoose.Schema(
   {
-    courseId:    { type: mongoose.Schema.Types.ObjectId, ref: 'Course', required: true, unique: true },
+    // L'index unique sur courseId est déclaré explicitement plus bas (line 68).
+    courseId:    { type: mongoose.Schema.Types.ObjectId, ref: 'Course', required: true },
     title:       { type: String, default: 'Parcours d\'apprentissage', trim: true },
     description: { type: String, default: '' },
     steps:       { type: [stepSchema], default: [] },
