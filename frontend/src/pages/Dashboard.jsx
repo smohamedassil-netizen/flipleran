@@ -7,6 +7,7 @@ import { capitalizeWords } from '../utils/format.js';
 import StreakFlame from '../components/StreakFlame.jsx';
 import LevelBadge from '../components/LevelBadge.jsx';
 import WeeklyQuestsCard from '../components/WeeklyQuestsCard.jsx';
+import CycleDiagram from '../components/CycleDiagram.jsx';
 import {
   BookOpen, BarChart2, Award, Zap,
   ChevronRight, Video, Brain,
@@ -212,6 +213,13 @@ export default function Dashboard() {
   const [upcoming,   setUpcoming]   = useState([]);
   const [upcomingLoading, setUpcomingLoading] = useState(true);
   const [dueCards, setDueCards] = useState(null); // F6 — { count, decks }
+  // CAI — diagramme cycle pour le 1er cours par défaut + dropdown switch
+  const [cycleSelectedCourseId, setCycleSelectedCourseId] = useState(null);
+  const [cycleSteps, setCycleSteps] = useState(null);
+  // Bandeau d'accueil CAI dismissible (1 seule fois par utilisateur via localStorage)
+  const [showCaiBanner, setShowCaiBanner] = useState(() => {
+    try { return !localStorage.getItem('cai-banner-seen'); } catch { return false; }
+  });
 
   useEffect(() => {
     Promise.all([
@@ -233,6 +241,26 @@ export default function Dashboard() {
       .then((r) => setDueCards(r.data || { count: 0, decks: [] }))
       .catch(() => setDueCards(null));
   }, [user?.role]);
+
+  // CAI — sélectionner par défaut le 1er cours dès qu'ils sont chargés
+  useEffect(() => {
+    if (!cycleSelectedCourseId && courses.length > 0 && user?.role === 'etudiant') {
+      setCycleSelectedCourseId(courses[0]._id);
+    }
+  }, [courses, cycleSelectedCourseId, user?.role]);
+
+  // CAI — charger le journey du cours sélectionné
+  useEffect(() => {
+    if (!cycleSelectedCourseId || user?.role !== 'etudiant') return;
+    api.get(`/journey/me/${cycleSelectedCourseId}`)
+      .then(({ data }) => setCycleSteps(data.steps))
+      .catch(() => setCycleSteps(null));
+  }, [cycleSelectedCourseId, user?.role]);
+
+  const dismissCaiBanner = () => {
+    try { localStorage.setItem('cai-banner-seen', '1'); } catch { /* private mode */ }
+    setShowCaiBanner(false);
+  };
 
   // Section "Cette semaine" : deadlines J+0 à J+7. Réservé aux étudiants
   // (l'endpoint backend renvoie 403 sinon — fail silently côté UI).
@@ -282,6 +310,77 @@ export default function Dashboard() {
 
   return (
     <Layout title="Tableau de bord">
+      {/* ── Bandeau d'accueil CAI (étudiant, 1× max) ───────────────── */}
+      {showCaiBanner && user?.role === 'etudiant' && (
+        <div style={{
+          background: 'linear-gradient(135deg, #9333EA 0%, #7C3AED 100%)',
+          color: 'white',
+          borderRadius: 12,
+          padding: '14px 18px',
+          marginBottom: 16,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 14,
+          flexWrap: 'wrap',
+        }}>
+          <span style={{ fontSize: 24, flexShrink: 0 }} aria-hidden="true">👋</span>
+          <p style={{ margin: 0, flex: 1, fontSize: 13, lineHeight: 1.5, minWidth: 240 }}>
+            <strong>Nouveau :</strong> ton parcours dans FlipLearn suit maintenant le{' '}
+            <strong>Cycle d'Apprentissage Inversé</strong> en 5 étapes — préparation,
+            rendez-vous, application, production, consolidation.
+          </p>
+          <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+            <button
+              type="button"
+              onClick={() => navigate('/my-journey')}
+              style={{
+                background: 'white', color: '#7C3AED',
+                border: 'none', borderRadius: 6,
+                padding: '8px 14px', fontSize: 13, fontWeight: 700, cursor: 'pointer',
+              }}
+            >
+              Voir mon parcours →
+            </button>
+            <button
+              type="button"
+              onClick={dismissCaiBanner}
+              aria-label="Fermer le message"
+              style={{
+                background: 'transparent', color: 'white',
+                border: '1px solid rgba(255,255,255,0.4)', borderRadius: 6,
+                padding: '8px 12px', fontSize: 16, cursor: 'pointer', lineHeight: 1,
+              }}
+            >
+              ×
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ── Cycle d'Apprentissage Inversé (étudiant, si au moins 1 cours) ─ */}
+      {user?.role === 'etudiant' && courses.length > 0 && cycleSteps && (
+        <div style={{ marginBottom: 18 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8, gap: 8, flexWrap: 'wrap' }}>
+            <p style={{ margin: 0, fontSize: 12, color: '#64748B', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.4 }}>
+              Mon cycle pour
+            </p>
+            <select
+              value={cycleSelectedCourseId || ''}
+              onChange={(e) => setCycleSelectedCourseId(e.target.value)}
+              style={{
+                padding: '6px 10px', borderRadius: 6, border: '1px solid #CBD5E1',
+                background: 'white', fontSize: 13, fontWeight: 600, color: '#1B4F72', cursor: 'pointer',
+              }}
+            >
+              {courses.map((c) => (
+                <option key={c._id} value={c._id}>{c.titre}</option>
+              ))}
+            </select>
+          </div>
+          <CycleDiagram steps={cycleSteps} />
+        </div>
+      )}
+
       {/* ── Welcome header ─────────────────────────────────────────── */}
       <div
         className="card"
