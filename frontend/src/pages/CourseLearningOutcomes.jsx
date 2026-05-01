@@ -8,7 +8,86 @@ import { BLOOM_LEVELS, BLOOM_META } from '../utils/bloom.js';
 import {
   Home, Target, Plus, Trash2, GripVertical, Save, ArrowLeft,
   AlertCircle, CheckCircle, Info, ChevronDown, ChevronUp, X, BookOpen,
+  Lightbulb, Eye, Sparkles, FileText,
 } from 'lucide-react';
+
+/* ─── Templates de contrat pédagogique pré-remplis ────────────────────────
+   Trois modèles types qu'un prof peut insérer en 1 clic puis adapter.
+   Réduit la charge de la page blanche et illustre ce qu'attend la plateforme. */
+const CONTRACT_TEMPLATES = [
+  {
+    id: 'classique',
+    label: 'Cours classique',
+    description: 'Engagement standard prof / étudiants',
+    body: `# Bienvenue dans ce module
+
+## Ce que vous allez apprendre
+Voir la liste des objectifs ci-dessous (taxonomie de Bloom).
+
+## Mon engagement (le professeur)
+- Réponse à vos messages sous **48h ouvrées**
+- Correction des QCM dans la **semaine** qui suit
+- Disponibilité en présentiel pour les questions
+
+## Votre engagement (étudiants)
+- Regarder les vidéos **avant** le cours en présentiel
+- Faire le QCM associé à chaque vidéo
+- Participer activement aux Prosits en groupe
+
+## Évaluation
+- 60 % contrôle final
+- 30 % QCM en cours de module
+- 10 % participation Prosits`,
+  },
+  {
+    id: 'collaboratif',
+    label: 'Cours collaboratif',
+    description: 'Centré sur le travail en groupe et les Prosits',
+    body: `# Bienvenue — module collaboratif
+
+## L'esprit du module
+Ce cours s'appuie sur l'**Apprentissage Par Problème (APP/CESI)** : vous travaillez en groupe sur des cas concrets contextualisés.
+
+## Mon engagement
+- Encadrement des groupes lors des phases Aller et Retour
+- Feedback individualisé sur chaque livrable de groupe
+- Réponse aux messages sous **24h** pendant les phases actives
+
+## Votre engagement
+- Présence et ponctualité sur les phases Aller et Retour
+- Contribution équilibrée dans le groupe (rotation des rôles CESI)
+- Respect des deadlines de chaque phase
+
+## Évaluation
+- 40 % livrables Prosit (note prof 70 % + note pairs 30 %)
+- 30 % QCM individuel
+- 30 % contrôle final`,
+  },
+  {
+    id: 'intensif',
+    label: 'Cours intensif',
+    description: 'Module dense — charge de travail élevée',
+    body: `# Bienvenue dans ce module intensif
+
+## Charge de travail prévue
+**Compter ~6h de travail personnel par semaine** en plus des séances en présentiel.
+
+## Mon engagement
+- Mise à disposition des ressources **chaque lundi**
+- Réponse aux messages sous **48h**
+- Permanence hebdomadaire pour vos questions
+
+## Votre engagement
+- Visionner les vidéos avant chaque séance
+- Réussir les QCM avec un **score minimum de 60 %**
+- Rendre les livrables Prosit **dans les délais** (pas de retard accepté)
+
+## Évaluation
+- 50 % contrôle final
+- 25 % QCM (moyenne)
+- 25 % Prosit en groupe`,
+  },
+];
 
 /**
  * CourseLearningOutcomes — Éditeur des objectifs d'apprentissage et du contrat
@@ -235,6 +314,85 @@ function BloomGuide() {
   );
 }
 
+/* ─── Encart "À quoi sert cette page" ─────────────────────────────────────
+   Toujours visible en haut, explique au prof le POURQUOI et l'EFFET CONCRET
+   de ce qu'il définit ici. Sans ça, beaucoup de profs ne comprennent pas
+   l'utilité et perçoivent la page comme une charge administrative. */
+function WhyThisPage() {
+  return (
+    <div style={{
+      background: 'linear-gradient(135deg, #EBF3FA, #F0F9FF)',
+      border: '1px solid #BFDBFE',
+      borderRadius: 10,
+      padding: 16,
+      marginBottom: 18,
+    }}>
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, marginBottom: 12 }}>
+        <Lightbulb size={20} color="#1B4F72" style={{ flexShrink: 0, marginTop: 2 }} />
+        <div>
+          <h3 style={{ fontSize: 14, fontWeight: 700, color: '#1B4F72', margin: 0 }}>
+            À quoi sert cette page ?
+          </h3>
+          <p style={{ fontSize: 13, color: '#475569', margin: '4px 0 0', lineHeight: 1.5 }}>
+            Définissez ici <strong>ce que vos étudiants doivent savoir faire</strong> à la fin
+            du cours. Ces objectifs sont ensuite réutilisés automatiquement à 3 endroits dans
+            l'application :
+          </p>
+        </div>
+      </div>
+
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+        gap: 10,
+        marginTop: 8,
+      }}>
+        <div style={{ background: 'white', padding: 10, borderRadius: 8, border: '1px solid #E0E7FF' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+            <Eye size={14} color="#1B4F72" />
+            <strong style={{ fontSize: 12, color: '#1B4F72' }}>Vu par vos étudiants</strong>
+          </div>
+          <p style={{ fontSize: 11, color: '#475569', margin: 0, lineHeight: 1.4 }}>
+            Affichés en haut de la page cours pour que chaque étudiant sache pourquoi il regarde ces vidéos.
+          </p>
+        </div>
+
+        <div style={{ background: 'white', padding: 10, borderRadius: 8, border: '1px solid #E0E7FF' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+            <Sparkles size={14} color="#9333EA" />
+            <strong style={{ fontSize: 12, color: '#9333EA' }}>Cible la génération IA</strong>
+          </div>
+          <p style={{ fontSize: 11, color: '#475569', margin: 0, lineHeight: 1.4 }}>
+            Quand l'IA génère des QCM ou un Prosit, elle vise précisément vos objectifs définis ici.
+          </p>
+        </div>
+
+        <div style={{ background: 'white', padding: 10, borderRadius: 8, border: '1px solid #E0E7FF' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+            <Target size={14} color="#059669" />
+            <strong style={{ fontSize: 12, color: '#059669' }}>Mesurez la progression</strong>
+          </div>
+          <p style={{ fontSize: 11, color: '#475569', margin: 0, lineHeight: 1.4 }}>
+            Suivez objectif par objectif quel étudiant maîtrise quoi (tracking ciblé).
+          </p>
+        </div>
+      </div>
+
+      <p style={{ fontSize: 12, color: '#475569', margin: '12px 0 0', lineHeight: 1.5 }}>
+        Cette page vous permet aussi de définir le <strong>contrat pédagogique</strong> (en bas) :
+        vos engagements, ceux que vous attendez de vos étudiants et les modalités d'évaluation.
+        Il s'affiche en haut de la page cours côté étudiant — utilisez le bouton{' '}
+        <strong>« Aperçu étudiant »</strong> en haut à droite pour le vérifier.
+      </p>
+
+      <p style={{ fontSize: 11, color: '#64748B', margin: '8px 0 0', fontStyle: 'italic' }}>
+        💡 Pas le temps ? Commencez avec 3-5 objectifs et un modèle de contrat prêt à l'emploi
+        (en bas de la page).
+      </p>
+    </div>
+  );
+}
+
 /* ─── Page principale ─────────────────────────────────────────────────────── */
 export default function CourseLearningOutcomes() {
   const { courseId } = useParams();
@@ -339,14 +497,26 @@ export default function CourseLearningOutcomes() {
               Objectifs d'apprentissage
             </h1>
             <p className="page-subtitle">
-              {course?.titre} · Taxonomie de Bloom révisée + contrat pédagogique
+              {course?.titre} · Définissez ce que vos étudiants doivent savoir faire à la fin du cours
             </p>
           </div>
-          <button className="btn btn-primary btn-sm" onClick={handleSave} disabled={saving}>
-            <Save size={14} /> {saving ? 'Enregistrement…' : 'Enregistrer'}
-          </button>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            <button
+              type="button"
+              className="btn btn-ghost btn-sm"
+              onClick={() => window.open(`/courses/${courseId}`, '_blank')}
+              title="Voir comment vos étudiants verront cette page"
+            >
+              <Eye size={14} /> Aperçu étudiant
+            </button>
+            <button className="btn btn-primary btn-sm" onClick={handleSave} disabled={saving}>
+              <Save size={14} /> {saving ? 'Enregistrement…' : 'Enregistrer'}
+            </button>
+          </div>
         </div>
       </div>
+
+      <WhyThisPage />
 
       {feedback && (
         <div className="alert alert-success" style={{ marginBottom: 14 }}>
@@ -407,7 +577,58 @@ export default function CourseLearningOutcomes() {
             Contrat pédagogique
           </span>
           <p style={{ fontSize: 11, color: '#64748B', margin: '4px 0 0' }}>
-            Markdown supporté. Max 2000 caractères. Affiché en haut de la page cours pour les étudiants.
+            Engagements mutuels prof / étudiants, affichés en haut de la page cours côté étudiant.
+            Mise en forme : <strong>Markdown</strong> (#&nbsp;Titre, **gras**, - liste). Max 2000&nbsp;caractères.
+          </p>
+        </div>
+
+        {/* Templates pré-remplis */}
+        <div style={{
+          padding: '10px 14px',
+          background: '#F8FAFC',
+          borderTop: '1px solid #E5E7EB',
+          borderBottom: '1px solid #E5E7EB',
+        }}>
+          <p style={{ fontSize: 11, fontWeight: 700, color: '#64748B', textTransform: 'uppercase', letterSpacing: 0.4, margin: '0 0 8px' }}>
+            <FileText size={11} style={{ verticalAlign: 'middle', marginRight: 4 }} />
+            Insérer un modèle prêt à l'emploi
+          </p>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            {CONTRACT_TEMPLATES.map((tpl) => (
+              <button
+                key={tpl.id}
+                type="button"
+                onClick={() => {
+                  if (contract.trim() && !window.confirm(`Le contenu actuel sera remplacé par le modèle "${tpl.label}". Continuer ?`)) {
+                    return;
+                  }
+                  setContract(tpl.body.slice(0, 2000));
+                }}
+                title={tpl.description}
+                style={{
+                  padding: '8px 12px',
+                  borderRadius: 8,
+                  border: '1px solid #BFDBFE',
+                  background: 'white',
+                  cursor: 'pointer',
+                  fontSize: 12,
+                  fontWeight: 600,
+                  color: '#1B4F72',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  transition: 'background 120ms, border-color 120ms',
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.background = '#EBF3FA'; e.currentTarget.style.borderColor = '#1B4F72'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = 'white'; e.currentTarget.style.borderColor = '#BFDBFE'; }}
+              >
+                <FileText size={12} />
+                {tpl.label}
+              </button>
+            ))}
+          </div>
+          <p style={{ fontSize: 10, color: '#94A3B8', margin: '6px 0 0', fontStyle: 'italic' }}>
+            Le modèle remplit l'éditeur ci-dessous. Vous pouvez ensuite l'adapter à votre cours.
           </p>
         </div>
 
