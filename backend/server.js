@@ -49,6 +49,7 @@ import courseAutoPrepRoutes, { autoPrepJobRouter } from './routes/courseAutoPrep
 import tutorRoutes from './routes/tutorRoutes.js';
 import projectTemplateRoutes from './routes/projectTemplateRoutes.js';
 import gamificationRoutes from './routes/gamificationRoutes.js';
+import journeyRoutes from './routes/journeyRoutes.js';
 import { seedDemoContent } from './services/contentSeed.js';
 import { seedDemoData } from './services/demoSeed.js';
 import { seedProsits }  from './services/prositsSeed.js';
@@ -226,6 +227,7 @@ app.use('/api/prosits',    prositRoutes);
 app.use('/api/users',      userRoutes);
 app.use('/api/video-questions', videoQuestionRoutes);
 app.use('/api/learning-paths', learningPathRoutes);
+app.use('/api/journey',    journeyRoutes);
 // IMPORTANT : monter auto-prep-jobs AVANT courseRoutes pour éviter que `/:id` intercepte
 app.use('/api/auto-prep-jobs', autoPrepJobRouter);
 app.use('/api/courses', courseAutoPrepRoutes);  // ce router définit /:courseId/videos/:videoId/auto-prep — ne conflicte pas avec courseRoutes /:id
