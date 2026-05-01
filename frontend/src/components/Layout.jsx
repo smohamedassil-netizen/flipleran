@@ -254,6 +254,7 @@ function Sidebar({ collapsed, onToggle, role, user, mobileOpen, setMobileOpen })
                   end={to === '/'}
                   className={() => `nav-item${isNavItemActive(to) ? ' active' : ''}`}
                   title={tooltip || (collapsed ? label : undefined)}
+                  aria-label={badge ? label : undefined}
                   style={{ justifyContent: collapsed ? 'center' : undefined }}
                   onClick={handleNavClick}
                 >
@@ -262,7 +263,7 @@ function Sidebar({ collapsed, onToggle, role, user, mobileOpen, setMobileOpen })
                     <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, flex: 1 }}>
                       {label}
                       {badge && (
-                        <span style={{
+                        <span aria-hidden="true" style={{
                           marginLeft: 'auto', padding: '1px 6px', fontSize: 9, fontWeight: 800,
                           background: 'linear-gradient(135deg, #9333EA, #C084FC)',
                           color: 'white', borderRadius: 999, letterSpacing: 0.3,
@@ -516,8 +517,6 @@ function Topbar({ onMenuClick, title, user, role, mobileOpen, setMobileOpen }) {
                     >
                       <div
                         style={{
-                          width: 8,
-                          height: 8,
                           borderRadius: '50%',
                           backgroundColor: n.read ? 'transparent' : (n.type === 'urgent' || n.priority === 'urgent') ? '#DC2626' : (n.type === 'success' ? '#22c55e' : n.type === 'warning' ? '#f59e0b' : '#3b82f6'),
                           flexShrink: 0,

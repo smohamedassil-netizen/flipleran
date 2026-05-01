@@ -290,13 +290,13 @@ export default function StudentProfile() {
         </section>
       )}
 
-      {/* ── Badges a debloquer (students only) ─────────────────────────── */}
+      {/* ── Badges à débloquer (students only) ─────────────────────────── */}
       {user?.role === 'etudiant' && !loading && lockedBadges.length > 0 && (
         <section>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
             <Award size={18} color="var(--text-muted)" />
             <h2 style={{ margin: 0, fontSize: '16px', fontWeight: 700, color: 'var(--text-muted)' }}>
-              Badges a debloquer
+              Badges à débloquer
             </h2>
           </div>
           <div

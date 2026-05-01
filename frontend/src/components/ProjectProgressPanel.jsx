@@ -206,6 +206,7 @@ export function PhaseChecklist({ projectId, phase, canManage, onUpdate }) {
               onClick={() => toggle(item)}
               style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', padding: 0 }}
               title={item.done ? 'Marquer comme non fait' : 'Marquer comme fait'}
+              aria-label={item.done ? `Marquer comme non fait : ${item.texte}` : `Marquer comme fait : ${item.texte}`}
             >
               {item.done
                 ? <CheckSquare size={16} color="#059669" />

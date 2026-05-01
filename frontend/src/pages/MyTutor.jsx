@@ -175,7 +175,7 @@ export default function MyTutor() {
               <Bot size={20} color="#fff" />
             </div>
             <div style={{ flex: 1 }}>
-              <p style={{ margin: 0, fontSize: 14, fontWeight: 800, color: '#1B4F72' }}>Mon tuteur IA</p>
+              <h1 style={{ margin: 0, fontSize: 14, fontWeight: 800, color: '#1B4F72' }}>Mon tuteur IA</h1>
               <p style={{ margin: '2px 0 0', fontSize: 11, color: '#64748B' }}>
                 Powered by Groq Llama 3.3 · {quotaInfo ? `${quotaInfo.used}/${quotaInfo.limit} messages aujourd'hui` : '30 messages / jour'}
               </p>

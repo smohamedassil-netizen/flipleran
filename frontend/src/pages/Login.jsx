@@ -265,7 +265,7 @@ export default function Login() {
         lineHeight: 1.6
       }}>
         <div>Projet de Fin d'Études — Licence Informatique ISIL</div>
-        <div>Plateforme de Classe Inversée © 2025</div>
+        <div>Plateforme de Classe Inversée © 2026</div>
       </div>
     </div>
   );
