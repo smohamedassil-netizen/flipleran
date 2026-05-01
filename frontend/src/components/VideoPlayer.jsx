@@ -162,6 +162,22 @@ function YouTubeEmbedPlayer({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [youtubeId]);
 
+  // Écoute les requêtes de seek (chapitres) et délègue à l'API YouTube IFrame.
+  useEffect(() => {
+    const handler = (e) => {
+      const t = Number(e?.detail?.timestamp);
+      if (!Number.isFinite(t) || t < 0) return;
+      const p = playerRef.current;
+      if (!p || !ytReady.current) return;
+      try {
+        p.seekTo(t, true);
+        p.playVideo?.();
+      } catch { /* ignore — player pas prêt */ }
+    };
+    window.addEventListener('fliplearn:seek-video', handler);
+    return () => window.removeEventListener('fliplearn:seek-video', handler);
+  }, []);
+
   const markAsWatched = () => {
     sendProgress(100);
   };
@@ -362,6 +378,22 @@ export default function VideoPlayer({
   useEffect(() => {
     if (videoRef.current) videoRef.current.volume = muted ? 0 : volume;
   }, [volume, muted]);
+
+  /* ── Seek depuis les chapitres (custom event partagé avec YouTube) ─────── */
+  useEffect(() => {
+    const handler = (e) => {
+      const t = Number(e?.detail?.timestamp);
+      if (!Number.isFinite(t) || t < 0) return;
+      const v = videoRef.current;
+      if (!v) return;
+      try {
+        v.currentTime = t;
+        v.play().catch(() => { /* autoplay parfois bloqué */ });
+      } catch { /* ignore */ }
+    };
+    window.addEventListener('fliplearn:seek-video', handler);
+    return () => window.removeEventListener('fliplearn:seek-video', handler);
+  }, []);
 
   /* ── event handlers ──────────────────────────────────────────────────────── */
   const handleLoadedMetadata = () => {

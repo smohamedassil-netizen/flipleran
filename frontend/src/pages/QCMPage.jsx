@@ -30,7 +30,11 @@ export default function QCMPage() {
     if (result?.points) {
       notify({ earned: result.points.earned, newBadges: result.points.newBadges ?? [] });
     }
-    setTimeout(() => navigate(-2), 4000);
+    // Destination explicite après QCM : page du cours (pour passer à la vidéo suivante).
+    // Fallback : la liste des cours si le courseId n'est pas dispo.
+    // (Avant : navigate(-2) qui pouvait sortir de l'app si l'étudiant arrivait via deeplink/refresh.)
+    const target = qcm?.courseId ? `/courses/${qcm.courseId}` : '/courses';
+    setTimeout(() => navigate(target), 4000);
   };
 
   if (loading) return <Layout title="QCM"><p className="text-small">Chargement...</p></Layout>;

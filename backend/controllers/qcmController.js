@@ -49,7 +49,8 @@ export const createQCM = async (req, res) => {
           const students = await User.find({
             role: 'etudiant',
             filiere: course.filiere,
-            isActive: true
+            isActive: true,
+            emailNotifications: { $ne: false },
           }).select('email prenom').limit(50);
 
           for (const student of students) {
@@ -92,7 +93,7 @@ export const getQCMByVideo = async (req, res) => {
       // Seuil : 50 % visionné OU completed=true.
       // Sous 50 %, le QCM est considéré non-prêt et videoWatched=false :
       // le frontend bloque la soumission tant que ce seuil n'est pas atteint.
-      const video = await Video.findById(req.params.videoId).select('watchedBy');
+      const video = await Video.findById(req.params.videoId).select('watchedBy courseId');
       let videoWatched = false;
       let watchedPercent = 0;
       if (video) {
@@ -106,6 +107,8 @@ export const getQCMByVideo = async (req, res) => {
       const sanitized = {
         _id:              qcm._id,
         videoId:          qcm.videoId,
+        // courseId exposé pour permettre au frontend de retourner au cours après le QCM (UX-3)
+        courseId:         video?.courseId,
         titre:            qcm.titre,
         pointsPerQuestion:qcm.pointsPerQuestion,
         timerSeconds:     qcm.timerSeconds,

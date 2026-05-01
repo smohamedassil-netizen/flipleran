@@ -7,11 +7,6 @@ import {
   deleteDeck,
   generateFlashcardsAI,
 } from '../controllers/deckController.js';
-import {
-  autoGenerate,
-  autoStatus,
-  dueToday,
-} from '../controllers/autoFlashcardsController.js';
 import authMiddleware from '../middleware/authMiddleware.js';
 import requireRole from '../middleware/roleMiddleware.js';
 import { checkAiQuota } from '../middleware/aiQuota.js';
@@ -27,10 +22,14 @@ router.route('/').get(getDecks).post(createDeck);
 // — soumise au quota mensuel (FREE = 5 / mois).
 router.post('/generate-ai', checkAiQuota('deckGeneration'), generateFlashcardsAI);
 
-// DÉSACTIVÉ pour PFE L3 — perspective d'évolution (F6 — Auto-flashcards depuis vidéos vues, SM-2)
-// router.post('/auto-generate', checkAiQuota('deckGeneration'), autoGenerate);
-// router.get('/auto-status', autoStatus);
-// router.get('/due-today', dueToday);
+/* F6 — Auto-flashcards SM-2 (perspective d'évolution post-PFE)
+   Pour réactiver : importer { autoGenerate, autoStatus, dueToday } depuis
+   '../controllers/autoFlashcardsController.js' et brancher les 3 routes :
+     router.post('/auto-generate', checkAiQuota('deckGeneration'), autoGenerate);
+     router.get('/auto-status', autoStatus);
+     router.get('/due-today', dueToday);
+   Les fichiers backend (autoFlashcardsController, services/autoFlashcards) sont
+   préservés tels quels. */
 
 router.route('/:id').get(getDeckById).put(updateDeck).delete(deleteDeck);
 

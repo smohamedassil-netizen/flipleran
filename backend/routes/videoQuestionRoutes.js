@@ -3,6 +3,7 @@ import authMiddleware from '../middleware/authMiddleware.js';
 import requireRole    from '../middleware/roleMiddleware.js';
 import {
   listByVideo,
+  countsByCourse,
   create,
   update,
   remove,
@@ -15,6 +16,8 @@ router.use(authMiddleware);
 
 /* ─── Lecture (auth requise — étudiant + prof + admin) ─── */
 router.get('/video/:videoId', listByVideo);
+// Batch — counts de questions par vidéo pour un cours (évite le N+1 du StudentCourse)
+router.get('/by-course/:courseId/counts', countsByCourse);
 
 /* ─── CRUD prof ─── */
 router.post('/',       requireRole('professeur', 'admin'), create);

@@ -85,7 +85,10 @@ export default function MyTutor() {
     try {
       const { data } = await api.post('/tutor/chat', {
         message: msg,
-        history: newMessages.slice(-9, -1), // n'envoie que les 8 derniers (sans le current)
+        // Envoie les 20 derniers messages (10 tours user/IA) sans le current.
+        // Le backend re-coupe à 20 par sécurité. Suffisant pour ~10 questions de suivi
+        // sans exploser les tokens (chaque message est aussi limité à 2000 chars côté serveur).
+        history: newMessages.slice(-21, -1),
       });
       setMessages([...newMessages, { role: 'assistant', content: data.reply }]);
       if (data.quota) setQuotaInfo(data.quota);
@@ -182,8 +185,11 @@ export default function MyTutor() {
             </div>
           </div>
 
-          {/* Messages */}
-          <div style={{ flex: 1, overflowY: 'auto', padding: 14, display: 'flex', flexDirection: 'column', gap: 10, maxHeight: 'calc(100vh - 380px)', minHeight: 300 }}>
+          {/* Messages — flex:1 + minHeight:0 fait que la zone occupe tout l'espace
+              dispo dans le container parent (qui a minHeight: calc(100vh - 180px)).
+              overflowY: auto pour scroller dans la zone, sans imposer de hauteur fixe
+              qui gâche l'espace sur grand écran ou casse sur petit écran. */}
+          <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: 14, display: 'flex', flexDirection: 'column', gap: 10 }}>
             {messages.map((m, i) => (
               <div key={i} style={{
                 alignSelf: m.role === 'user' ? 'flex-end' : 'flex-start',

@@ -44,20 +44,24 @@ export default function ResourcesHub() {
 
   const loadResources = async () => {
     try {
-      const { data: coursesData } = await api.get('/courses');
+      // 2 requêtes parallèles au lieu de 1 + N : un appel cours + un appel batch ressources
+      const [{ data: coursesData }, { data: allResources }] = await Promise.all([
+        api.get('/courses'),
+        api.get('/resources/me'),
+      ]);
       setCourses(coursesData);
 
+      // Regrouper les ressources par cours côté client (la réponse populate déjà courseId)
       const resourceMap = {};
-      await Promise.all(
-        coursesData.map(async (course) => {
-          try {
-            const { data } = await api.get(`/resources/course/${course._id}`);
-            if (data.length > 0) {
-              resourceMap[course._id] = { course, resources: data };
-            }
-          } catch { /* no resources for this course */ }
-        })
-      );
+      const courseById = new Map(coursesData.map(c => [c._id, c]));
+      for (const r of allResources) {
+        const cid = (r.courseId && r.courseId._id) || r.courseId;
+        if (!cid) continue;
+        const course = courseById.get(cid.toString()) || (typeof r.courseId === 'object' ? r.courseId : null);
+        if (!course) continue;
+        if (!resourceMap[cid]) resourceMap[cid] = { course, resources: [] };
+        resourceMap[cid].resources.push(r);
+      }
       setResources(resourceMap);
     } catch (err) {
       console.error(err);

@@ -51,6 +51,34 @@ export const uploadResource = async (req, res) => {
   }
 };
 
+/* ─── GET /api/resources/me ───────────────────────────────────────────────
+ * Endpoint batch : toutes les ressources accessibles à l'utilisateur connecté
+ * en UNE SEULE requête. Évite le N+1 du ResourcesHub (1 call par cours).
+ *   - Étudiant : ressources des cours de sa filière + promotion
+ *   - Prof / admin : toutes les ressources
+ */
+export const getMyResources = async (req, res) => {
+  try {
+    let courseFilter = {};
+    if (req.user.role === 'etudiant') {
+      const Course = (await import('../models/Course.js')).default;
+      const accessibleCourses = await Course.find({
+        filiere: req.user.filiere,
+        promotion: req.user.promotion,
+      }).select('_id');
+      courseFilter = { courseId: { $in: accessibleCourses.map(c => c._id) } };
+    }
+
+    const resources = await Resource.find(courseFilter)
+      .populate('uploadedBy', 'nom prenom')
+      .populate('courseId', 'titre filiere promotion')
+      .sort({ createdAt: -1 });
+    res.json(resources);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
 /* ─── GET /api/resources/course/:courseId ────────────────────────────────── */
 export const getResourcesByCourse = async (req, res) => {
   try {

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout.jsx';
 import api from '../utils/api.js';
+import { useToast } from '../context/ToastContext.jsx';
 import {
   ArrowLeft, HelpCircle, ChevronDown, ChevronUp, Send, Plus, Clock,
   CheckCircle, MessageSquare, X, Loader2, User as UserIcon, ShieldCheck,
@@ -54,6 +55,7 @@ function Status({ status }) {
 function CreateModal({ onClose, onCreated }) {
   const [form, setForm] = useState({ objet: '', message: '', priority: 'normal', category: 'autre' });
   const [sending, setSending] = useState(false);
+  const { toast } = useToast();
   const user = (() => { try { return JSON.parse(sessionStorage.getItem('fliplearn_user') || 'null'); } catch { return null; } })();
 
   const submit = async () => {
@@ -68,7 +70,7 @@ function CreateModal({ onClose, onCreated }) {
       onCreated();
       onClose();
     } catch (err) {
-      alert(err.response?.data?.message || 'Erreur');
+      toast({ type: 'error', message: err.response?.data?.message || 'Erreur lors de la création du ticket.' });
     } finally {
       setSending(false);
     }
@@ -130,6 +132,7 @@ function CreateModal({ onClose, onCreated }) {
 function TicketDetail({ ticket, onClose, onRefresh }) {
   const [reply, setReply] = useState('');
   const [sending, setSending] = useState(false);
+  const { toast } = useToast();
 
   const sendReply = async () => {
     if (!reply.trim()) return;
@@ -139,7 +142,7 @@ function TicketDetail({ ticket, onClose, onRefresh }) {
       setReply('');
       onRefresh();
     } catch (err) {
-      alert(err.response?.data?.message || 'Erreur');
+      toast({ type: 'error', message: err.response?.data?.message || "Erreur lors de l'envoi du message." });
     } finally {
       setSending(false);
     }

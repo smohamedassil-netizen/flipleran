@@ -34,7 +34,8 @@ export const createCourse = async (req, res) => {
       const students = await User.find({
         role: 'etudiant',
         filiere: course.filiere,
-        isActive: true
+        isActive: true,
+        emailNotifications: { $ne: false },
       }).select('email prenom').limit(50);
 
       for (const student of students) {

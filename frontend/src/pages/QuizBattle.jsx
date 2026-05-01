@@ -255,14 +255,20 @@ export default function QuizBattle() {
     setUsedPowerups(prev => new Set([...prev, id]));
 
     if (id === 'fifty') {
-      // Cache 2 options incorrectes
-      const correct = null;
-      const options = ['A', 'B', 'C', 'D'];
-      // On ne connaît pas la correcte côté client, donc on stratégie : on cache 2 aléatoires
-      // Fallback : montrer les 2 qui restent aléatoirement (utile même sans savoir la bonne)
-      // Ici on va ne cacher que 2 non-sélectionnées au hasard pour garder la contrainte stratégique
-      const shuffled = options.sort(() => Math.random() - 0.5);
-      setHiddenOptions(shuffled.slice(0, 2));
+      // Le serveur connaît la bonne réponse — on lui demande quelles 2 mauvaises cacher
+      socketRef.current?.emit('battle:powerup_fifty', { roomId, questionIndex }, (res) => {
+        if (res?.error) {
+          // Rollback : libérer le power-up si le serveur a refusé
+          setUsedPowerups(prev => {
+            const n = new Set(prev);
+            n.delete('fifty');
+            return n;
+          });
+          setError(res.error);
+          return;
+        }
+        setHiddenOptions(Array.isArray(res?.hiddenOptions) ? res.hiddenOptions : []);
+      });
     } else if (id === 'freeze') {
       setTimer(t => t + 8);
     } else if (id === 'double') {

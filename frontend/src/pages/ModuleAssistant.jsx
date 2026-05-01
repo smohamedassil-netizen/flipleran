@@ -260,7 +260,16 @@ export default function ModuleAssistant() {
                   ton {persona.ton}
                 </span>
               )}
+              <span
+                title="L'Assistant Module n'a pas de quota — pose autant de questions que tu veux."
+                style={{ padding: '2px 8px', background: 'rgba(255,255,255,.2)', borderRadius: 10, fontSize: 11, display: 'inline-flex', alignItems: 'center', gap: 4 }}
+              >
+                ✨ Sans limite
+              </span>
             </div>
+            <p style={{ margin: '6px 0 0', fontSize: 11, opacity: .8 }}>
+              Powered by Groq Llama 3.3 · Conversations illimitées
+            </p>
           </div>
           {canConfigure && (
             <button

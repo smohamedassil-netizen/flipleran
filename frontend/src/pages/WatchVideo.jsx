@@ -48,12 +48,11 @@ export default function WatchVideo() {
     return `${m}:${sec.toString().padStart(2, '0')}`;
   };
 
+  // Seek vers un chapitre : on délègue au VideoPlayer (qu'il soit YouTube ou natif)
+  // via un CustomEvent. Le VideoPlayer écoute cet event et applique le bon mécanisme
+  // (YT.Player.seekTo pour YouTube, videoEl.currentTime pour la balise <video> native).
   const seekToChapter = (timestamp) => {
-    const videoEl = document.querySelector('video');
-    if (videoEl) {
-      videoEl.currentTime = timestamp;
-      videoEl.play();
-    }
+    window.dispatchEvent(new CustomEvent('fliplearn:seek-video', { detail: { timestamp } }));
   };
 
   useEffect(() => {

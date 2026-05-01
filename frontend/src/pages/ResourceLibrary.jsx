@@ -9,6 +9,7 @@ import Layout from '../components/Layout.jsx';
 import Breadcrumb from '../components/Breadcrumb.jsx';
 import api    from '../utils/api.js';
 import { useAuth } from '../context/AuthContext.jsx';
+import { useToast } from '../context/ToastContext.jsx';
 
 /* ─── Helpers ────────────────────────────────────────────────────────────── */
 const TYPE_META = {
@@ -267,6 +268,7 @@ export default function ResourceLibrary() {
   const { courseId } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { toast } = useToast();
   const canUpload = user?.role === 'professeur' || user?.role === 'admin';
 
   const [activeTab, setActiveTab] = useState('fichiers');
@@ -278,6 +280,8 @@ export default function ResourceLibrary() {
   const [showUpload, setShowUpload] = useState(false);
   const [showVideoUpload, setShowVideoUpload] = useState(false);
   const [filterType, setFilterType] = useState('all');
+  const [resourceToDelete, setResourceToDelete] = useState(null);
+  const [deletingResource, setDeletingResource] = useState(false);
 
   useEffect(() => {
     Promise.all([
@@ -300,10 +304,23 @@ export default function ResourceLibrary() {
   }, [activeTab, courseId]);
 
   const handleAdd = (r) => setResources((prev) => [r, ...prev]);
-  const handleDelete = async (id) => {
-    if (!confirm('Supprimer cette ressource ?')) return;
-    await api.delete(`/resources/${id}`).catch(console.error);
-    setResources((prev) => prev.filter((r) => r._id !== id));
+  // Demande de suppression : on ouvre la modal de confirmation, suppression effective via confirmDeleteResource
+  const handleDelete = (id) => {
+    const target = resources.find((r) => r._id === id);
+    setResourceToDelete(target || { _id: id, titre: 'cette ressource' });
+  };
+  const confirmDeleteResource = async () => {
+    if (!resourceToDelete?._id) return;
+    setDeletingResource(true);
+    try {
+      await api.delete(`/resources/${resourceToDelete._id}`);
+      setResources((prev) => prev.filter((r) => r._id !== resourceToDelete._id));
+      setResourceToDelete(null);
+    } catch (err) {
+      toast({ type: 'error', message: err.response?.data?.message || 'Erreur lors de la suppression de la ressource.' });
+    } finally {
+      setDeletingResource(false);
+    }
   };
 
   const filtered = filterType === 'all' ? resources : resources.filter((r) => r.type === filterType);
@@ -450,6 +467,37 @@ export default function ResourceLibrary() {
           onSuccess={(video) => { setVideos(prev => [...prev, video]); }}
           onClose={() => setShowVideoUpload(false)}
         />
+      )}
+
+      {/* Modal de confirmation suppression ressource (UX-9) */}
+      {resourceToDelete && (
+        <div
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2000, padding: 16 }}
+          onClick={(e) => e.target === e.currentTarget && !deletingResource && setResourceToDelete(null)}
+        >
+          <div style={{ background: 'white', borderRadius: 14, padding: 24, width: '100%', maxWidth: 420, boxShadow: '0 20px 50px rgba(0,0,0,.2)' }}>
+            <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: '#1B4F72' }}>Supprimer cette ressource ?</h3>
+            <p style={{ margin: '10px 0 18px', fontSize: 13, color: '#475569', lineHeight: 1.5 }}>
+              <strong>{resourceToDelete.titre}</strong> sera définitivement supprimée. Cette action est irréversible.
+            </p>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+              <button
+                onClick={() => setResourceToDelete(null)}
+                disabled={deletingResource}
+                style={{ padding: '9px 14px', border: '1px solid #E5E7EB', borderRadius: 8, background: 'white', cursor: 'pointer', fontSize: 13, fontWeight: 600 }}
+              >
+                Annuler
+              </button>
+              <button
+                onClick={confirmDeleteResource}
+                disabled={deletingResource}
+                style={{ padding: '9px 14px', border: 'none', borderRadius: 8, color: 'white', background: '#DC2626', cursor: deletingResource ? 'wait' : 'pointer', fontSize: 13, fontWeight: 700 }}
+              >
+                {deletingResource ? 'Suppression…' : 'Supprimer'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </Layout>
   );

@@ -454,6 +454,8 @@ io.on('connection', (socket) => {
           try {
             const { sendNotificationEmail, sendUrgentEmail } = await import('./services/emailService.js');
             const course = await (await import('./models/Course.js')).default.findById(courseId).select('titre');
+            // Pour les messages URGENTS de cours, on n'applique PAS le filtre emailNotifications :
+            // les urgents passent toujours (sécurité pédagogique). Seuls isActive et le rôle filtrent.
             const students = await User.find({ role: 'etudiant', isActive: true }).select('email prenom nom');
             const courseName = course?.titre || 'un cours';
             for (const student of students) {
@@ -488,16 +490,18 @@ io.on('connection', (socket) => {
         // Send email notification
         try {
           const { sendNotificationEmail, sendUrgentEmail } = await import('./services/emailService.js');
-          const recipient = await User.findById(receiverId).select('email prenom');
+          const recipient = await User.findById(receiverId).select('email prenom emailNotifications');
           console.log('[EMAIL] Private message -> receiverId:', receiverId, '-> email:', recipient?.email, '-> priority:', msgPriority);
           if (recipient?.email) {
             if (isUrgent) {
+              // Les messages urgents passent toujours (sécurité pédagogique).
               sendUrgentEmail(
                 recipient.email,
                 'Message urgent',
                 `<strong>${user.prenom} ${user.nom}</strong> vous a envoye un message urgent sur FlipLearn :<br><br><em>"${content.trim().substring(0, 200)}"</em><br><br>Connectez-vous pour repondre.`
               );
-            } else {
+            } else if (recipient.emailNotifications !== false) {
+              // Messages normaux : respecter la préférence du destinataire.
               sendNotificationEmail(
                 recipient.email,
                 'Nouveau message',
@@ -567,35 +571,15 @@ io.on('connection', (socket) => {
     socket.join(roomId);
     if (typeof callback === 'function') callback({ roomId });
 
-    // Notify all connected users about the new battle room
+    // Notification temps réel à tous les étudiants connectés (suffisant pour un Quiz Battle).
+    // L'envoi d'email a été retiré : 30 mails/création explosaient le quota Brevo (300/j) en ~10 démos
+    // et risquaient un signalement spam. La notif socket couvre l'usage attendu.
     socket.broadcast.emit('notification', {
       type: 'quiz_battle',
       message: `${data.name} a créé une salle de Quiz Battle ! Rejoignez-le !`,
       link: '/quiz-battle',
       createdAt: new Date().toISOString(),
     });
-
-    // Send email to classmates about quiz battle
-    try {
-      const { sendNotificationEmail } = await import('./services/emailService.js');
-      const students = await User.find({
-        role: 'etudiant',
-        isActive: { $ne: false },
-        _id: { $ne: data.userId },
-      }).select('email prenom').limit(30);
-
-      for (const student of students) {
-        if (student.email) {
-          sendNotificationEmail(
-            student.email,
-            'Invitation Quiz Battle',
-            `<strong>${data.name}</strong> vous invite à un Quiz Battle sur FlipLearn ! Connectez-vous pour relever le défi ! ⚔️`
-          );
-        }
-      }
-    } catch (err) {
-      console.error('Quiz battle email error:', err.message);
-    }
   });
 
   /* Rejoindre une salle */
@@ -771,6 +755,25 @@ io.on('connection', (socket) => {
         });
       }
     }
+  });
+
+  /* Power-up 50/50 — le serveur connaît la bonne réponse, il choisit 2 mauvaises options à cacher */
+  socket.on('battle:powerup_fifty', ({ roomId, questionIndex }, callback) => {
+    if (typeof callback !== 'function') return;
+    const room = battleRooms.get(roomId);
+    if (!room || !Array.isArray(room.questions) || !room.questions[questionIndex]) {
+      return callback({ error: 'Salle ou question introuvable' });
+    }
+    const correctAnswer = room.questions[questionIndex].correctAnswer;
+    const wrongOptions = ['A', 'B', 'C', 'D'].filter(o => o !== correctAnswer);
+    const shuffled = [...wrongOptions];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    const hiddenOptions = shuffled.slice(0, 2);
+    socket.to(roomId).emit('battle:opponent_powerup', { powerup: 'fifty' });
+    callback({ hiddenOptions });
   });
 
   /* Lister les salles disponibles */

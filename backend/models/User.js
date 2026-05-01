@@ -45,6 +45,12 @@ const userSchema = new mongoose.Schema(
       qcmGeneration:  { count: { type: Number, default: 0 }, resetAt: { type: Date, default: null } },
       deckGeneration: { count: { type: Number, default: 0 }, resetAt: { type: Date, default: null } },
     },
+
+    /* ─── Préférences notifications ──────────────────────────────────────
+       Seules les notifications non-transactionnelles et non-urgentes sont
+       coupées par ce toggle. Les emails de validation de compte et les
+       messages explicitement marqués 'urgent' passent toujours. */
+    emailNotifications: { type: Boolean, default: true },
   },
   { timestamps: true }
 );

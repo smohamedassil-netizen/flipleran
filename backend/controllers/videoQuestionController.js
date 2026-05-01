@@ -75,6 +75,34 @@ export const listByVideo = async (req, res) => {
   }
 };
 
+/**
+ * GET /api/video-questions/by-course/:courseId/counts
+ * Endpoint batch : retourne le nombre de questions par vidéo pour un cours
+ * en UNE SEULE requête. Évite le N+1 de StudentCourse (1 call par vidéo).
+ * Format de réponse : { [videoId]: count, ... }
+ */
+export const countsByCourse = async (req, res) => {
+  try {
+    const { courseId } = req.params;
+    const videos = await Video.find({ courseId }).select('_id').lean();
+    const videoIds = videos.map(v => v._id);
+    if (videoIds.length === 0) return res.json({});
+
+    const grouped = await VideoQuestion.aggregate([
+      { $match: { videoId: { $in: videoIds } } },
+      { $group: { _id: '$videoId', count: { $sum: 1 } } },
+    ]);
+
+    const counts = {};
+    for (const v of videoIds) counts[v.toString()] = 0;
+    for (const g of grouped) counts[g._id.toString()] = g.count;
+    res.json(counts);
+  } catch (err) {
+    console.error('[videoQuestion.countsByCourse]', err);
+    res.status(500).json({ message: err.message });
+  }
+};
+
 /* ─────────────────────────────────────────────────────────────────────────
    CRUD prof — création / mise à jour / suppression
 ───────────────────────────────────────────────────────────────────────── */

@@ -52,6 +52,7 @@ export const uploadVideo = async (req, res) => {
           role: 'etudiant',
           filiere: course.filiere,
           isActive: { $ne: false },
+          emailNotifications: { $ne: false },
         }).select('email prenom').limit(50);
 
         for (const student of students) {

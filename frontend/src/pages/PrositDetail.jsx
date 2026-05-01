@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import Layout from '../components/Layout.jsx';
 import api from '../utils/api.js';
+import { useToast } from '../context/ToastContext.jsx';
 import PrositPhaseStepper from '../components/PrositPhaseStepper.jsx';
 import PrositGroupCard from '../components/PrositGroupCard.jsx';
 import {
@@ -44,6 +45,7 @@ export default function PrositDetail() {
   });
   const isProf = user?.role === 'professeur' || user?.role === 'admin';
   const isStudent = user?.role === 'etudiant';
+  const { toast } = useToast();
 
   const [prosit, setProsit] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -51,6 +53,8 @@ export default function PrositDetail() {
   const [transitioning, setTransitioning] = useState(false);
   const [showFirstTimeModal, setShowFirstTimeModal] = useState(false);
   const [showGroupComposer, setShowGroupComposer] = useState(false);
+  // Modal de confirmation pour les actions destructives (transition phase, suppression)
+  const [confirmDialog, setConfirmDialog] = useState(null); // { title, message, action, label, danger }
 
   const load = useCallback(() => {
     setLoading(true);
@@ -81,27 +85,40 @@ export default function PrositDetail() {
     }
   };
 
-  const transitionPhase = async () => {
-    if (!confirm('Confirmer la transition de phase ? Cette action peut verrouiller les modifications.')) return;
-    try {
-      setTransitioning(true);
-      await api.post(`/prosits/${id}/transition`);
-      await load();
-    } catch (err) {
-      alert(err.response?.data?.message || 'Erreur transition');
-    } finally {
-      setTransitioning(false);
-    }
+  const transitionPhase = () => {
+    setConfirmDialog({
+      title: 'Confirmer la transition de phase ?',
+      message: 'Cette action peut verrouiller les modifications de la phase actuelle.',
+      label: 'Confirmer',
+      action: async () => {
+        try {
+          setTransitioning(true);
+          await api.post(`/prosits/${id}/transition`);
+          await load();
+        } catch (err) {
+          toast({ type: 'error', message: err.response?.data?.message || 'Erreur lors de la transition de phase.' });
+        } finally {
+          setTransitioning(false);
+        }
+      },
+    });
   };
 
-  const deleteProsit = async () => {
-    if (!confirm('Supprimer définitivement ce Prosit ? Cette action est irréversible.')) return;
-    try {
-      await api.delete(`/prosits/${id}`);
-      navigate('/prosits');
-    } catch (err) {
-      alert(err.response?.data?.message || 'Erreur suppression');
-    }
+  const deleteProsit = () => {
+    setConfirmDialog({
+      title: 'Supprimer définitivement ce Prosit ?',
+      message: 'Cette action est irréversible — toutes les contributions et évaluations seront perdues.',
+      label: 'Supprimer définitivement',
+      danger: true,
+      action: async () => {
+        try {
+          await api.delete(`/prosits/${id}`);
+          navigate('/prosits');
+        } catch (err) {
+          toast({ type: 'error', message: err.response?.data?.message || 'Erreur lors de la suppression.' });
+        }
+      },
+    });
   };
 
   if (loading) {
@@ -483,6 +500,41 @@ export default function PrositDetail() {
           onUpdated={load}
         />
       )}
+
+      {/* Modal de confirmation pour transitions de phase / suppression (UX-9) */}
+      {confirmDialog && (
+        <div
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2000, padding: 16 }}
+          onClick={(e) => e.target === e.currentTarget && setConfirmDialog(null)}
+        >
+          <div style={{ background: 'white', borderRadius: 14, padding: 24, width: '100%', maxWidth: 440, boxShadow: '0 20px 50px rgba(0,0,0,.2)' }}>
+            <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: '#1B4F72' }}>{confirmDialog.title}</h3>
+            <p style={{ margin: '10px 0 18px', fontSize: 13, color: '#475569', lineHeight: 1.5 }}>{confirmDialog.message}</p>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+              <button
+                onClick={() => setConfirmDialog(null)}
+                style={{ padding: '9px 14px', border: '1px solid #E5E7EB', borderRadius: 8, background: 'white', cursor: 'pointer', fontSize: 13, fontWeight: 600 }}
+              >
+                Annuler
+              </button>
+              <button
+                onClick={async () => {
+                  const action = confirmDialog.action;
+                  setConfirmDialog(null);
+                  if (typeof action === 'function') await action();
+                }}
+                style={{
+                  padding: '9px 14px', border: 'none', borderRadius: 8, color: 'white',
+                  background: confirmDialog.danger ? '#DC2626' : '#1B4F72',
+                  cursor: 'pointer', fontSize: 13, fontWeight: 700,
+                }}
+              >
+                {confirmDialog.label || 'Confirmer'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </Layout>
   );
 }
@@ -492,6 +544,7 @@ export default function PrositDetail() {
 ───────────────────────────────────────────────────────────────────────── */
 
 function CollaborativeWorkspace({ prosit, groupe, groupeIndex, userId, onUpdated }) {
+  const { toast } = useToast();
   const [motsClesText, setMotsClesText]                 = useState((groupe.motsClesIdentifies || []).join(', '));
   const [problematique, setProblematique]               = useState(groupe.problematiqueReformulee || '');
   const [hypothesesText, setHypothesesText]             = useState((groupe.hypotheses || []).join('\n'));
@@ -524,7 +577,7 @@ function CollaborativeWorkspace({ prosit, groupe, groupeIndex, userId, onUpdated
       setSavedAt(new Date());
       onUpdated?.();
     } catch (err) {
-      alert(err.response?.data?.message || 'Erreur sauvegarde');
+      toast({ type: 'error', message: err.response?.data?.message || 'Erreur lors de la sauvegarde du workspace.' });
     } finally {
       setSaving(false);
     }
@@ -537,7 +590,7 @@ function CollaborativeWorkspace({ prosit, groupe, groupeIndex, userId, onUpdated
       setSavedAt(new Date());
       onUpdated?.();
     } catch (err) {
-      alert(err.response?.data?.message || 'Erreur contribution');
+      toast({ type: 'error', message: err.response?.data?.message || 'Erreur lors de l\'envoi de ta contribution.' });
     } finally {
       setSaving(false);
     }
@@ -688,6 +741,7 @@ function PhaseGuide({ title, description, steps, color = '#F59E0B' }) {
 ───────────────────────────────────────────────────────────────────────── */
 
 function ProfEvaluationPanel({ prosit, onUpdated }) {
+  const { toast } = useToast();
   const [editing, setEditing] = useState(null); // groupeIndex
   const [noteGlobale, setNoteGlobale] = useState(15);
   const [commentaire, setCommentaire] = useState('');
@@ -703,9 +757,13 @@ function ProfEvaluationPanel({ prosit, onUpdated }) {
       setEditing(null);
       setCommentaire('');
       onUpdated?.();
-      alert('Évaluation enregistrée. +150 XP attribués à chaque membre du groupe.');
+      toast({
+        type: 'success',
+        title: 'Évaluation enregistrée',
+        message: '+150 XP attribués à chaque membre du groupe.',
+      });
     } catch (err) {
-      alert(err.response?.data?.message || 'Erreur évaluation');
+      toast({ type: 'error', message: err.response?.data?.message || "Erreur lors de l'enregistrement de l'évaluation." });
     } finally {
       setSaving(false);
     }

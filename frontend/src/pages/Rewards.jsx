@@ -2,6 +2,8 @@ import { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import Layout from '../components/Layout.jsx';
 import api from '../utils/api.js';
+import { useAuth } from '../context/AuthContext.jsx';
+import { useToast } from '../context/ToastContext.jsx';
 import {
   ArrowLeft, Gift, Star, Lock, Check, Crown, X, Loader2,
   Clock, Sparkles, Package, Trophy, Award, ShoppingBag,
@@ -159,6 +161,10 @@ export default function Rewards() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const tab = searchParams.get('tab') || 'catalog';
+  // Source unique de vérité pour les points : AuthContext. refreshMe re-fetche
+  // GET /auth/me et propage la mise à jour (sessionStorage + event 'fliplearn:user-changed').
+  const { user, refreshMe } = useAuth();
+  const { toast } = useToast();
 
   const [rewards, setRewards] = useState([]);
   const [myClaims, setMyClaims] = useState([]);
@@ -166,7 +172,6 @@ export default function Rewards() {
   const [filter, setFilter] = useState('all');
   const [claimModal, setClaimModal] = useState(null);
   const [claiming, setClaiming] = useState(false);
-  const [user, setUser] = useState(null);
 
   const loadAll = async () => {
     setLoading(true);
@@ -177,10 +182,6 @@ export default function Rewards() {
       ]);
       setRewards(rs);
       setMyClaims(claims);
-      try {
-        const u = JSON.parse(sessionStorage.getItem('fliplearn_user') || 'null');
-        setUser(u);
-      } catch { /* ignore */ }
     } catch { /* ignore */ }
     finally { setLoading(false); }
   };
@@ -198,11 +199,13 @@ export default function Rewards() {
     setClaiming(true);
     try {
       await api.post(`/rewards/${claimModal._id}/claim`, { userMessage: message });
-      await loadAll();
+      // Refresh DU SERVEUR : points débités, plan/premiumUntil potentiellement maj.
+      // refreshMe propage la mise à jour à tout le contexte (sessionStorage + autres pages).
+      await Promise.all([loadAll(), refreshMe()]);
       setClaimModal(null);
       setSearchParams({ tab: 'mine' });
     } catch (err) {
-      alert(err.response?.data?.message || 'Erreur');
+      toast({ type: 'error', message: err.response?.data?.message || 'Erreur lors de la réclamation.' });
     } finally {
       setClaiming(false);
     }

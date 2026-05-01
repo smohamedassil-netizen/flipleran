@@ -7,6 +7,7 @@ import { ProjectProgressWidget, PhaseChecklist, IdeasPanel } from '../components
 // DÉSACTIVÉ pour PFE L3 — perspective d'évolution (F7 — Coach IA Prosit/Projet)
 // import CoachAIPanel from '../components/CoachAIPanel.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
+import { useToast } from '../context/ToastContext.jsx';
 import api from '../utils/api.js';
 import { capitalizeWords, formatFullName } from '../utils/format.js';
 import {
@@ -156,6 +157,7 @@ export default function ProjectDetail() {
   const { projectId } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { toast } = useToast();
   const role = user?.role ?? 'etudiant';
   const isProfOrAdmin = role === 'professeur' || role === 'admin';
 
@@ -255,7 +257,7 @@ export default function ProjectDetail() {
       setShowUpload(false);
       setUploadForm({ titre: '', type: 'document', file: null });
     } catch (err) {
-      alert(err.response?.data?.message ?? 'Erreur lors de l\'envoi du livrable.');
+      toast({ type: 'error', message: err.response?.data?.message ?? "Erreur lors de l'envoi du livrable." });
     } finally {
       setUploading(false);
     }
@@ -272,7 +274,7 @@ export default function ProjectDetail() {
       await api.post(`/projects/${projectId}/evaluations`, { notes });
       setEvalSubmitted(true);
     } catch (err) {
-      alert(err.response?.data?.message ?? 'Erreur lors de la soumission.');
+      toast({ type: 'error', message: err.response?.data?.message ?? 'Erreur lors de la soumission.' });
     } finally {
       setSubmittingEval(false);
     }
@@ -297,7 +299,7 @@ export default function ProjectDetail() {
       setProject(data);
       setShowGroupModal(false);
     } catch (err) {
-      alert(err.response?.data?.message ?? 'Erreur lors de la cr\u00e9ation des groupes.');
+      toast({ type: 'error', message: err.response?.data?.message ?? 'Erreur lors de la cr\u00e9ation des groupes.' });
     } finally {
       setCreatingGroups(false);
     }
@@ -308,7 +310,7 @@ export default function ProjectDetail() {
       const { data } = await api.put(`/projects/${projectId}/phases/${phaseIndex}`, { statut: newStatut });
       setProject(data);
     } catch (err) {
-      alert(err.response?.data?.message ?? 'Erreur.');
+      toast({ type: 'error', message: err.response?.data?.message ?? 'Erreur changement de phase.' });
     }
   };
 
@@ -318,7 +320,7 @@ export default function ProjectDetail() {
       setProject(data);
       setEditing(false);
     } catch (err) {
-      alert(err.response?.data?.message ?? 'Erreur lors de la modification.');
+      toast({ type: 'error', message: err.response?.data?.message ?? 'Erreur lors de la modification.' });
     }
   };
 
@@ -328,7 +330,7 @@ export default function ProjectDetail() {
       setAllEvals(data);
       setShowAllEvals(true);
     } catch (err) {
-      alert(err.response?.data?.message ?? 'Erreur.');
+      toast({ type: 'error', message: err.response?.data?.message ?? 'Erreur de chargement des évaluations.' });
     }
   };
 
@@ -1116,8 +1118,8 @@ export default function ProjectDetail() {
             <select
               className="form-input"
               style={{ marginBottom: 20, width: '100%' }}
-              value={editForm.statut ?? 'brouillon'}
-              onChange={(e) => setEditForm({ ...editForm, statut: e.target.value })}
+              value={editForm.status ?? 'brouillon'}
+              onChange={(e) => setEditForm({ ...editForm, status: e.target.value })}
             >
               <option value="brouillon">Brouillon</option>
               <option value="actif">Actif</option>

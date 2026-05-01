@@ -16,8 +16,8 @@ import { sendNotificationEmail } from './emailService.js';
 async function sendDeadlineEmail(userId, subject, body, days) {
   if (days > 1) return; // Email seulement pour J-0 et J-1
   try {
-    const user = await User.findById(userId).select('email prenom');
-    if (user?.email) {
+    const user = await User.findById(userId).select('email prenom emailNotifications');
+    if (user?.email && user.emailNotifications !== false) {
       await sendNotificationEmail(user.email, subject, body);
     }
   } catch (err) {

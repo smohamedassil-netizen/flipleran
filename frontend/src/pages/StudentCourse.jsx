@@ -6,6 +6,7 @@ import { useAuth } from '../context/AuthContext.jsx';
 import Breadcrumb from '../components/Breadcrumb.jsx';
 import LearningPathTimeline from '../components/LearningPathTimeline.jsx';
 import PedagogicalHeader from '../components/PedagogicalHeader.jsx';
+import { useToast } from '../context/ToastContext.jsx';
 import {
   Play, CheckCircle, Clock, Lock, Home,
   BookOpen, AlertCircle, ChevronRight, MessageSquare,
@@ -178,6 +179,7 @@ export default function StudentCourse() {
   const navigate     = useNavigate();
   const { user }     = useAuth();
   const isProfOrAdmin = user?.role === 'professeur' || user?.role === 'admin';
+  const { toast } = useToast();
 
   const [course,  setCourse]  = useState(null);
   const [videos,  setVideos]  = useState([]);
@@ -237,7 +239,7 @@ export default function StudentCourse() {
       setVideos(videos.map(v => v._id === editingVideo._id ? { ...v, ...editForm } : v));
       setEditingVideo(null);
     } catch (err) {
-      alert(err.response?.data?.message || 'Erreur lors de la modification');
+      toast({ type: 'error', message: err.response?.data?.message || 'Erreur lors de la modification de la vidéo.' });
     }
   };
 
@@ -247,7 +249,7 @@ export default function StudentCourse() {
       setVideos(videos.filter(v => v._id !== video._id));
       setDeleteConfirm(null);
     } catch (err) {
-      alert(err.response?.data?.message || 'Erreur lors de la suppression');
+      toast({ type: 'error', message: err.response?.data?.message || 'Erreur lors de la suppression de la vidéo.' });
     }
   };
 
@@ -273,15 +275,13 @@ export default function StudentCourse() {
         setCourse(courseRes.data);
         setVideos(videosRes.data);
 
-        // Compte les questions in-video par vidéo (en parallèle, fail silencieux)
-        const counts = {};
-        await Promise.all((videosRes.data || []).map(async (v) => {
-          try {
-            const { data } = await api.get(`/video-questions/video/${v._id}`);
-            counts[v._id] = Array.isArray(data) ? data.length : 0;
-          } catch { counts[v._id] = 0; }
-        }));
-        setQuestionCounts(counts);
+        // Compte les questions in-video par vidéo — UNE seule requête batch (évite le N+1)
+        try {
+          const { data: counts } = await api.get(`/video-questions/by-course/${courseId}/counts`);
+          setQuestionCounts(counts || {});
+        } catch {
+          setQuestionCounts({}); // fail silencieux : la page reste utilisable sans les counts
+        }
 
         await fetchLearningPath(false);
 

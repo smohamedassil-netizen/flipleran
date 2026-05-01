@@ -1,11 +1,18 @@
 import { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Award, BookOpen, CheckCircle, Zap, BarChart2, Clock, ArrowLeft, Edit2, Lock, Users, ClipboardList, Video, Camera, Download } from 'lucide-react';
+import { Award, BookOpen, CheckCircle, Zap, BarChart2, Clock, ArrowLeft, Edit2, Lock, Users, ClipboardList, Video, Camera, Download, Loader2 } from 'lucide-react';
 import Layout from '../components/Layout.jsx';
 import api from '../utils/api.js';
 import { useAuth } from '../context/AuthContext.jsx';
+import { useToast } from '../context/ToastContext.jsx';
 import BadgeCard from '../components/BadgeCard.jsx';
 import { capitalizeWords, formatFullName } from '../utils/format.js';
+
+// Contraintes upload avatar — alignées sur le backend (multer 10 MB) avec une marge.
+// Types acceptés : voir backend/middleware/upload.js qui filtre image/jpeg|png|webp.
+const AVATAR_MAX_SIZE = 5 * 1024 * 1024; // 5 MB
+const AVATAR_ACCEPT = 'image/jpeg,image/png,image/webp';
+const AVATAR_ALLOWED_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
 
 /* ─── All possible badges (for "locked" display) ─────────────────────────── */
 const ALL_BADGE_KEYS = [
@@ -26,21 +33,43 @@ function StatCard({ icon: Icon, label, value, color = 'var(--primary)' }) {
 
 export default function StudentProfile() {
   const { user, refreshMe } = useAuth();
+  const { toast } = useToast();
   const isProf = user?.role === 'professeur';
   const avatarInputRef = useRef(null);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [avatarError, setAvatarError] = useState('');
 
   const handleAvatarUpload = async (e) => {
     const file = e.target.files?.[0];
+    // Reset l'input pour permettre de re-sélectionner le même fichier après une erreur
+    if (e.target) e.target.value = '';
     if (!file) return;
+
+    setAvatarError('');
+
+    // Validation client AVANT l'upload — économise bande passante et donne feedback immédiat
+    if (!AVATAR_ALLOWED_TYPES.has(file.type)) {
+      setAvatarError('Format non supporté. Choisis une image JPEG, PNG ou WebP.');
+      return;
+    }
+    if (file.size > AVATAR_MAX_SIZE) {
+      const sizeMB = (file.size / 1024 / 1024).toFixed(1);
+      setAvatarError(`Image trop lourde (${sizeMB} MB). Maximum 5 MB.`);
+      return;
+    }
+
     const formData = new FormData();
     formData.append('avatar', file);
+    setUploadingAvatar(true);
     try {
       await api.put('/auth/avatar', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
-      refreshMe?.();
+      await refreshMe?.();
     } catch (err) {
-      console.error('Avatar upload failed:', err);
+      setAvatarError(err.response?.data?.message || "Échec de l'upload. Réessaie dans un instant.");
+    } finally {
+      setUploadingAvatar(false);
     }
   };
 
@@ -86,7 +115,10 @@ export default function StudentProfile() {
   /* ── Export PDF (zero-dep, via window.print) ──────────────────────────── */
   const handleDownloadRecap = () => {
     const w = window.open('', '_blank', 'width=900,height=700');
-    if (!w) { alert('Bloquage pop-up — autorisez les fenêtres pour télécharger le récap.'); return; }
+    if (!w) {
+      toast({ type: 'warning', message: 'Bloquage pop-up — autorise les fenêtres pour télécharger le récap.' });
+      return;
+    }
     const today = new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
     const earnedRows = earnedBadges.map(b => `<li><strong>${b.nom}</strong> — ${b.description ?? ''}</li>`).join('');
     const html = `<!DOCTYPE html>
@@ -184,31 +216,50 @@ export default function StudentProfile() {
         }}
       >
         {/* Avatar */}
-        <div style={{ position: 'relative', cursor: 'pointer', flexShrink: 0 }} onClick={() => avatarInputRef.current?.click()}>
-          {user?.avatar ? (
-            <img src={user.avatar} alt="Avatar" style={{ width: 72, height: 72, borderRadius: '50%', objectFit: 'cover', border: '3px solid rgba(255,255,255,0.4)' }} />
-          ) : (
-            <div
-              style={{
-                width:          72,
-                height:         72,
-                borderRadius:   '50%',
-                background:     'rgba(255,255,255,0.2)',
-                border:         '3px solid rgba(255,255,255,0.4)',
-                display:        'flex',
-                alignItems:     'center',
-                justifyContent: 'center',
-                fontSize:       '24px',
-                fontWeight:     800,
-              }}
-            >
-              {initials}
+        <div style={{ position: 'relative', flexShrink: 0 }}>
+          <div
+            style={{ position: 'relative', cursor: uploadingAvatar ? 'wait' : 'pointer' }}
+            onClick={() => !uploadingAvatar && avatarInputRef.current?.click()}
+            title={uploadingAvatar ? 'Upload en cours…' : 'Changer la photo (JPEG/PNG/WebP, 5 MB max)'}
+          >
+            {user?.avatar ? (
+              <img src={user.avatar} alt="Avatar" style={{ width: 72, height: 72, borderRadius: '50%', objectFit: 'cover', border: '3px solid rgba(255,255,255,0.4)', opacity: uploadingAvatar ? 0.5 : 1 }} />
+            ) : (
+              <div
+                style={{
+                  width:          72,
+                  height:         72,
+                  borderRadius:   '50%',
+                  background:     'rgba(255,255,255,0.2)',
+                  border:         '3px solid rgba(255,255,255,0.4)',
+                  display:        'flex',
+                  alignItems:     'center',
+                  justifyContent: 'center',
+                  fontSize:       '24px',
+                  fontWeight:     800,
+                  opacity:        uploadingAvatar ? 0.5 : 1,
+                }}
+              >
+                {initials}
+              </div>
+            )}
+            {uploadingAvatar ? (
+              <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Loader2 size={28} color="white" style={{ animation: 'spin 1s linear infinite' }} />
+              </div>
+            ) : (
+              <div style={{ position: 'absolute', bottom: 0, right: 0, width: 24, height: 24, borderRadius: '50%', background: '#1B4F72', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid white' }}>
+                <Camera size={12} color="white" />
+              </div>
+            )}
+            <input ref={avatarInputRef} type="file" accept={AVATAR_ACCEPT} hidden onChange={handleAvatarUpload} disabled={uploadingAvatar} />
+          </div>
+          {avatarError && (
+            <div style={{ position: 'absolute', top: 80, left: 0, width: 'max-content', maxWidth: 260, padding: '6px 10px', background: '#FEE2E2', color: '#7F1D1D', border: '1px solid #FCA5A5', borderRadius: 8, fontSize: 11, fontWeight: 500, lineHeight: 1.4, zIndex: 1 }}>
+              {avatarError}
             </div>
           )}
-          <div style={{ position: 'absolute', bottom: 0, right: 0, width: 24, height: 24, borderRadius: '50%', background: '#1B4F72', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid white' }}>
-            <Camera size={12} color="white" />
-          </div>
-          <input ref={avatarInputRef} type="file" accept="image/*" hidden onChange={handleAvatarUpload} />
+          <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
           <h2 style={{ margin: 0, fontSize: '20px', fontWeight: 800 }}>

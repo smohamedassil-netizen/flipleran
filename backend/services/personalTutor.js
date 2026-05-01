@@ -188,8 +188,10 @@ ${SOCRATIC_RULES}
 CONTEXTE ÉTUDIANT :
 ${summary}`;
 
-  // Limite l'historique à 8 derniers échanges pour ne pas exploser les tokens
-  const recentHistory = (history || []).slice(-8).map((m) => ({
+  // Limite l'historique à 20 derniers messages (~10 tours) pour garder un vrai contexte
+  // de conversation sans exploser les tokens. Chaque message est aussi limité à 2000 chars.
+  // Coût estimé : ~10k tokens d'historique max, OK avec llama-3.3-70b (128k tokens context).
+  const recentHistory = (history || []).slice(-20).map((m) => ({
     role: m.role === 'user' ? 'user' : 'assistant',
     content: String(m.content || '').slice(0, 2000),
   }));

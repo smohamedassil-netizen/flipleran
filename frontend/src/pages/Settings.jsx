@@ -1,11 +1,42 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Layout from '../components/Layout.jsx';
-import { Settings as SettingsIcon, Moon, Sun, Bell, Globe, Shield, Info, ChevronRight } from 'lucide-react';
+import { Settings as SettingsIcon, Moon, Sun, Bell, Globe, Shield, Info, ChevronRight, Check, Loader2 } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext.jsx';
+import api from '../utils/api.js';
 
 export default function Settings() {
   const { theme, setTheme } = useTheme();
   const [notifications, setNotifications] = useState(true);
+  const [savingPrefs, setSavingPrefs] = useState(false);
+  const [savedPrefs, setSavedPrefs] = useState(false);
+
+  // Charger les préférences depuis le backend au montage
+  useEffect(() => {
+    api.get('/users/me/preferences')
+      .then(({ data }) => {
+        if (typeof data?.emailNotifications === 'boolean') {
+          setNotifications(data.emailNotifications);
+        }
+      })
+      .catch(() => { /* on garde la valeur par défaut */ });
+  }, []);
+
+  // Persister le toggle "Notifications email" sur le backend
+  const toggleEmailNotifications = async () => {
+    const newValue = !notifications;
+    setNotifications(newValue); // optimistic update
+    setSavingPrefs(true);
+    setSavedPrefs(false);
+    try {
+      await api.patch('/users/me/preferences', { emailNotifications: newValue });
+      setSavedPrefs(true);
+      setTimeout(() => setSavedPrefs(false), 2000);
+    } catch {
+      setNotifications(!newValue); // rollback en cas d'erreur
+    } finally {
+      setSavingPrefs(false);
+    }
+  };
 
   const settingSections = [
     {
@@ -28,10 +59,12 @@ export default function Settings() {
       items: [
         {
           label: 'Notifications par email',
-          description: 'Recevoir des notifications pour les nouveaux cours et QCM',
+          description: 'Recevoir des emails pour les nouveaux cours, vidéos, QCM, messages et rappels de deadlines (les messages urgents passent toujours)',
           type: 'toggle',
           value: notifications,
-          onChange: () => setNotifications(!notifications),
+          onChange: toggleEmailNotifications,
+          saving: savingPrefs,
+          saved: savedPrefs,
         }
       ]
     },
@@ -81,6 +114,7 @@ export default function Settings() {
 
   return (
     <Layout title="Paramètres">
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
       <div style={{ maxWidth: 700, margin: '0 auto' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 28 }}>
           <SettingsIcon size={24} color="#1B4F72" />
@@ -121,17 +155,22 @@ export default function Settings() {
                 </div>
 
                 {item.type === 'toggle' && (
-                  <button onClick={item.onChange} style={{
-                    width: 44, height: 24, borderRadius: 12, border: 'none',
-                    background: item.value ? '#1B4F72' : '#d1d5db',
-                    cursor: 'pointer', position: 'relative', transition: 'background 0.2s'
-                  }}>
-                    <span style={{
-                      position: 'absolute', top: 2, left: item.value ? 22 : 2,
-                      width: 20, height: 20, borderRadius: '50%', background: 'white',
-                      transition: 'left 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.2)'
-                    }} />
-                  </button>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    {item.saving && <Loader2 size={14} color="#64748b" style={{ animation: 'spin 1s linear infinite' }} />}
+                    {item.saved && !item.saving && <Check size={14} color="#10B981" />}
+                    <button onClick={item.onChange} disabled={item.saving} style={{
+                      width: 44, height: 24, borderRadius: 12, border: 'none',
+                      background: item.value ? '#1B4F72' : '#d1d5db',
+                      cursor: item.saving ? 'wait' : 'pointer', position: 'relative', transition: 'background 0.2s',
+                      opacity: item.saving ? 0.7 : 1,
+                    }}>
+                      <span style={{
+                        position: 'absolute', top: 2, left: item.value ? 22 : 2,
+                        width: 20, height: 20, borderRadius: '50%', background: 'white',
+                        transition: 'left 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.2)'
+                      }} />
+                    </button>
+                  </div>
                 )}
 
                 {item.type === 'select' && (

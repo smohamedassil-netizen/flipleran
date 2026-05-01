@@ -3,7 +3,24 @@ import { useParams, useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout.jsx';
 import Breadcrumb from '../components/Breadcrumb.jsx';
 import api from '../utils/api.js';
-import { ChevronLeft, ChevronRight, RotateCcw, Award, Shuffle, ArrowLeft, Plus, X } from 'lucide-react';
+import { ChevronLeft, RotateCcw, Award, Shuffle, ArrowLeft, Plus, X, Repeat, ThumbsUp, Zap } from 'lucide-react';
+
+/* SM-2 (Wozniak 1990) — mapping UI → quality
+   "Encore" = j'ai raté ou hésité longtemps    → quality 1 (reset, retour demain)
+   "Bien"   = j'ai répondu correctement        → quality 4 (intervalle ×easeFactor)
+   "Facile" = j'ai répondu sans hésiter        → quality 5 (intervalle ×easeFactor + bonus E) */
+const SM2_QUALITY = { again: 1, good: 4, easy: 5 };
+
+const fmtNextReview = (date) => {
+  if (!date) return '';
+  const ms = new Date(date).getTime() - Date.now();
+  const days = Math.round(ms / 86400000);
+  if (days <= 0) return "aujourd'hui";
+  if (days === 1) return 'demain';
+  if (days < 30) return `dans ${days} j`;
+  if (days < 365) return `dans ${Math.round(days / 30)} mois`;
+  return `dans ${Math.round(days / 365)} an${days >= 730 ? 's' : ''}`;
+};
 
 export default function Study() {
   const { deckId } = useParams();
@@ -13,20 +30,45 @@ export default function Study() {
   const [index, setIndex] = useState(0);
   const [flipped, setFlipped] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const [completed, setCompleted] = useState(false);
   const [showAddCard, setShowAddCard] = useState(false);
   const [newCard, setNewCard] = useState({ front: '', back: '' });
   const [addingCard, setAddingCard] = useState(false);
+  // SM-2 — feedback temporaire après le grade (next review date) + verrou pendant l'API
+  const [grading, setGrading] = useState(false);
+  const [lastGrade, setLastGrade] = useState(null); // { label, nextReview }
+  // Stats de la session courante (utile dans l'écran "terminé")
+  const [sessionStats, setSessionStats] = useState({ again: 0, good: 0, easy: 0 });
 
   useEffect(() => {
-    Promise.all([
-      api.get(`/decks/${deckId}`),
-      api.get(`/decks/${deckId}/cards`),
-    ]).then(([deckRes, cardsRes]) => {
-      setDeck(deckRes.data);
-      setCards(cardsRes.data);
-      setLoading(false);
-    });
+    let cancelled = false;
+    setLoading(true);
+    setError('');
+    (async () => {
+      try {
+        const [deckRes, cardsRes] = await Promise.all([
+          api.get(`/decks/${deckId}`),
+          api.get(`/decks/${deckId}/cards`),
+        ]);
+        if (cancelled) return;
+        setDeck(deckRes.data);
+        setCards(cardsRes.data);
+      } catch (err) {
+        if (cancelled) return;
+        const status = err.response?.status;
+        if (status === 404) {
+          setError("Ce deck n'existe pas (ou plus). Il a peut-être été supprimé.");
+        } else if (status === 403) {
+          setError("Tu n'as pas accès à ce deck.");
+        } else {
+          setError(err.response?.data?.message || 'Impossible de charger ce deck. Réessaie dans un instant.');
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
   }, [deckId]);
 
   const goTo = useCallback((newIndex) => {
@@ -36,6 +78,7 @@ export default function Study() {
       setIndex(newIndex);
       setFlipped(false);
       setCompleted(false);
+      setLastGrade(null);
     }
   }, [cards.length]);
 
@@ -43,7 +86,39 @@ export default function Study() {
     setIndex(0);
     setFlipped(false);
     setCompleted(false);
+    setLastGrade(null);
+    setSessionStats({ again: 0, good: 0, easy: 0 });
   }, []);
+
+  // SM-2 — grader la carte courante puis avancer
+  const gradeAndNext = useCallback(async (label) => {
+    if (grading || !cards[index]) return;
+    const quality = SM2_QUALITY[label];
+    setGrading(true);
+    try {
+      const { data } = await api.post(`/decks/${deckId}/cards/${cards[index]._id}/grade`, { quality });
+      setLastGrade({ label, nextReview: data.nextReview });
+      setSessionStats((s) => ({ ...s, [label]: (s[label] || 0) + 1 }));
+      // Mettre à jour la carte localement (on la garde dans l'array, mais avec ses nouvelles dates)
+      setCards((prev) => prev.map((c, i) => i === index
+        ? { ...c, ...data }
+        : c));
+      // Avancer après un court délai pour laisser voir le feedback
+      setTimeout(() => {
+        if (index + 1 >= cards.length) setCompleted(true);
+        else {
+          setIndex((i) => i + 1);
+          setFlipped(false);
+          setLastGrade(null);
+        }
+      }, 600);
+    } catch (err) {
+      console.error('[grade]', err.response?.data?.message || err.message);
+      setLastGrade({ label, error: true });
+    } finally {
+      setGrading(false);
+    }
+  }, [grading, cards, index, deckId]);
 
   const handleAddCard = async (e) => {
     e.preventDefault();
@@ -70,26 +145,54 @@ export default function Study() {
     setCompleted(false);
   }, [cards]);
 
-  // Keyboard support
+  // Keyboard support — flèches pour naviguer, espace pour retourner.
+  // Une fois la carte retournée, raccourcis SM-2 : 1=Encore, 2=Bien, 3=Facile (style Anki)
   useEffect(() => {
     const handleKeyDown = (e) => {
+      // Ignorer si l'utilisateur tape dans un input/textarea (formulaire ajout carte)
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+
       if (e.key === 'ArrowLeft') {
         goTo(index - 1);
-      } else if (e.key === 'ArrowRight') {
-        goTo(index + 1);
       } else if (e.key === ' ') {
         e.preventDefault();
         setFlipped((f) => !f);
+      } else if (flipped && !grading) {
+        if (e.key === '1') gradeAndNext('again');
+        else if (e.key === '2') gradeAndNext('good');
+        else if (e.key === '3') gradeAndNext('easy');
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [index, goTo]);
+  }, [index, goTo, flipped, grading, gradeAndNext]);
 
   if (loading) {
     return (
       <Layout title="Étudier">
         <p className="text-small">Chargement...</p>
+      </Layout>
+    );
+  }
+
+  if (error) {
+    return (
+      <Layout title="Étudier">
+        <Breadcrumb items={[
+          { label: 'Accueil', to: '/' },
+          { label: 'Mes decks', to: '/decks' },
+          { label: 'Erreur' },
+        ]} />
+        <div className="empty-state">
+          <X size={32} className="empty-state-icon" />
+          <p className="empty-state-title">Impossible de charger ce deck</p>
+          <p className="empty-state-desc">{error}</p>
+          <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+            <button onClick={() => navigate('/decks')} className="btn btn-primary btn-sm">
+              <ArrowLeft size={15} /> Retour aux decks
+            </button>
+          </div>
+        </div>
       </Layout>
     );
   }
@@ -154,9 +257,25 @@ export default function Study() {
       {completed ? (
         <div className="celebrate" style={{ textAlign: 'center', padding: 60 }}>
           <Award size={48} color="var(--color-primary)" />
-          <h2 style={{ marginTop: 16, marginBottom: 8 }}>Félicitations !</h2>
-          <p className="text-small" style={{ marginBottom: 24 }}>
-            Vous avez terminé toutes les {cards.length} cartes du deck.
+          <h2 style={{ marginTop: 16, marginBottom: 8 }}>Session terminée !</h2>
+          <p className="text-small" style={{ marginBottom: 16 }}>
+            Tu as révisé {cards.length} carte{cards.length > 1 ? 's' : ''} de ce deck.
+          </p>
+          {(sessionStats.again + sessionStats.good + sessionStats.easy) > 0 && (
+            <div style={{ display: 'flex', justifyContent: 'center', gap: 16, marginBottom: 24, flexWrap: 'wrap' }}>
+              <span style={{ background: '#FEE2E2', color: '#B91C1C', padding: '6px 14px', borderRadius: 999, fontSize: 13, fontWeight: 600 }}>
+                <Repeat size={13} style={{ verticalAlign: -2, marginRight: 4 }} /> {sessionStats.again} encore
+              </span>
+              <span style={{ background: '#DBEAFE', color: '#1B4F72', padding: '6px 14px', borderRadius: 999, fontSize: 13, fontWeight: 600 }}>
+                <ThumbsUp size={13} style={{ verticalAlign: -2, marginRight: 4 }} /> {sessionStats.good} bien
+              </span>
+              <span style={{ background: '#DCFCE7', color: '#166534', padding: '6px 14px', borderRadius: 999, fontSize: 13, fontWeight: 600 }}>
+                <Zap size={13} style={{ verticalAlign: -2, marginRight: 4 }} /> {sessionStats.easy} facile
+              </span>
+            </div>
+          )}
+          <p className="text-small" style={{ marginBottom: 24, fontStyle: 'italic', opacity: 0.7 }}>
+            La prochaine revue de chaque carte est calculée automatiquement (algorithme SM-2, Wozniak 1990).
           </p>
           <div style={{ display: 'flex', justifyContent: 'center', gap: 12 }}>
             <button onClick={restart} className="btn btn-primary btn-sm">
@@ -232,34 +351,83 @@ export default function Study() {
             </div>
           </div>
 
-          {/* Navigation controls */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, marginTop: 24 }}>
-            <button
-              onClick={() => goTo(index - 1)}
-              disabled={index === 0}
-              className="btn btn-secondary btn-sm"
-            >
-              <ChevronLeft size={15} /> Précédent
-            </button>
-            <button
-              onClick={() => setFlipped((f) => !f)}
-              className="btn btn-ghost btn-sm"
-              title="Retourner la carte"
-            >
-              <RotateCcw size={15} /> Retourner
-            </button>
-            <button
-              onClick={() => goTo(index + 1)}
-              className="btn btn-primary btn-sm"
-            >
-              Suivant <ChevronRight size={15} />
-            </button>
-          </div>
-
-          {/* Keyboard hint */}
-          <p className="text-small" style={{ textAlign: 'center', marginTop: 16, opacity: 0.5 }}>
-            ← → pour naviguer &middot; Espace pour retourner
-          </p>
+          {/* SM-2 grading controls (visibles uniquement quand la carte est retournée) */}
+          {flipped ? (
+            <>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, marginTop: 24, flexWrap: 'wrap' }}>
+                <button
+                  onClick={() => goTo(index - 1)}
+                  disabled={index === 0 || grading}
+                  className="btn btn-ghost btn-sm"
+                  title="Carte précédente (sans noter)"
+                >
+                  <ChevronLeft size={15} />
+                </button>
+                <button
+                  onClick={() => gradeAndNext('again')}
+                  disabled={grading}
+                  className="btn btn-sm"
+                  style={{ background: '#FEE2E2', color: '#B91C1C', border: '1px solid #FCA5A5', display: 'flex', alignItems: 'center', gap: 6, minWidth: 110, justifyContent: 'center' }}
+                  title="Quality 1 — Reset, retour demain (raccourci : 1)"
+                >
+                  <Repeat size={15} /> Encore
+                </button>
+                <button
+                  onClick={() => gradeAndNext('good')}
+                  disabled={grading}
+                  className="btn btn-sm"
+                  style={{ background: '#1B4F72', color: 'white', border: 'none', display: 'flex', alignItems: 'center', gap: 6, minWidth: 110, justifyContent: 'center' }}
+                  title="Quality 4 — Intervalle ×easeFactor (raccourci : 2)"
+                >
+                  <ThumbsUp size={15} /> Bien
+                </button>
+                <button
+                  onClick={() => gradeAndNext('easy')}
+                  disabled={grading}
+                  className="btn btn-sm"
+                  style={{ background: '#DCFCE7', color: '#166534', border: '1px solid #86EFAC', display: 'flex', alignItems: 'center', gap: 6, minWidth: 110, justifyContent: 'center' }}
+                  title="Quality 5 — Bonus easeFactor (raccourci : 3)"
+                >
+                  <Zap size={15} /> Facile
+                </button>
+              </div>
+              {lastGrade?.nextReview && (
+                <p className="text-small" style={{ textAlign: 'center', marginTop: 12, color: '#10B981' }}>
+                  ✓ Noté · prochaine revue {fmtNextReview(lastGrade.nextReview)}
+                </p>
+              )}
+              {lastGrade?.error && (
+                <p className="text-small" style={{ textAlign: 'center', marginTop: 12, color: '#DC2626' }}>
+                  Erreur d'enregistrement — passe à la suivante manuellement.
+                </p>
+              )}
+              <p className="text-small" style={{ textAlign: 'center', marginTop: 8, opacity: 0.5 }}>
+                Raccourcis : 1 = Encore · 2 = Bien · 3 = Facile · ← retour
+              </p>
+            </>
+          ) : (
+            <>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, marginTop: 24 }}>
+                <button
+                  onClick={() => goTo(index - 1)}
+                  disabled={index === 0}
+                  className="btn btn-secondary btn-sm"
+                >
+                  <ChevronLeft size={15} /> Précédent
+                </button>
+                <button
+                  onClick={() => setFlipped(true)}
+                  className="btn btn-primary btn-sm"
+                  title="Voir la réponse pour t'auto-évaluer (raccourci : Espace)"
+                >
+                  <RotateCcw size={15} /> Voir la réponse
+                </button>
+              </div>
+              <p className="text-small" style={{ textAlign: 'center', marginTop: 16, opacity: 0.5 }}>
+                Espace pour retourner · ← carte précédente
+              </p>
+            </>
+          )}
         </>
       )}
     </Layout>
