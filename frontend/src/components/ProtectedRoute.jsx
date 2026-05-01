@@ -34,6 +34,12 @@ export default function ProtectedRoute({ roles }) {
   }
 
   if (!user) {
+    // Si l'utilisateur tente d'accéder à la racine, l'envoyer sur la landing
+    // page (vitrine publique). Sinon vers /login en gardant l'URL d'origine
+    // pour redirection post-connexion.
+    if (location.pathname === '/') {
+      return <Navigate to="/welcome" replace />;
+    }
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
