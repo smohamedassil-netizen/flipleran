@@ -87,8 +87,9 @@ const NAV = {
     {
       section: 'Mon enseignement',
       items: [
-        { label: 'Tableau de bord', icon: LayoutDashboard, to: '/professor/dashboard' },
-        { label: 'Suivi étudiants', icon: BarChart3,       to: '/professor/tracking' },
+        { label: 'Tableau de bord',     icon: LayoutDashboard, to: '/professor/dashboard' },
+        { label: 'Préparation classe',  icon: BarChart2,       to: '/professor/class-readiness', badge: 'CAI' },
+        { label: 'Suivi étudiants',     icon: BarChart3,       to: '/professor/tracking' },
         { label: 'Mes cours',       icon: BookOpen,        to: '/courses' },
         { label: 'Ressources',      icon: FolderOpen,      to: '/resources' },
         { label: 'Projets',         icon: FolderKanban,    to: '/projects' },

@@ -51,6 +51,7 @@ import CesiMethodGuide       from './pages/CesiMethodGuide.jsx';
 import AutoPrepReview        from './pages/AutoPrepReview.jsx';
 import MyTutor               from './pages/MyTutor.jsx';
 import MyJourney             from './pages/MyJourney.jsx';
+import ClassReadiness, { ClassReadinessHub } from './pages/ClassReadiness.jsx';
 
 /* ── Pages d'erreur ────────────────────────────────────────────────────────── */
 function ErrorPage({ code, title, description }) {
@@ -161,6 +162,8 @@ export default function App() {
             <Route path="/prosits/new"                          element={<PrositCreate />} />
             <Route path="/professor/tracking"                   element={<ProfessorTracking />} />
             <Route path="/professor/tracking/:courseId"         element={<ProfessorTracking />} />
+            <Route path="/professor/class-readiness"            element={<ClassReadinessHub />} />
+            <Route path="/professor/class-readiness/:courseId"  element={<ClassReadiness />} />
           </Route>
 
           {/* Admin only */}
