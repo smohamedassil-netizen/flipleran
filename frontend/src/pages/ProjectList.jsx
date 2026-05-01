@@ -76,9 +76,12 @@ function ProjectCard({ project, onClick }) {
         }}>
           {statusCfg.label}
         </span>
-        {linkedModules.slice(0, 2).map((m) => (
-          <span key={m._id} className="badge" style={{ fontSize: 11 }}>{m.titre}</span>
-        ))}
+        {linkedModules
+          .filter((m) => m && typeof m === 'object' && m._id && m.titre)
+          .slice(0, 2)
+          .map((m) => (
+            <span key={m._id} className="badge" style={{ fontSize: 11 }}>{m.titre}</span>
+          ))}
         {linkedModules.length > 2 && (
           <span className="badge" style={{ fontSize: 11 }}>+{linkedModules.length - 2}</span>
         )}

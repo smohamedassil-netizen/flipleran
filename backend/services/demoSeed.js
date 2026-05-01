@@ -800,7 +800,7 @@ const PROJECT_DEFS = [
   // PROJET COLLABORATIF MULTI-MODULES
   {
     filiere: null, promotion: 'L3',
-    titre: '[COLLABORATIF] Startup Tech+Management+Finance — FinTech algérienne',
+    titre: 'Startup Tech+Management+Finance — FinTech algérienne',
     description: 'Projet transverse 3 filières : ISIL code le produit, Management fait le business, Finance le plan financier.',
     isCollaborative: true,
     multiModulesTitres: [

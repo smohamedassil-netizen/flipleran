@@ -222,7 +222,7 @@ export default function WatchVideo() {
               color: 'var(--color-text)',
             }}
           >
-            Videos du cours
+            Vidéos du cours
           </div>
           <div style={{ maxHeight: 400, overflowY: 'auto' }}>
             {videos.map((v, i) => {

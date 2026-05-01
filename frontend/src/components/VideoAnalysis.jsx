@@ -109,7 +109,10 @@ export default function VideoAnalysis({ videoId, userRole }) {
   const [activeTab, setActiveTab] = useState('summary');
   const [quota, setQuota]       = useState(null);  // { used, limit, resetAt, premiumActive }
 
-  const canAnalyze = true; // tous les utilisateurs peuvent lancer l'analyse
+  // canAnalyze : qui peut lancer une analyse initiale (tous les utilisateurs authentifiés)
+  // canDelete  : qui peut SUPPRIMER l'analyse pour la relancer (professeurs et admins uniquement)
+  // Le backend protège DELETE /videos/:id/analysis avec requireRole('professeur', 'admin').
+  const canAnalyze = true;
   const canDelete = userRole === 'professeur' || userRole === 'admin';
 
   // Charger les quotas IA (mis à jour après chaque analyse lancée)
@@ -350,7 +353,7 @@ export default function VideoAnalysis({ videoId, userRole }) {
             <AlertCircle size={14} />
             <span style={{ flex: 1 }}>{error}</span>
           </div>
-          {canAnalyze && (
+          {canDelete && (
             <button
               onClick={handleReanalyze}
               className="btn btn-primary"
