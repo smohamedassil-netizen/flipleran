@@ -133,11 +133,18 @@ export const getProjects = async (req, res) => {
         ],
       };
     } else {
-      // Prof/Admin : projets créés ou auxquels ils participent
+      // Prof : projets qu'il a créés OU projets associés à un de ses cours.
+      // (Un projet créé par un étudiant et rattaché à un cours du prof doit être
+      // visible par le prof pour qu'il puisse l'évaluer.)
+      const Course = (await import('../models/Course.js')).default;
+      const myCourses = await Course.find({ professorId: req.user.id }).select('_id');
+      const myCourseIds = myCourses.map(c => c._id);
+
       filter = {
         $or: [
           { createdBy: req.user.id },
-          { 'groupes.membres.userId': req.user.id },
+          { courseId: { $in: myCourseIds } },
+          { modules: { $in: myCourseIds } },
         ],
       };
       if (req.user.role === 'admin') filter = {};
