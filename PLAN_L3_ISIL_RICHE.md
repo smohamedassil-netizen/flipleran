@@ -30,19 +30,22 @@ Tu peux relancer plusieurs fois sans risque (idempotent).
 
 ### Les 10 nouveaux étudiants (mot de passe : `test1234`)
 
-#### Semestre 5 (1er semestre L3)
-1. `yacine.boudjedra.l3@fliplearn.dz` — Yacine Boudjedra
-2. `lina.benkhelifa.l3@fliplearn.dz` — Lina Benkhelifa
-3. `mohamed.larbi.l3@fliplearn.dz` — Mohamed Larbi
-4. `sarah.bouzid.l3@fliplearn.dz` — Sarah Bouzid
-5. `adel.bouhabel.l3@fliplearn.dz` — Adel Bouhabel
+**Logique LMD** : tous ces étudiants sont dans la **même cohorte L3**. Ils ont fait S5 (sept→jan 2025-2026) et sont actuellement en **S6** (fév→juin 2026, semestre courant). Ils ont accès aux modules S5 (en révision) et S6 (en cours). En L3, on n'a quasiment pas de nouvelles inscriptions — ce sont les étudiants qui montent de L2.
 
-#### Semestre 6 (2e semestre L3)
-6. `imane.rahmoun.l3@fliplearn.dz` — Imane Rahmoun
-7. `karim.saidi.l3@fliplearn.dz` — Karim Saidi
-8. `hanae.mokhtari.l3@fliplearn.dz` — Hanae Mokhtari
-9. `anis.bouchama.l3@fliplearn.dz` — Anis Bouchama
-10. `selma.djebbar.l3@fliplearn.dz` — Selma Djebbar
+Tous les 10 étudiants sont marqués `semestre = 'S6'` :
+
+| # | Email | Nom |
+|---|---|---|
+| 1 | `yacine.boudjedra.l3@fliplearn.dz` | Yacine Boudjedra |
+| 2 | `lina.benkhelifa.l3@fliplearn.dz` | Lina Benkhelifa |
+| 3 | `mohamed.larbi.l3@fliplearn.dz` | Mohamed Larbi |
+| 4 | `sarah.bouzid.l3@fliplearn.dz` | Sarah Bouzid |
+| 5 | `adel.bouhabel.l3@fliplearn.dz` | Adel Bouhabel |
+| 6 | `imane.rahmoun.l3@fliplearn.dz` | Imane Rahmoun |
+| 7 | `karim.saidi.l3@fliplearn.dz` | Karim Saidi |
+| 8 | `hanae.mokhtari.l3@fliplearn.dz` | Hanae Mokhtari |
+| 9 | `anis.bouchama.l3@fliplearn.dz` | Anis Bouchama |
+| 10 | `selma.djebbar.l3@fliplearn.dz` | Selma Djebbar |
 
 ### Les 8 modules
 

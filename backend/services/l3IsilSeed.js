@@ -3,10 +3,18 @@
  *
  * Crée :
  *   - 3 nouveaux professeurs ISIL L3 (Tarek, Sami, Yasmine) en plus d'Omar
- *   - 10 nouveaux étudiants ISIL L3 (5 en S5, 5 en S6) — Assil reste seedé séparément
+ *   - 10 nouveaux étudiants ISIL L3 (TOUS en S6 — même cohorte) — Assil aussi
  *   - 8 modules (cours) couvrant le programme réel d'une L3 ISIL
- *     (4 modules en S5 + 4 modules en S6)
+ *     (4 modules en S5 = 1er semestre, 4 modules en S6 = 2e semestre)
  *   - Assigne chaque module à un prof (parfois 1 prof = 2 modules)
+ *
+ * Logique LMD française :
+ *   L1 = S1+S2, L2 = S3+S4, L3 = S5+S6 (les mêmes étudiants enchaînent les
+ *   2 semestres dans la même année universitaire). Les rares nouvelles
+ *   inscriptions concernent surtout L1 ; en L3 c'est la cohorte de L2.
+ *   Les étudiants seedés sont marqués 'S6' car la session simulée est en
+ *   mai 2026 (fin d'année L3, semestre courant = S6). Ils ont accès aux
+ *   modules S5 (en révision) et S6 (en cours).
  *
  * Idempotent : skip si l'email/cours existe déjà. Sûr à relancer.
  */
@@ -35,15 +43,16 @@ const NEW_PROFS = [
   },
 ];
 
-// ─── 10 étudiants ISIL L3 (5 en S5, 5 en S6) ──────────────────────────────
+// ─── 10 étudiants ISIL L3 — TOUS en S6 (même cohorte, fin d'année 2026) ──
+// La logique LMD française veut que les MÊMES étudiants enchaînent S5 (sept→jan)
+// puis S6 (fév→juin) dans la même année. On simule ici la fin de leur L3 :
+// semestre courant = S6, ils ont déjà étudié les modules S5 (révision possible).
 const NEW_STUDENTS = [
-  // Semestre 5 (1er sem L3)
-  { email: 'yacine.boudjedra.l3@fliplearn.dz',  nom: 'Boudjedra',  prenom: 'Yacine',  semestre: 'S5' },
-  { email: 'lina.benkhelifa.l3@fliplearn.dz',   nom: 'Benkhelifa', prenom: 'Lina',    semestre: 'S5' },
-  { email: 'mohamed.larbi.l3@fliplearn.dz',     nom: 'Larbi',      prenom: 'Mohamed', semestre: 'S5' },
-  { email: 'sarah.bouzid.l3@fliplearn.dz',      nom: 'Bouzid',     prenom: 'Sarah',   semestre: 'S5' },
-  { email: 'adel.bouhabel.l3@fliplearn.dz',     nom: 'Bouhabel',   prenom: 'Adel',    semestre: 'S5' },
-  // Semestre 6 (2e sem L3)
+  { email: 'yacine.boudjedra.l3@fliplearn.dz',  nom: 'Boudjedra',  prenom: 'Yacine',  semestre: 'S6' },
+  { email: 'lina.benkhelifa.l3@fliplearn.dz',   nom: 'Benkhelifa', prenom: 'Lina',    semestre: 'S6' },
+  { email: 'mohamed.larbi.l3@fliplearn.dz',     nom: 'Larbi',      prenom: 'Mohamed', semestre: 'S6' },
+  { email: 'sarah.bouzid.l3@fliplearn.dz',      nom: 'Bouzid',     prenom: 'Sarah',   semestre: 'S6' },
+  { email: 'adel.bouhabel.l3@fliplearn.dz',     nom: 'Bouhabel',   prenom: 'Adel',    semestre: 'S6' },
   { email: 'imane.rahmoun.l3@fliplearn.dz',     nom: 'Rahmoun',    prenom: 'Imane',   semestre: 'S6' },
   { email: 'karim.saidi.l3@fliplearn.dz',       nom: 'Saidi',      prenom: 'Karim',   semestre: 'S6' },
   { email: 'hanae.mokhtari.l3@fliplearn.dz',    nom: 'Mokhtari',   prenom: 'Hanae',   semestre: 'S6' },
@@ -127,7 +136,12 @@ async function upsertUser(payload) {
     if (existing.isActive === false)       { existing.isActive = true; changed = true; }
     if (!existing.filiere && payload.filiere)   { existing.filiere = payload.filiere; changed = true; }
     if (!existing.promotion && payload.promotion) { existing.promotion = payload.promotion; changed = true; }
-    if (!existing.semestre && payload.semestre) { existing.semestre = payload.semestre; changed = true; }
+    // Le semestre fait foi du seed (re-sync sur re-exécution) car il évolue
+    // dans le temps : un étudiant L3 passe S5 → S6 dans la même année.
+    if (payload.semestre && existing.semestre !== payload.semestre) {
+      existing.semestre = payload.semestre;
+      changed = true;
+    }
     if (changed) await existing.save();
     return { user: existing, created: false };
   }
