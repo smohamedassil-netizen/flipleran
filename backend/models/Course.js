@@ -31,6 +31,10 @@ const courseSchema = new mongoose.Schema(
     professorId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
     filiere:     { type: String, required: true },
     promotion:   { type: String, required: true },
+    // Semestre académique du module (ex: 'S5', 'S6'). Optionnel : permet de
+    // découper la promotion par semestre (calque sur l'organisation universitaire
+    // française : L1 = S1+S2, L2 = S3+S4, L3 = S5+S6).
+    semestre:    { type: String, default: '', enum: ['', 'S1', 'S2', 'S3', 'S4', 'S5', 'S6'] },
     isActive:    { type: Boolean, default: true },
     aiPersona:   { type: aiPersonaSchema, default: () => ({}) },
 

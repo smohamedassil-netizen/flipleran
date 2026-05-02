@@ -6,6 +6,7 @@ import {
   getCourses, createCourse, updateCourse, deleteCourse,
   getStats, getProfessors,
   getRecentMessages, getActivity, createUser,
+  seedL3IsilEndpoint,
 } from '../controllers/adminController.js';
 
 const router = express.Router();
@@ -31,5 +32,8 @@ router.get('/courses',        getCourses);
 router.post('/courses',       createCourse);
 router.put('/courses/:id',    updateCourse);
 router.delete('/courses/:id', deleteCourse);
+
+// Seed L3 ISIL (one-shot, idempotent) — crée profs, étudiants et modules de démo
+router.post('/seed/l3-isil',  seedL3IsilEndpoint);
 
 export default router;

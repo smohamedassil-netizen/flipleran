@@ -198,6 +198,25 @@ export const getActivity = async (req, res) => {
    CREATE USER (admin)
 ═══════════════════════════════════════════════════════════════════════════ */
 
+/* POST /api/admin/seed/l3-isil — déclenche le seed riche L3 ISIL (admin only).
+   Crée 3 profs, 10 étudiants, 8 modules avec semestre. Idempotent. */
+export const seedL3IsilEndpoint = async (req, res) => {
+  try {
+    const { seedL3Isil } = await import('../services/l3IsilSeed.js');
+    const result = await seedL3Isil();
+    res.json({
+      message: 'Seed L3 ISIL terminé.',
+      summary: result.summary,
+      profs:    result.profs,
+      students: result.students,
+      courses:  result.courses,
+    });
+  } catch (err) {
+    console.error('[seedL3Isil]', err);
+    res.status(500).json({ message: err.message });
+  }
+};
+
 /* POST /api/admin/users */
 export const createUser = async (req, res) => {
   try {

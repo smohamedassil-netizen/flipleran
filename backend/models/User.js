@@ -10,6 +10,9 @@ const userSchema = new mongoose.Schema(
     role:      { type: String, enum: ['etudiant', 'professeur', 'admin'], default: 'etudiant' },
     filiere:   { type: String, default: '' },
     promotion: { type: String, default: '' },
+    // Semestre académique courant pour les étudiants (ex: 'S5' pour un L3 1er sem).
+    // Optionnel : permet l'affichage des cours du semestre en cours uniquement.
+    semestre:  { type: String, default: '', enum: ['', 'S1', 'S2', 'S3', 'S4', 'S5', 'S6'] },
     avatar:    { type: String, default: '' },
     points:    { type: Number, default: 0 },
     badges:    [{ type: mongoose.Schema.Types.ObjectId, ref: 'Badge' }],
