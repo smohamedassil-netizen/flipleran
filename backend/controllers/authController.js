@@ -56,23 +56,39 @@ export const register = async (req, res) => {
     });
 
     // Notifier les admins qu'un nouveau compte attend validation
+    let notifiedAdmins = 0;
     try {
       const io = req.app.get('io');
-      const admins = await User.find({ role: 'admin', status: 'active', isActive: { $ne: false } }).select('_id');
+      const admins = await User.find({ role: 'admin', status: 'active', isActive: { $ne: false } }).select('_id email prenom');
+      const filiereLabel = filiere ? ` — ${filiere}${promotion ? ` ${promotion}` : ''}` : '';
       for (const a of admins) {
         await pushNotification(io, {
           userId: a._id,
           type: 'warning',
           priority: 'high',
           title: '👤 Nouvelle inscription',
-          message: `${prenom} ${nom} (${assignedRole}) demande à rejoindre FlipLearn.`,
+          message: `${prenom} ${nom} (${assignedRole}${filiereLabel}) demande à rejoindre FlipLearn.`,
           link: '/admin?section=pending',
-          relatedType: 'course',
+          relatedType: 'auth',
           relatedId: user._id,
         });
+        notifiedAdmins++;
       }
+      console.log(`[register] ${prenom} ${nom} <${email}> — ${notifiedAdmins} admin(s) notifié(s)`);
     } catch (err) {
       console.error('[register] notif admins:', err.message);
+    }
+
+    // Email de confirmation à l'utilisateur (réception inscription)
+    try {
+      const { sendNotificationEmail } = await import('../services/emailService.js');
+      sendNotificationEmail(
+        user.email,
+        'Inscription bien reçue',
+        `Bonjour ${prenom},<br><br>Nous avons bien reçu ta demande d'inscription à <strong>FlipLearn</strong>${filiere ? ` en filière <strong>${filiere}${promotion ? ` (${promotion})` : ''}</strong>` : ''}.<br><br>Un administrateur va vérifier tes informations dans les plus brefs délais (généralement sous 24h). Tu recevras un nouvel email dès que ton compte sera activé.<br><br>À très vite sur FlipLearn !`
+      );
+    } catch (err) {
+      console.error('[register] email confirmation:', err.message);
     }
 
     // PAS de token ici — l'utilisateur doit attendre la validation
@@ -82,6 +98,7 @@ export const register = async (req, res) => {
       email: user.email,
     });
   } catch (err) {
+    console.error('[register] error:', err);
     res.status(500).json({ message: err.message });
   }
 };

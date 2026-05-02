@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
+import api from '../utils/api.js';
 import Logo from '../components/Logo.jsx';
 import {
   User, Mail, Lock, Eye, EyeOff, GraduationCap, BookOpen, AlertCircle,
   ChevronDown, Clock, CheckCircle, ShieldCheck, Mail as MailIcon, ArrowRight,
+  XCircle, RefreshCw,
 } from 'lucide-react';
 
 const ROLES = [
@@ -30,7 +32,9 @@ export default function Register() {
   const [error, setError] = useState('');
   const [fieldErrors, setFieldErrors] = useState({});
   const [loading, setLoading] = useState(false);
+  const [serverWaking, setServerWaking] = useState(false);
   const [submitted, setSubmitted] = useState(null); // { email } après succès
+  const [statusCheck, setStatusCheck] = useState(null); // { status, rejectionReason } après vérif
 
   const { register } = useAuth();
   const navigate = useNavigate();
@@ -64,14 +68,35 @@ export default function Register() {
     setError('');
     if (!validateStep2()) return;
     setLoading(true);
+    // Affiche un message "réveil du serveur" si la requête traîne (Render free tier dort après 15 min)
+    const wakeTimer = setTimeout(() => setServerWaking(true), 4000);
     try {
       const { confirm, ...payload } = form;
       const data = await register(payload);
       setSubmitted({ email: data.email || form.email, message: data.message });
     } catch (err) {
-      setError(err.response?.data?.message ?? 'Une erreur est survenue.');
+      // Cas timeout / serveur injoignable → message dédié
+      if (err.code === 'ECONNABORTED' || !err.response) {
+        setError("Le serveur met du temps à répondre. Réessaye dans quelques secondes (le serveur peut être en cours de réveil).");
+      } else {
+        setError(err.response?.data?.message ?? 'Une erreur est survenue.');
+      }
     } finally {
+      clearTimeout(wakeTimer);
+      setServerWaking(false);
       setLoading(false);
+    }
+  };
+
+  // Vérifie le statut d'un compte (utilisé sur l'écran de confirmation)
+  const refreshStatus = async () => {
+    if (!submitted?.email) return;
+    setStatusCheck({ loading: true });
+    try {
+      const { data } = await api.get('/auth/status', { params: { email: submitted.email } });
+      setStatusCheck(data); // { exists, status, rejectionReason }
+    } catch {
+      setStatusCheck({ error: true });
     }
   };
 
@@ -81,37 +106,97 @@ export default function Register() {
 
   /* ─── Écran de confirmation post-inscription ─────────────────────────── */
   if (submitted) {
+    // Détermine la couleur/icône selon le statut renvoyé par checkStatus
+    const isActive   = statusCheck?.status === 'active';
+    const isRejected = statusCheck?.status === 'rejected';
+    const headerColor = isActive ? '#059669' : isRejected ? '#DC2626' : '#D97706';
+    const headerBg = isActive
+      ? 'linear-gradient(135deg, #D1FAE5, #A7F3D0)'
+      : isRejected
+        ? 'linear-gradient(135deg, #FEE2E2, #FCA5A5)'
+        : 'linear-gradient(135deg, #FEF3C7, #FDE68A)';
+    const HeaderIcon = isActive ? CheckCircle : isRejected ? XCircle : Clock;
+    const headerTitle = isActive
+      ? '🎉 Compte activé !'
+      : isRejected
+        ? 'Inscription refusée'
+        : 'Compte en attente de validation';
+
     return (
       <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(135deg, #EFF6FF 0%, #F0FDF4 100%)', padding: 16 }}>
         <div style={{ width: '100%', maxWidth: 480, background: 'white', borderRadius: 20, padding: '40px 36px', boxShadow: '0 20px 50px rgba(0,0,0,0.08)', textAlign: 'center' }}>
-          <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 80, height: 80, borderRadius: '50%', background: 'linear-gradient(135deg, #FEF3C7, #FDE68A)', marginBottom: 18, animation: 'result-pop 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) both' }}>
-            <Clock size={40} color="#D97706" />
+          <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 80, height: 80, borderRadius: '50%', background: headerBg, marginBottom: 18, animation: 'result-pop 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) both' }}>
+            <HeaderIcon size={40} color={headerColor} />
           </div>
           <h1 style={{ fontSize: 22, fontWeight: 800, color: '#1B4F72', margin: 0, marginBottom: 8 }}>
-            Compte en attente de validation
+            {headerTitle}
           </h1>
           <p style={{ color: '#64748B', margin: 0, marginBottom: 20, lineHeight: 1.5 }}>
-            {submitted.message || "Ton inscription a bien été enregistrée. Un administrateur va vérifier ton compte avant que tu puisses te connecter."}
+            {isActive
+              ? `Ton compte FlipLearn est maintenant activé. Tu peux te connecter.`
+              : isRejected
+                ? (statusCheck.rejectionReason
+                    ? `Ton inscription a été refusée : ${statusCheck.rejectionReason}`
+                    : "Ton inscription a été refusée par un administrateur.")
+                : (submitted.message || "Ton inscription a bien été enregistrée. Un administrateur va vérifier ton compte avant que tu puisses te connecter.")}
           </p>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 24, padding: 14, background: '#F8FAFC', borderRadius: 12, textAlign: 'left' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 13, color: '#475569' }}>
-              <MailIcon size={14} color="#1B4F72" />
-              <span>Email enregistré : <strong>{submitted.email}</strong></span>
+          {!isActive && !isRejected && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 20, padding: 14, background: '#F8FAFC', borderRadius: 12, textAlign: 'left' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 13, color: '#475569' }}>
+                <MailIcon size={14} color="#1B4F72" />
+                <span>Email enregistré : <strong>{submitted.email}</strong></span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 13, color: '#475569' }}>
+                <ShieldCheck size={14} color="#059669" />
+                <span>Un admin FlipLearn vérifie ta spécialité et ton niveau.</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 13, color: '#475569' }}>
+                <Clock size={14} color="#D97706" />
+                <span>Délai habituel : <strong>moins de 24h</strong>.</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 13, color: '#475569' }}>
+                <CheckCircle size={14} color="#D97706" />
+                <span>Tu recevras un email dès que ton compte sera activé.</span>
+              </div>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 13, color: '#475569' }}>
-              <ShieldCheck size={14} color="#059669" />
-              <span>Un admin FlipLearn vérifie ta spécialité et ton niveau.</span>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 13, color: '#475569' }}>
-              <CheckCircle size={14} color="#D97706" />
-              <span>Tu recevras un email dès que ton compte sera activé.</span>
-            </div>
-          </div>
+          )}
 
-          <Link to="/login" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '12px 24px', background: 'linear-gradient(135deg, #1B4F72, #2874A6)', color: 'white', textDecoration: 'none', borderRadius: 10, fontWeight: 700, fontSize: 14, boxShadow: '0 4px 14px rgba(27,79,114,.3)' }}>
-            Retour à la connexion <ArrowRight size={14} />
-          </Link>
+          {/* Bouton de vérification du statut (n'apparaît pas si déjà actif) */}
+          {!isActive && (
+            <button
+              type="button"
+              onClick={refreshStatus}
+              disabled={statusCheck?.loading}
+              style={{
+                display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                padding: '10px 18px',
+                background: 'white',
+                border: '1px solid #CBD5E1',
+                color: '#1B4F72',
+                borderRadius: 10,
+                fontWeight: 600, fontSize: 13,
+                cursor: statusCheck?.loading ? 'wait' : 'pointer',
+                marginBottom: 12,
+                fontFamily: 'inherit',
+              }}
+            >
+              <RefreshCw size={13} style={statusCheck?.loading ? { animation: 'spin 1s linear infinite' } : {}} />
+              {statusCheck?.loading ? 'Vérification…' : 'Vérifier le statut de mon compte'}
+            </button>
+          )}
+
+          {statusCheck?.error && (
+            <p style={{ color: '#DC2626', fontSize: 12, marginBottom: 12 }}>
+              Impossible de vérifier le statut. Réessaye plus tard.
+            </p>
+          )}
+
+          <div>
+            <Link to="/login" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '12px 24px', background: 'linear-gradient(135deg, #1B4F72, #2874A6)', color: 'white', textDecoration: 'none', borderRadius: 10, fontWeight: 700, fontSize: 14, boxShadow: '0 4px 14px rgba(27,79,114,.3)' }}>
+              {isActive ? 'Me connecter' : 'Retour à la connexion'} <ArrowRight size={14} />
+            </Link>
+          </div>
         </div>
       </div>
     );
@@ -279,6 +364,21 @@ export default function Register() {
                   {loading ? 'Inscription...' : "S'inscrire"}
                 </button>
               </div>
+
+              {/* Bandeau de réveil du serveur (Render free tier dort après 15 min d'inactivité) */}
+              {serverWaking && (
+                <div style={{
+                  padding: '10px 14px', borderRadius: 8,
+                  background: 'var(--color-primary-light)',
+                  border: '1px solid var(--color-primary)',
+                  fontSize: 12, color: 'var(--color-primary)',
+                  display: 'flex', alignItems: 'center', gap: 8,
+                  marginTop: 4,
+                }}>
+                  <Clock size={14} />
+                  <span>Réveil du serveur en cours… (jusqu'à 60 secondes pour la 1ʳᵉ inscription)</span>
+                </div>
+              )}
             </div>
           )}
         </form>

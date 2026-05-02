@@ -4,6 +4,35 @@ Historique des modifications par date de session.
 
 ---
 
+## 2 Mai 2026 — Fix flux d'inscription (cold start Render + email confirmation + check status)
+
+Bug remonté : "j'essaie de m'inscrire, aucun message ne s'affiche, et l'admin ne reçoit pas de notification". Cause racine : timeout axios à 15s côté front, alors que le backend Render free tier dort après 15 min d'inactivité — le premier réveil prend 30-60s. La requête timeout, l'erreur n'est pas attrapée correctement, l'utilisateur ne voit rien, et la création de compte n'a même pas lieu côté serveur.
+
+### Backend
+- **`controllers/authController.js`** — `register()` :
+  - Email automatique de confirmation à l'utilisateur via `sendNotificationEmail` (Brevo) : "Inscription bien reçue, validation sous 24h".
+  - Notification admin enrichie : ajoute filière + promotion dans le message (`Marie Dupont (etudiant — ISIL L3) demande à rejoindre`).
+  - Correction `relatedType: 'course'` → `'auth'` (typo qui rendait le lien de notif illisible).
+  - Log explicite du nombre d'admins notifiés (`[register] X admin(s) notifié(s)`) pour diagnostiquer si la notif n'arrive pas.
+  - Log d'erreur sur le catch global (avant : message muet).
+
+### Frontend
+- **`context/AuthContext.jsx`** — `register()` : timeout passé à **60 s** (override du timeout axios global de 15 s) pour absorber le cold start Render.
+- **`pages/Register.jsx`** :
+  - Bandeau **« Réveil du serveur en cours… »** affiché après 4 s d'attente (même UX que `Login.jsx`).
+  - Gestion explicite du timeout / serveur injoignable (`err.code === 'ECONNABORTED' || !err.response`) → message dédié au lieu du générique "Une erreur est survenue".
+  - Écran post-inscription enrichi :
+    - Délai annoncé "moins de 24h" dans la liste d'infos.
+    - Bouton **« Vérifier le statut de mon compte »** qui appelle `GET /auth/status?email=...` (endpoint public déjà existant côté back, mais jusqu'ici non branché).
+    - Si `status: active` → écran vert "🎉 Compte activé" avec bouton "Me connecter".
+    - Si `status: rejected` → écran rouge avec la raison du refus.
+- **`index.css`** : ajout de l'animation `@keyframes spin` (utilisée par l'icône `RefreshCw` pendant la vérification de statut).
+
+### Diagnostic complémentaire
+La query d'admins pour les notifications (`User.find({ role: 'admin', status: 'active' })`) a été vérifiée : l'admin seedé via `usersSeed.js` a bien `status: 'active'`, et la migration `migrateUserStatus()` au démarrage marque `active` les anciens comptes sans champ `status`. Donc côté DB, ce n'était pas la cause.
+
+---
+
 ## 29 Avril 2026 — soir tardif (refonte UX post-revue encadrante)
 
 Refonte UX en réponse à la revue de l'encadrante. 8 corrections en un commit, structurées en trois chantiers : alléger le dashboard prof, fusionner Feedback dans Messages, expliquer Prosit/Projet, durcir le prérequis QCM.

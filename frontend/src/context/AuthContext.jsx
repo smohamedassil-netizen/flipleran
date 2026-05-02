@@ -46,9 +46,11 @@ export const AuthProvider = ({ children }) => {
     return data;
   }, []);
 
-  /* ── register — ne connecte PAS automatiquement, le compte est pending ──── */
+  /* ── register — ne connecte PAS automatiquement, le compte est pending ────
+     Timeout étendu à 60s pour gérer le cold start Render free tier
+     (le backend dort après 15 min d'inactivité, premier réveil ~30-60s). */
   const register = useCallback(async (payload) => {
-    const { data } = await api.post('/auth/register', payload);
+    const { data } = await api.post('/auth/register', payload, { timeout: 60000 });
     return data; // { status: 'pending', email, message }
   }, []);
 
