@@ -8,6 +8,7 @@ import LearningPathTimeline from '../components/LearningPathTimeline.jsx';
 import PedagogicalHeader from '../components/PedagogicalHeader.jsx';
 import HonorBoard from '../components/HonorBoard.jsx';
 import ModuleParcoursPanel from '../components/ModuleParcoursPanel.jsx';
+import ChaptersView from '../components/ChaptersView.jsx';
 import {
   Play, CheckCircle, Clock, Lock, Home,
   BookOpen, AlertCircle, ChevronRight, MessageSquare,
@@ -437,34 +438,12 @@ export default function StudentCourse() {
                 </div>
               )}
 
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
-                <h2 className="text-subtitle">{videos.length} vidéo{videos.length !== 1 ? 's' : ''}</h2>
-              </div>
-
-              {videos.length === 0 ? (
-                <div className="empty-state">
-                  <BookOpen size={32} className="empty-state-icon" />
-                  <p className="empty-state-title">Aucune vidéo dans ce cours</p>
-                  <p className="empty-state-desc">Le professeur n'a pas encore ajouté de vidéos.</p>
-                </div>
-              ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  {videos.map((video, i) => (
-                    <VideoRow
-                      key={video._id}
-                      video={video}
-                      index={i}
-                      isActive={false}
-                      isProfOrAdmin={isProfOrAdmin}
-                      navigate={navigate}
-                      onSelect={(v) => navigate(`/watch/${v._id}`)}
-                      onEdit={handleEditVideo}
-                      onDelete={(v) => setDeleteConfirm(v)}
-                      questionCount={questionCounts[video._id] ?? 0}
-                    />
-                  ))}
-                </div>
-              )}
+              {/* Vue par chapitres (Mastery learning Bloom 1968) — pédagogique */}
+              <ChaptersView
+                courseId={courseId}
+                isProfOrAdmin={isProfOrAdmin}
+                onVideoClick={(v) => navigate(`/watch/${v._id}`)}
+              />
             </>
           )}
         </div>

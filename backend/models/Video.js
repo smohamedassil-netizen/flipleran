@@ -29,8 +29,11 @@ const videoSchema = new mongoose.Schema(
     publicId:     { type: String, default: '' },          // pour suppression Cloudinary
     thumbnailUrl: { type: String, default: '' },
     duration:     { type: Number, default: 0 },           // secondes
-    order:        { type: Number, default: 0 },           // ordre dans le cours
-    chapters:     [chapterSchema],                        // chapitres / parties
+    order:        { type: Number, default: 0 },           // ordre dans le cours/chapitre
+    chapters:     [chapterSchema],                        // markers timestamps (saute dans la timeline)
+    /* Lien optionnel vers le Chapter parent (regroupement pédagogique).
+       Null/absent pour les vidéos non encore migrées (rétrocompat). */
+    chapterId:    { type: mongoose.Schema.Types.ObjectId, ref: 'Chapter', default: null, index: true },
     courseId:     { type: mongoose.Schema.Types.ObjectId, ref: 'Course', required: true },
     createdBy:    { type: mongoose.Schema.Types.ObjectId, ref: 'User',   required: true },
     watchedBy:    [watchedEntrySchema],

@@ -51,6 +51,7 @@ import projectTemplateRoutes from './routes/projectTemplateRoutes.js';
 import gamificationRoutes from './routes/gamificationRoutes.js';
 import journeyRoutes from './routes/journeyRoutes.js';
 import classReadinessRoutes from './routes/classReadinessRoutes.js';
+import chapterRoutes, { chapterStandaloneRouter } from './routes/chapterRoutes.js';
 import { seedDemoContent } from './services/contentSeed.js';
 import { seedDemoData } from './services/demoSeed.js';
 import { seedProsits }  from './services/prositsSeed.js';
@@ -69,6 +70,51 @@ async function migrateUserStatus() {
     }
   } catch (err) {
     console.error('[migration] userStatus:', err.message);
+  }
+}
+
+/**
+ * Migration : pour chaque cours qui a des vidéos sans chapterId, on crée
+ * 1 chapitre "Chapitre principal" et on y attache les vidéos (rétrocompat
+ * avec la nouvelle hiérarchie pédagogique Course → Chapter → Video).
+ * Idempotent : ne fait rien si un cours a déjà au moins 1 chapitre.
+ */
+async function migrateChapters() {
+  try {
+    const Course   = (await import('./models/Course.js')).default;
+    const Chapter  = (await import('./models/Chapter.js')).default;
+    const Video    = (await import('./models/Video.js')).default;
+
+    const courses = await Course.find({}).select('_id titre').lean();
+    let createdChapters = 0;
+    let migratedVideos  = 0;
+
+    for (const c of courses) {
+      const existingChapter = await Chapter.findOne({ courseId: c._id }).select('_id').lean();
+      if (existingChapter) continue;
+
+      const orphanCount = await Video.countDocuments({ courseId: c._id, chapterId: { $in: [null, undefined] } });
+      if (orphanCount === 0) continue;
+
+      const chapter = await Chapter.create({
+        courseId: c._id,
+        titre: 'Chapitre principal',
+        description: 'Chapitre généré automatiquement lors de la migration. Le prof peut le renommer ou le scinder en plusieurs chapitres.',
+        order: 0,
+      });
+      const updateRes = await Video.updateMany(
+        { courseId: c._id, chapterId: { $in: [null, undefined] } },
+        { $set: { chapterId: chapter._id } }
+      );
+      createdChapters++;
+      migratedVideos += updateRes.modifiedCount || 0;
+    }
+
+    if (createdChapters > 0) {
+      console.log(`[migration] ${createdChapters} chapitre(s) créé(s), ${migratedVideos} vidéo(s) attachée(s).`);
+    }
+  } catch (err) {
+    console.error('[migration] chapters:', err.message);
   }
 }
 
@@ -142,6 +188,7 @@ async function runL3IsilSeedIfEnabled() {
 if (process.env.NODE_ENV !== 'test') {
   connectDB().then(async () => {
     await migrateUserStatus();
+    await migrateChapters();
     await runDemoSeedsIfEnabled();
     await runL3IsilSeedIfEnabled();
     startNotificationScheduler(io);
@@ -223,6 +270,8 @@ app.get('/api/health', (_req, res) => {
 app.use('/api/auth',     authRoutes);
 app.use('/api/decks',    deckRoutes);
 app.use('/api/decks/:deckId/cards', cardRoutes);
+app.use('/api/courses/:courseId/chapters', chapterRoutes);
+app.use('/api/chapters', chapterStandaloneRouter);
 app.use('/api/courses',  courseRoutes);
 app.use('/api/videos',   videoRoutes);
 app.use('/api/qcm',      qcmRoutes);
