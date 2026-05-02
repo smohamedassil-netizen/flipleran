@@ -119,6 +119,23 @@ const io = new Server(httpServer, {
 
 app.set('io', io);
 
+/**
+ * Seed L3 ISIL — déclenchable en prod ou dev via SEED_L3_ISIL=true.
+ * Idempotent : skip ce qui existe déjà. Sûr à laisser actif (overhead < 1s).
+ * Crée 3 profs, 10 étudiants S6 et 8 modules ISIL L3 — voir l3IsilSeed.js.
+ */
+async function runL3IsilSeedIfEnabled() {
+  if (process.env.SEED_L3_ISIL !== 'true') return;
+  console.log('[seed] SEED_L3_ISIL=true détecté — exécution du seed L3 ISIL…');
+  try {
+    const { seedL3Isil } = await import('./services/l3IsilSeed.js');
+    const result = await seedL3Isil();
+    console.log('[seed] L3 ISIL :', result.summary);
+  } catch (err) {
+    console.error('[seed] Erreur L3 ISIL :', err.message);
+  }
+}
+
 // En mode test (Jest), on n'établit pas la connexion DB / seeds / cron : l'app
 // Express est juste exportée pour être consommée par supertest. Les tests qui
 // touchent la DB devront mocker les models concernés.
@@ -126,6 +143,7 @@ if (process.env.NODE_ENV !== 'test') {
   connectDB().then(async () => {
     await migrateUserStatus();
     await runDemoSeedsIfEnabled();
+    await runL3IsilSeedIfEnabled();
     startNotificationScheduler(io);
   });
 }
