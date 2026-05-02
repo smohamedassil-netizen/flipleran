@@ -15,6 +15,7 @@ import Study                from './pages/Study.jsx';
 import CoursesPage          from './pages/CoursesPage.jsx';
 import StudentCourse        from './pages/StudentCourse.jsx';
 import CourseValidate       from './pages/CourseValidate.jsx';
+import ChapterPractice      from './pages/ChapterPractice.jsx';
 import WatchVideo           from './pages/WatchVideo.jsx';
 import QCMPage              from './pages/QCMPage.jsx';
 import ProfessorUpload      from './pages/ProfessorUpload.jsx';
@@ -112,6 +113,7 @@ export default function App() {
             <Route path="/courses"                     element={<CoursesPage />} />
             <Route path="/courses/:courseId"           element={<StudentCourse />} />
             <Route path="/courses/:id/validate"        element={<CourseValidate />} />
+            <Route path="/chapters/:id/practice"       element={<ChapterPractice />} />
             <Route path="/watch/:videoId"              element={<WatchVideo />} />
             <Route path="/profile"                     element={<StudentProfile />} />
             <Route path="/chat"                        element={<ChatContacts />} />

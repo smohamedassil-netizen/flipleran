@@ -19,6 +19,26 @@ const chapterSchema = new mongoose.Schema(
   { _id: false }
 );
 
+/**
+ * Sous-doc Part — découpage pédagogique d'une vidéo en sections
+ * (microlearning Hug 2005 ; test-enhanced learning Roediger & Karpicke 2006).
+ * À chaque partie peut être attaché :
+ *   - un mini-QCM (référence vers un QCM existant)
+ *   - un feedback (texte affiché en fin de partie)
+ *   - des questions inline (déjà gérées par le modèle VideoQuestion existant)
+ */
+const partSchema = new mongoose.Schema(
+  {
+    ordre:     { type: Number, default: 0 },
+    titre:     { type: String, required: true, trim: true },
+    startTime: { type: Number, required: true, min: 0 },   // secondes
+    endTime:   { type: Number, required: true, min: 0 },
+    qcmId:     { type: mongoose.Schema.Types.ObjectId, ref: 'QCM', default: null },
+    feedback:  { type: String, default: '', maxlength: 500 },
+  },
+  { _id: true }
+);
+
 const videoSchema = new mongoose.Schema(
   {
     titre:        { type: String, required: true, trim: true },
@@ -31,6 +51,9 @@ const videoSchema = new mongoose.Schema(
     duration:     { type: Number, default: 0 },           // secondes
     order:        { type: Number, default: 0 },           // ordre dans le cours/chapitre
     chapters:     [chapterSchema],                        // markers timestamps (saute dans la timeline)
+    /* Parties pédagogiques de la vidéo (microlearning) — à chaque partie
+       on peut associer un mini-QCM et un feedback. */
+    parts:        [partSchema],
     /* Lien optionnel vers le Chapter parent (regroupement pédagogique).
        Null/absent pour les vidéos non encore migrées (rétrocompat). */
     chapterId:    { type: mongoose.Schema.Types.ObjectId, ref: 'Chapter', default: null, index: true },

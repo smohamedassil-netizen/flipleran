@@ -418,7 +418,7 @@ export const updateVideo = async (req, res) => {
       return res.status(403).json({ message: 'Vous ne pouvez modifier que vos propres vidéos.' });
     }
 
-    const { titre, description, order, chapters } = req.body;
+    const { titre, description, order, chapters, parts, chapterId } = req.body;
     if (titre !== undefined) video.titre = titre;
     if (description !== undefined) video.description = description;
     if (order !== undefined) video.order = Number(order);
@@ -428,6 +428,22 @@ export const updateVideo = async (req, res) => {
         .filter(c => c.title && c.timestamp >= 0)
         .sort((a, b) => a.timestamp - b.timestamp);
     }
+    if (parts !== undefined && Array.isArray(parts)) {
+      // Découpage pédagogique en parties (microlearning)
+      // Chaque partie doit avoir un titre + start/end. Tri par startTime.
+      video.parts = parts
+        .filter(p => p.titre && typeof p.startTime === 'number' && typeof p.endTime === 'number' && p.endTime > p.startTime)
+        .sort((a, b) => a.startTime - b.startTime)
+        .map((p, idx) => ({
+          ordre: idx,
+          titre: p.titre.trim(),
+          startTime: p.startTime,
+          endTime:   p.endTime,
+          qcmId:     p.qcmId || null,
+          feedback:  (p.feedback || '').slice(0, 500),
+        }));
+    }
+    if (chapterId !== undefined) video.chapterId = chapterId || null;
 
     await video.save();
     res.json(video);

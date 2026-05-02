@@ -7,6 +7,7 @@ import { ArrowLeft, AlertCircle, BookOpen, Home, ListOrdered, MessageCircle } fr
 import Breadcrumb from '../components/Breadcrumb.jsx';
 import VideoAnalysis from '../components/VideoAnalysis.jsx';
 import AskVideoPanel from '../components/AskVideoPanel.jsx';
+import InlineQuestionsList from '../components/InlineQuestionsList.jsx';
 import { useGamification } from '../context/GamificationContext.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useToast } from '../context/ToastContext.jsx';
@@ -206,6 +207,9 @@ export default function WatchVideo() {
               </div>
             </div>
           )}
+
+          {/* Questions inline (test-enhanced learning Roediger & Karpicke 2006) */}
+          <InlineQuestionsList videoId={video._id} isProfOrAdmin={user?.role === 'professeur' || user?.role === 'admin'} />
 
           {/* Analyse IA */}
           <VideoAnalysis videoId={video._id} userRole={user?.role} />
