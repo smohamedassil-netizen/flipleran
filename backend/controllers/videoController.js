@@ -274,6 +274,53 @@ export const saveProgress = async (req, res) => {
         { upsert: true }
       );
 
+      // Notif déblocage du chapitre suivant (Mastery Learning Bloom 1968)
+      // Quand l'étudiant atteint le completionThreshold du chapitre courant,
+      // on l'informe que le chapitre suivant est débloqué.
+      if (video.chapterId && !wasAlreadyCompleted) {
+        try {
+          const Chapter = (await import('../models/Chapter.js')).default;
+          const chapter = await Chapter.findById(video.chapterId).lean();
+          if (chapter) {
+            const chapterVideos = await Video.find({ chapterId: chapter._id })
+              .select('_id watchedBy').lean();
+            const completedCount = chapterVideos.filter(v =>
+              (v.watchedBy || []).some(w => w.userId?.toString() === req.user.id && w.completed === true)
+            ).length;
+            const totalCount = chapterVideos.length;
+            const pct = totalCount > 0 ? (completedCount / totalCount) * 100 : 0;
+            const threshold = chapter.completionThreshold ?? 80;
+
+            // On déclenche au moment où on franchit le seuil (avant cette vidéo on était <, maintenant >=)
+            const previousPct = totalCount > 0 ? ((completedCount - 1) / totalCount) * 100 : 0;
+            if (pct >= threshold && previousPct < threshold) {
+              const nextChapter = await Chapter.findOne({
+                courseId: chapter.courseId,
+                order: { $gt: chapter.order },
+              }).sort({ order: 1 }).select('_id titre').lean();
+
+              const io = req.app.get('io');
+              const { pushNotification } = await import('../services/notificationService.js');
+              await pushNotification(io, {
+                userId: req.user.id,
+                type: 'achievement',
+                priority: 'high',
+                title: `🎉 Chapitre terminé — ${chapter.titre}`,
+                message: nextChapter
+                  ? `Bravo ! Tu as terminé "${chapter.titre}". Le chapitre suivant "${nextChapter.titre}" est maintenant débloqué.`
+                  : `Bravo ! Tu as terminé "${chapter.titre}" — le dernier chapitre du module. Tu peux maintenant valider le module.`,
+                link: `/courses/${chapter.courseId}`,
+                relatedType: 'chapter',
+                relatedId: chapter._id,
+                dedupKey: `chapter_unlocked_${req.user.id}_${chapter._id}`,
+              });
+            }
+          }
+        } catch (e) {
+          console.error('[chapter unlock notif]', e.message);
+        }
+      }
+
       // Award points only on first completion
       if (!wasAlreadyCompleted) {
         pointsResult = await addPoints(req.user.id, 20, 'video_watched').catch(() => null);

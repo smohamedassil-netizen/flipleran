@@ -14,6 +14,7 @@ import {
   BookOpen, AlertCircle, ChevronRight, MessageSquare,
   ArrowLeft, Upload, FileText, PenTool, Edit3, Trash2,
   HelpCircle, Route, Settings as SettingsIcon, Target, Sparkles,
+  BarChart2,
 } from 'lucide-react';
 
 /* ─── Status helpers ──────────────────────────────────────────────────────── */
@@ -150,6 +151,14 @@ function VideoRow({ video, index, onSelect, isActive, isProfOrAdmin, navigate, o
             onClick={(e) => { e.stopPropagation(); navigate(`/professor/videos/${video._id}/questions`); }}
           >
             <HelpCircle size={13} /> Questions
+          </button>
+          <button
+            className="btn btn-ghost btn-sm"
+            title="Découper la vidéo en parties pédagogiques (microlearning)"
+            onClick={(e) => { e.stopPropagation(); navigate(`/professor/videos/${video._id}/parts`); }}
+            style={{ color: '#9333EA' }}
+          >
+            <Sparkles size={13} /> Parts
           </button>
           <button
             className="btn btn-ghost btn-sm"
@@ -374,6 +383,9 @@ export default function StudentCourse() {
               </button>
               <button className="btn btn-ghost btn-sm" onClick={() => navigate(`/courses/${courseId}/resources`)}>
                 <FileText size={14} /> Ressources
+              </button>
+              <button className="btn btn-secondary btn-sm" onClick={() => navigate(`/courses/${courseId}/grades`)}>
+                <BarChart2 size={14} /> Notes CC
               </button>
             </div>
           )}
