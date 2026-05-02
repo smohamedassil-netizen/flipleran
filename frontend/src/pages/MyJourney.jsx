@@ -151,7 +151,11 @@ function CourseJourney({ course, onError }) {
           }
           actionLabel="Voir le projet"
           actionTo={`/projects?courseId=${course._id}`}
-          lockedReason="Termine au moins 1 Prosit pour débloquer"
+          lockedReason={
+            steps.preparation.status !== 'completed'
+              ? 'Termine la préparation puis 1 Prosit pour débloquer'
+              : 'Termine au moins 1 Prosit pour débloquer'
+          }
         />
 
         <JourneyStepCard

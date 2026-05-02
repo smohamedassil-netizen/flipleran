@@ -20,9 +20,9 @@ import Card from '../models/Card.js';
  *   4. PRODUCTION    — Projects où l'étudiant est dans un groupe
  *   5. CONSOLIDATION — Cards à réviser (SM-2)
  *
- * Locks :
+ * Locks (chaîne pédagogique : on ne saute pas une étape) :
  *   - APPLICATION  locked si PRÉPARATION != 'completed'
- *   - PRODUCTION   locked si APPLICATION n'a aucun prosit complété
+ *   - PRODUCTION   locked si PRÉPARATION != 'completed' OU aucun prosit complété
  *   - CONSOLIDATION locked si PRÉPARATION == 'not-started'
  */
 export const getMyJourney = async (req, res) => {
@@ -100,8 +100,10 @@ export const getMyJourney = async (req, res) => {
     const projectsSubmitted = projects.filter((p) => p.status === 'termine').length;
     const projectsInProgress = projects.filter((p) => p.status === 'actif').length;
 
+    // Lock si la préparation n'est pas finie OU si aucun prosit n'est complété.
+    // On ne saute pas la phase APPLICATION : sans Prosit terminé, pas de Production.
     let productionStatus;
-    if (prositsCompleted < 1) {
+    if (preparationStatus !== 'completed' || prositsCompleted < 1) {
       productionStatus = 'locked';
     } else if (projectsSubmitted >= 1) {
       productionStatus = 'completed';
