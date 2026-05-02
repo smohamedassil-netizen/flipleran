@@ -4,6 +4,9 @@ import {
   updateAiPersona, getCourseOutcomes, updateCourseOutcomes,
   getCourseInsights, getStudentSuggestion,
 } from '../controllers/courseController.js';
+import {
+  getMyCompletion, submitCompletion, listCompletions,
+} from '../controllers/courseCompletionController.js';
 import authMiddleware from '../middleware/authMiddleware.js';
 import requireRole from '../middleware/roleMiddleware.js';
 
@@ -26,5 +29,10 @@ router.put('/:id/outcomes', requireRole('professeur', 'admin'), updateCourseOutc
 // Insights pédagogiques IA (F3 sprint-final, Hattie 2009 + Black & Wiliam 1998)
 router.get('/:id/insights',                       requireRole('professeur', 'admin'), getCourseInsights);
 router.get('/:id/insights/student/:userId',       requireRole('professeur', 'admin'), getStudentSuggestion);
+
+// Validation finale du module — auto-évaluation métacognitive (Lebrun 2007, Tardif 1998)
+router.get('/:id/my-completion',                  getMyCompletion);
+router.post('/:id/validate',                      requireRole('etudiant'), submitCompletion);
+router.get('/:id/completions',                    requireRole('professeur', 'admin'), listCompletions);
 
 export default router;

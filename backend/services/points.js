@@ -105,6 +105,15 @@ export const BADGE_DEFS = [
     rarity:      'epic',
     condition:   'Note finale ≥ 18/20 sur un Prosit',
   },
+  {
+    key:         'module_validated',
+    nom:         'Module validé',
+    description: 'Valider votre premier module via l\'auto-évaluation finale',
+    icon:        'GraduationCap',
+    color:       '#15803D',
+    rarity:      'rare',
+    condition:   '1 module validé via l\'écran de validation finale',
+  },
 ];
 
 /* ─── Seed badges into DB (call once on server start) ───────────────────────── */

@@ -7,6 +7,7 @@ import Breadcrumb from '../components/Breadcrumb.jsx';
 import LearningPathTimeline from '../components/LearningPathTimeline.jsx';
 import PedagogicalHeader from '../components/PedagogicalHeader.jsx';
 import HonorBoard from '../components/HonorBoard.jsx';
+import ModuleParcoursPanel from '../components/ModuleParcoursPanel.jsx';
 import {
   Play, CheckCircle, Clock, Lock, Home,
   BookOpen, AlertCircle, ChevronRight, MessageSquare,
@@ -385,6 +386,11 @@ export default function StudentCourse() {
           outcomes={outcomesData.learningOutcomes}
           videos={videos}
         />
+      )}
+
+      {/* ── Parcours pédagogique CAI (étudiants seulement) — Lebrun 2007 ── */}
+      {!isProfOrAdmin && courseId && (
+        <ModuleParcoursPanel courseId={courseId} />
       )}
 
       <div className="responsive-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: 24, alignItems: 'start' }}>
