@@ -4,6 +4,7 @@ import api from '../utils/api.js';
 import {
   BookOpen, ClipboardCheck, Users, Rocket, RotateCcw,
   Lock, CheckCircle2, CircleDashed, ArrowRight, Award,
+  TrendingUp, Info,
 } from 'lucide-react';
 
 /**
@@ -21,6 +22,7 @@ export default function ModuleParcoursPanel({ courseId }) {
   const navigate = useNavigate();
   const [data, setData]         = useState(null);
   const [completion, setCompl]  = useState(null);
+  const [grade, setGrade]       = useState(null);
   const [loading, setLoading]   = useState(true);
 
   useEffect(() => {
@@ -31,10 +33,12 @@ export default function ModuleParcoursPanel({ courseId }) {
     Promise.all([
       api.get(`/journey/me/${courseId}`).catch(() => ({ data: null })),
       api.get(`/courses/${courseId}/my-completion`).catch(() => ({ data: null })),
-    ]).then(([j, c]) => {
+      api.get(`/courses/${courseId}/my-grade`).catch(() => ({ data: null })),
+    ]).then(([j, c, g]) => {
       if (cancelled) return;
       setData(j.data);
       setCompl(c.data);
+      setGrade(g.data);
     }).finally(() => { if (!cancelled) setLoading(false); });
 
     return () => { cancelled = true; };
@@ -253,6 +257,75 @@ export default function ModuleParcoursPanel({ courseId }) {
           </button>
         )}
       </div>
+
+      {/* Note de contrôle continu — séparée des XP gamification */}
+      {grade && grade.finalGrade !== null && (
+        <div style={{
+          marginTop: 12,
+          background: 'white',
+          border: '1px solid #E2E8F0',
+          borderRadius: 10,
+          padding: 12,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 12,
+          flexWrap: 'wrap',
+        }}>
+          <div style={{
+            width: 48, height: 48, borderRadius: 10,
+            background: gradeColor(grade.finalGrade),
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            color: 'white', fontWeight: 800, fontSize: 16, flexShrink: 0,
+          }}>
+            {grade.finalGrade}
+          </div>
+          <div style={{ flex: 1, minWidth: 180 }}>
+            <p style={{ margin: 0, fontSize: 11, fontWeight: 700, color: '#94A3B8', letterSpacing: 0.5 }}>
+              NOTE DE CONTRÔLE CONTINU /20
+            </p>
+            <p style={{ margin: '2px 0 4px', fontSize: 12, color: '#475569' }}>
+              {grade.qcmCountsInGrade
+                ? 'QCM inclus dans la note (paramétré par le prof)'
+                : 'QCM = formatif uniquement (Black & Wiliam 1998)'}
+            </p>
+            {/* Détail des composantes notées */}
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', fontSize: 11 }}>
+              {grade.qcmCountsInGrade && grade.breakdown.qcm !== null && (
+                <Pill label="QCM" value={`${grade.breakdown.qcm}/20`} weight={grade.weights.qcm} />
+              )}
+              {grade.breakdown.prosit !== null && (
+                <Pill label="Prosit" value={`${grade.breakdown.prosit}/20`} weight={grade.weights.prosit} />
+              )}
+              {grade.breakdown.project !== null && (
+                <Pill label="Projet" value={`${grade.breakdown.project}/20`} weight={grade.weights.project} />
+              )}
+              {grade.breakdown.validation !== null && (
+                <Pill label="Validation" value="20/20" weight={grade.weights.validation} />
+              )}
+            </div>
+          </div>
+          <Info size={14} color="#94A3B8" title="La note CC est séparée des XP gamification" />
+        </div>
+      )}
     </div>
+  );
+}
+
+function gradeColor(g) {
+  if (g >= 16) return 'linear-gradient(135deg, #15803D, #16A34A)';
+  if (g >= 12) return 'linear-gradient(135deg, #1B4F72, #2874A6)';
+  if (g >= 10) return 'linear-gradient(135deg, #B45309, #D97706)';
+  return 'linear-gradient(135deg, #B91C1C, #DC2626)';
+}
+
+function Pill({ label, value, weight }) {
+  return (
+    <span style={{
+      padding: '2px 8px', borderRadius: 999,
+      background: '#F8FAFC', border: '1px solid #E2E8F0',
+      color: '#475569', fontWeight: 600,
+    }}>
+      {label} {value} <span style={{ color: '#94A3B8', fontWeight: 400 }}>({weight}%)</span>
+    </span>
   );
 }

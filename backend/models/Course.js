@@ -43,6 +43,20 @@ const courseSchema = new mongoose.Schema(
 
     // Contrat pédagogique (Markdown, max 2000 chars) — Biggs (1996)
     pedagogicalContract: { type: String, default: '', maxlength: 2000 },
+
+    /* Toggle prof : "Les QCM comptent dans la note de contrôle continu ?"
+       En classe inversée stricte les QCM AVANT le cours sont formatifs
+       (Black & Wiliam 1998) → false par défaut. Le prof peut activer pour
+       que la moyenne des QCM compte dans la note CC du module. */
+    qcmCountsInGrade: { type: Boolean, default: false },
+
+    /* Pondération de la note CC du module (somme = 100). */
+    gradeWeights: {
+      qcm:        { type: Number, default: 30, min: 0, max: 100 },
+      prosit:     { type: Number, default: 30, min: 0, max: 100 },
+      project:    { type: Number, default: 30, min: 0, max: 100 },
+      validation: { type: Number, default: 10, min: 0, max: 100 },
+    },
   },
   { timestamps: true }
 );

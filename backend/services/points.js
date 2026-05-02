@@ -3,6 +3,26 @@ import Badge   from '../models/Badge.js';
 import Progress from '../models/Progress.js';
 import QCM     from '../models/QCM.js';
 import Video   from '../models/Video.js';
+import XPTransaction from '../models/XPTransaction.js';
+
+/**
+ * Détermine la catégorie sémantique d'un ajout de points à partir d'une raison
+ * texte (rétrocompatibilité avec les appels addPoints(userId, X, reason)).
+ */
+function inferSource(reason = '') {
+  const r = reason.toLowerCase();
+  if (r.includes('video'))   return 'video';
+  if (r.includes('qcm') || r.includes('quiz'))     return 'qcm';
+  if (r.includes('prosit'))  return 'prosit';
+  if (r.includes('project') || r.includes('projet')) return 'project';
+  if (r.includes('module') || r.includes('cours validé')) return 'module';
+  if (r.includes('battle')) return 'battle';
+  if (r.includes('quest')) return 'quest';
+  if (r.includes('streak')) return 'streak';
+  if (r.includes('ai') || r.includes('explorateur')) return 'ai';
+  if (r.includes('admin')) return 'admin';
+  return 'other';
+}
 
 /* ─── Badge definitions (seeded once) ──────────────────────────────────────── */
 export const BADGE_DEFS = [
@@ -221,7 +241,7 @@ async function getAllQCMResults(userId) {
  *                            | 'prosit_completed'
  * @returns {{ newPoints: number, newBadges: Badge[] }}
  */
-export async function addPoints(userId, amount, reason) {
+export async function addPoints(userId, amount, reason, opts = {}) {
   const user = await User.findById(userId);
   if (!user) throw new Error('User not found');
 
@@ -237,6 +257,25 @@ export async function addPoints(userId, amount, reason) {
   const newBadges = await checkBadges(user, { videosCompleted, qcmResults });
 
   await user.save();
+
+  // Journal d'attribution (traçabilité — XPTransaction)
+  // Idempotent via dedupKey si fourni : 2 appels avec la même clé → 1 seule entrée
+  if (amount !== 0) {
+    try {
+      await XPTransaction.create({
+        userId,
+        amount,
+        reason: reason || '',
+        source: opts.source || inferSource(reason),
+        relatedType: opts.relatedType || '',
+        relatedId:   opts.relatedId || null,
+        dedupKey:    opts.dedupKey || null,
+      });
+    } catch (err) {
+      // Doublon dedupKey → silencieux (idempotence). Autre erreur → log.
+      if (err.code !== 11000) console.error('[addPoints] XPTransaction:', err.message);
+    }
+  }
 
   return {
     newPoints: user.points,

@@ -766,18 +766,22 @@ io.on('connection', (socket) => {
           correctAnswer: room.questions[questionIndex].correctAnswer,
         });
 
-        // Persister les résultats pour le classement interne du Quiz Battle.
-        // ⚠️ Conformément au brief 01 (cadre éducatif) : aucune XP ajoutée à User.points.
-        // Le classement BattleResult est entièrement séparé de l'XP global.
+        // Persister les résultats pour le classement interne du Quiz Battle
+        // (BattleResult — classement séparé) ET attribuer une XP modeste
+        // d'engagement au gagnant (+10 XP, +5 si match nul). L'XP Battle est
+        // marquée source='battle' pour rester distincte de l'XP académique
+        // dans le breakdown étudiant — le QB reste un système ludique
+        // séparé pédagogiquement.
         try {
           const BattleResult = (await import('./models/BattleResult.js')).default;
+          const { addPoints } = await import('./services/points.js');
           const [p1, p2] = room.players;
           if (p1 && p2 && p1.odgerId && p2.odgerId) {
             const draw = p1.score === p2.score;
             const p1Outcome = draw ? 'draw' : (p1.score > p2.score ? 'win' : 'loss');
             const p2Outcome = draw ? 'draw' : (p2.score > p1.score ? 'win' : 'loss');
             const total = room.questions.length;
-            await BattleResult.insertMany([
+            const insertedResults = await BattleResult.insertMany([
               {
                 userId: p1.odgerId, opponentId: p2.odgerId, courseId: room.courseId,
                 score: p1.score, correctCount: p1.correctCount || 0, totalQuestions: total,
@@ -789,6 +793,26 @@ io.on('connection', (socket) => {
                 bestStreak: p2.bestStreak || 0, outcome: p2Outcome,
               },
             ]);
+
+            // XP d'engagement (Hamari 2014) — 10 pour victoire, 5 pour nul, 0 pour défaite
+            const xpFor = (outcome) => outcome === 'win' ? 10 : outcome === 'draw' ? 5 : 0;
+            const players = [
+              { id: p1.odgerId, outcome: p1Outcome, resultId: insertedResults[0]?._id },
+              { id: p2.odgerId, outcome: p2Outcome, resultId: insertedResults[1]?._id },
+            ];
+            for (const pl of players) {
+              const xp = xpFor(pl.outcome);
+              if (xp > 0) {
+                try {
+                  await addPoints(pl.id, xp, `battle_${pl.outcome}`, {
+                    source: 'battle',
+                    relatedType: 'BattleResult',
+                    relatedId: pl.resultId,
+                    dedupKey: pl.resultId ? `battle_${pl.resultId}` : null,
+                  });
+                } catch (e) { console.error('[battle XP]', e.message); }
+              }
+            }
           }
         } catch (err) {
           console.error('[battle] persist results error:', err.message);

@@ -5,6 +5,7 @@ import Layout from '../components/Layout.jsx';
 import api from '../utils/api.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import BadgeCard from '../components/BadgeCard.jsx';
+import XPBreakdownCard from '../components/XPBreakdownCard.jsx';
 import { capitalizeWords, formatFullName } from '../utils/format.js';
 
 /* ─── All possible badges (for "locked" display) ─────────────────────────── */
@@ -253,6 +254,9 @@ export default function StudentProfile() {
           <StatCard icon={Award}       label="Badges gagnés"      value={earnedBadges.length}                 color="#F59E0B" />
         </div>
       )}
+
+      {/* ── XP breakdown (étudiants seulement) ─────────────────────────── */}
+      {user?.role === 'etudiant' && <XPBreakdownCard />}
 
       {/* ── Mes récompenses (students only) ────────────────────────────── */}
       {user?.role === 'etudiant' && (

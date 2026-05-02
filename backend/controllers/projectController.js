@@ -245,7 +245,16 @@ export const updateProject = async (req, res) => {
       const memberIds = new Set();
       project.groupes.forEach(g => g.membres.forEach(m => memberIds.add(m.userId.toString())));
       for (const uid of memberIds) {
-        try { await addPoints(uid, 100, 'project_completed'); }
+        try {
+          // dedupKey : empêche un double crédit si updateProject est appelé
+          // plusieurs fois après le passage à 'termine'
+          await addPoints(uid, 100, 'project_completed', {
+            source: 'project',
+            relatedType: 'Project',
+            relatedId: project._id,
+            dedupKey: `project_completed_${project._id}_${uid}`,
+          });
+        }
         catch (e) { console.error('[project_completed XP]', e.message); }
         try { await triggerAutoBadge(uid, 'project_completed'); }
         catch (e) { console.error('[project_completed badge]', e.message); }
