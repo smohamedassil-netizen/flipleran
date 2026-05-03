@@ -4,6 +4,41 @@ Historique des modifications par date de session.
 
 ---
 
+## 3 Mai 2026 — Audit complet + correctifs critiques + nettoyage structure
+
+Session orientée qualité : audit jury PFE, corrections des défauts visibles, refactor de structure.
+
+### Notifications pop-up stylées (`feat(toast)`)
+- **`context/ToastContext.jsx`** — animation pop bouncy avec halo lumineux pulsant + effet shine en diagonale ; durées 5-10 s selon priorité ; les `urgent` sont persistants (clic obligatoire, pas de barre de progression).
+- **Hover-to-pause** : la barre de progression se fige au survol du toast.
+- **Mode Focus auto** sur `/qcm/`, `/quiz-battle`, `/study/`, `/watch/` : les toasts non-urgents sont mis en file d'attente avec une pill discrète « 🔔 N notifications en attente ». Dès que l'utilisateur quitte la page, la queue se déverse automatiquement.
+- **Max 3 toasts visibles** simultanément (anti-saturation), son OFF par défaut (préférence localStorage).
+- **`useToast` et `useNotifications` déplacés** dans des fichiers séparés des Providers pour que Vite Fast Refresh fonctionne correctement.
+
+### Correctifs critiques (`fix(audit)`)
+- **`components/ErrorBoundary.jsx`** créé, wrappé autour des routes : plus d'écran blanc en cas de crash composant. Fallback UX avec recharger / retour accueil + détails techniques en mode dev uniquement.
+- **`AdminDashboard.jsx`** — suppression des fake stats hardcodées (`+12%`, `+8%`, `+15%`, `+23%` qui étaient juste des chaînes inventées) → vraies tendances 7j calculées côté backend (`controllers/adminController.getStats` enrichi avec `deltaUsers7d`, `deltaCourses7d`, etc., agrégation `$dateToString` sur 7 jours).
+- **`AdminDashboard.jsx`** — suppression du « Fake bar chart for registrations » → vrai graphique des inscriptions par jour des 7 derniers jours.
+- **`/api/auth/status`** sécurisé : suppression de l'exposition publique de `rejectionReason` (le motif détaillé est envoyé par email au moment du rejet via `emailService`, pas via API publique). Rate-limit dédié 30 req/15 min/IP. Réponse uniforme `{exists: false}` pour les emails malformés.
+- **Tri intelligent des cours** : côté étudiant, les cours avec contenu (vidéos > 0) remontent en premier ; côté prof, le cours avec le plus d'étudiants inscrits ouvre par défaut. Évite que MyJourney/Synthèse de classe s'ouvre sur un cours vide.
+
+### Performance (`perf(api)`, `perf(frontend)`)
+- **N+1 query fix** dans `adminController.getCourses` (renommé `getAllCoursesWithStats`) : remplacement du pattern 1 + 2N requêtes par 2 agrégations groupées avec `$match $in + $group`. 3 requêtes au total quel que soit le nombre de cours.
+- **Nouveau endpoint `GET /api/resources/all`** qui retourne toutes les ressources accessibles à l'utilisateur, groupées par cours, en 1 seule requête. Utilisé par `ResourcesHub.jsx` qui faisait 1 + N appels avant.
+- **Pagination** sur les endpoints liste sensibles : `/api/admin/users`, `/api/admin/courses`, `/api/badges` (limit défaut, max 500, skip optionnel).
+- **Lazy loading** des 46 routes via `React.lazy()` dans `App.jsx`. Chaque page devient un chunk chargé à la demande. Bundle initial fortement réduit, utile en 3G/4G algérienne.
+- **`utils/logger.js`** créé : helpers `logError`/`logWarn`/`logInfo` qui n'écrivent qu'en mode dev (`import.meta.env.DEV`). 21 `console.error`/`console.warn` remplacés à travers le frontend pour éviter le bruit en prod sur Render.
+
+### Nettoyage structure (`chore(cleanup)`)
+- Déplacement des `.md` à la racine de `fliplearn/` vers `docs/` (convention standard) : `DEPLOYMENT.md`, `GUIDE_DEFENSE_PFE.md`, `PLAN_L3_ISIL_RICHE.md`, `PLAN_TEST_ISIL_L3.md`, `TUTO_TEST_COMPLET.md`. La racine ne garde que `README.md`, `CLAUDE.md`, `CHANGELOG.md`, `PROGRESS.md`.
+- Suppression définitive de `backend/services/videoMigration.deprecated.js` et nettoyage des références dans `migrations/README.md`.
+- Suppression de `backups/mongo-debut-session/` (déjà gitignored, ne devrait pas être versionné).
+
+### Mémoire PFE final (`livrables/`)
+- Régénération du mémoire suivant la structure du modèle Boubakir/Hamouti (3 chapitres) en l'enrichissant : 24 022 mots, 85 pages estimées, 12 tableaux, 18 références bibliographiques. Disponible en `livrables/Memoire_PFE_FlipLearn.docx`.
+
+---
+
 ## 2 Mai 2026 — Fix flux d'inscription (cold start Render + email confirmation + check status)
 
 Bug remonté : "j'essaie de m'inscrire, aucun message ne s'affiche, et l'admin ne reçoit pas de notification". Cause racine : timeout axios à 15s côté front, alors que le backend Render free tier dort après 15 min d'inactivité — le premier réveil prend 30-60s. La requête timeout, l'erreur n'est pas attrapée correctement, l'utilisateur ne voit rien, et la création de compte n'a même pas lieu côté serveur.
