@@ -12,6 +12,7 @@ import {
 import Layout from '../components/Layout.jsx';
 import api from '../utils/api.js';
 import { formatFullName } from '../utils/format.js';
+import { logError } from '../utils/logger.js';
 
 /* ─── Constants ────────────────────────────────────────────────────────── */
 const PRIMARY = '#1B4F72';
@@ -193,46 +194,55 @@ function OverviewSection({ onNavigate }) {
     ]).then(([s, a]) => {
       setStats(s.data);
       setActivity(a.data);
-    }).catch(console.error).finally(() => setLoading(false));
+    }).catch((err) => {
+      if (import.meta.env?.DEV) logError('[admin/stats]', err);
+    }).finally(() => setLoading(false));
   }, []);
 
   if (loading) return <Spinner />;
   if (!stats) return <div style={{ textAlign: 'center', color: '#64748B', padding: 40 }}>Erreur de chargement.</div>;
 
+  // Cartes statistiques — pas de tendance hardcodée. Si l'API renvoie un delta réel
+  // (ex: stats.deltaUsers7d), on l'affiche, sinon on n'affiche rien.
   const cards = [
-    { icon: Users, label: 'Utilisateurs', value: stats.totalUsers, color: PRIMARY, trend: '+12%', up: true },
-    { icon: BookOpen, label: 'Cours', value: stats.totalCourses, color: '#6D28D9', trend: '+8%', up: true },
-    { icon: Video, label: 'Vidéos', value: stats.totalVideos, color: '#2563EB', trend: '+15%', up: true },
-    { icon: MessageSquare, label: 'Messages', value: stats.totalMessages, color: '#059669', trend: '+23%', up: true },
+    { icon: Users,         label: 'Utilisateurs', value: stats.totalUsers,    color: PRIMARY,    delta: stats.deltaUsers7d },
+    { icon: BookOpen,      label: 'Cours',        value: stats.totalCourses,  color: '#6D28D9',  delta: stats.deltaCourses7d },
+    { icon: Video,         label: 'Vidéos',       value: stats.totalVideos,   color: '#2563EB',  delta: stats.deltaVideos7d },
+    { icon: MessageSquare, label: 'Messages',     value: stats.totalMessages, color: '#059669',  delta: stats.deltaMessages7d },
   ];
 
   const byRole = (role) => stats.byRole?.find(r => r._id === role)?.count ?? 0;
 
-  // Fake bar chart data for registrations
-  const barData = [
-    { label: 'Lun', value: 4 }, { label: 'Mar', value: 7 },
-    { label: 'Mer', value: 3 }, { label: 'Jeu', value: 9 },
-    { label: 'Ven', value: 6 }, { label: 'Sam', value: 2 },
-    { label: 'Dim', value: 5 },
-  ];
-  const maxBar = Math.max(...barData.map(b => b.value));
+  // Graphique des inscriptions des 7 derniers jours — calculé côté serveur.
+  // Si l'API ne renvoie pas registrationsByDay, on n'affiche pas la section.
+  const registrations = Array.isArray(stats.registrationsByDay) ? stats.registrationsByDay : null;
+  const maxBar = registrations && registrations.length > 0
+    ? Math.max(1, ...registrations.map(b => b.value))
+    : 1;
 
   return (
     <div>
       {/* Stat cards */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px', marginBottom: '24px' }}>
-        {cards.map((c, i) => {
+        {cards.map((c) => {
           const Icon = c.icon;
-          const Trend = c.up ? TrendingUp : TrendingDown;
+          const hasDelta = typeof c.delta === 'number';
+          const up = hasDelta ? c.delta >= 0 : null;
+          const Trend = up ? TrendingUp : TrendingDown;
           return (
-            <div key={i} style={{ ...cardStyle, display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <div key={c.label} style={{ ...cardStyle, display: 'flex', flexDirection: 'column', gap: '12px' }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <div style={{ width: 40, height: 40, borderRadius: 10, background: c.color + '15', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   <Icon size={20} color={c.color} />
                 </div>
-                <span style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', fontWeight: 600, color: c.up ? '#059669' : '#DC2626' }}>
-                  <Trend size={14} /> {c.trend}
-                </span>
+                {hasDelta && (
+                  <span
+                    title="Variation sur les 7 derniers jours"
+                    style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', fontWeight: 600, color: up ? '#059669' : '#DC2626' }}
+                  >
+                    <Trend size={14} /> {up ? '+' : ''}{c.delta}
+                  </span>
+                )}
               </div>
               <div>
                 <div style={{ fontSize: '28px', fontWeight: 800, color: '#1E293B' }}>{c.value}</div>
@@ -244,27 +254,39 @@ function OverviewSection({ onNavigate }) {
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '24px' }}>
-        {/* Bar chart */}
+        {/* Bar chart : inscriptions des 7 derniers jours (données réelles) */}
         <div style={cardStyle}>
-          <h3 style={{ margin: '0 0 16px', fontSize: '14px', fontWeight: 700, color: '#1E293B' }}>Inscriptions cette semaine</h3>
-          <div style={{ display: 'flex', alignItems: 'flex-end', gap: '8px', height: '140px' }}>
-            {barData.map((b, i) => (
-              <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
-                <span style={{ fontSize: '11px', fontWeight: 600, color: '#475569' }}>{b.value}</span>
-                <div style={{
-                  width: '100%', background: `${PRIMARY}20`, borderRadius: 6, position: 'relative',
-                  height: `${(b.value / maxBar) * 100}px`, minHeight: 8,
-                }}>
+          <h3 style={{ margin: '0 0 16px', fontSize: '14px', fontWeight: 700, color: '#1E293B' }}>
+            Inscriptions des 7 derniers jours
+          </h3>
+          {registrations === null ? (
+            <p style={{ color: '#94A3B8', fontSize: '13px', margin: 0 }}>
+              Données indisponibles.
+            </p>
+          ) : registrations.every(b => b.value === 0) ? (
+            <p style={{ color: '#94A3B8', fontSize: '13px', margin: 0 }}>
+              Aucune inscription cette semaine.
+            </p>
+          ) : (
+            <div style={{ display: 'flex', alignItems: 'flex-end', gap: '8px', height: '140px' }}>
+              {registrations.map((b) => (
+                <div key={b.label} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
+                  <span style={{ fontSize: '11px', fontWeight: 600, color: '#475569' }}>{b.value}</span>
                   <div style={{
-                    position: 'absolute', bottom: 0, left: 0, right: 0,
-                    height: '100%', background: PRIMARY, borderRadius: 6,
-                    opacity: 0.85, transition: 'height 0.3s',
-                  }} />
+                    width: '100%', background: `${PRIMARY}20`, borderRadius: 6, position: 'relative',
+                    height: `${(b.value / maxBar) * 100}px`, minHeight: 8,
+                  }}>
+                    <div style={{
+                      position: 'absolute', bottom: 0, left: 0, right: 0,
+                      height: '100%', background: PRIMARY, borderRadius: 6,
+                      opacity: 0.85, transition: 'height 0.3s',
+                    }} />
+                  </div>
+                  <span style={{ fontSize: '10px', color: '#94A3B8', fontWeight: 500 }}>{b.label}</span>
                 </div>
-                <span style={{ fontSize: '10px', color: '#94A3B8', fontWeight: 500 }}>{b.label}</span>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Role distribution */}
@@ -315,8 +337,9 @@ function OverviewSection({ onNavigate }) {
             const iconMap = { UserPlus, BookOpen, Video };
             const Icon = iconMap[a.icon] || Activity;
             const colorMap = { user: '#059669', course: '#6D28D9', video: '#2563EB' };
+            const stableKey = a._id || a.id || `${a.type}-${a.timestamp || a.createdAt || i}`;
             return (
-              <div key={i} style={{
+              <div key={stableKey} style={{
                 display: 'flex', alignItems: 'center', gap: '12px',
                 padding: '10px 0', borderBottom: i < activity.slice(0, 10).length - 1 ? '1px solid #F1F5F9' : 'none',
               }}>
@@ -368,7 +391,7 @@ function UsersSection() {
     if (roleFilter) params.set('role', roleFilter);
     api.get(`/admin/users?${params}`)
       .then(({ data }) => setUsers(data))
-      .catch(console.error)
+      .catch(logError)
       .finally(() => setLoading(false));
   }, [search, roleFilter]);
 
@@ -388,7 +411,7 @@ function UsersSection() {
   };
 
   const remove = async (id) => {
-    await api.delete(`/admin/users/${id}`).catch(console.error);
+    await api.delete(`/admin/users/${id}`).catch(logError);
     setUsers(prev => prev.filter(u => u._id !== id));
     setConfirmDelete(null);
     setSelectedUsers(prev => { const n = new Set(prev); n.delete(id); return n; });
@@ -888,7 +911,7 @@ function CoursesSection() {
       api.get('/admin/courses'),
       api.get('/admin/professors'),
     ]).then(([c, p]) => { setCourses(c.data); setProfs(p.data); })
-      .catch(console.error).finally(() => setLoading(false));
+      .catch(logError).finally(() => setLoading(false));
   }, []);
 
   const toggleActive = async (id, current) => {
@@ -897,7 +920,7 @@ function CoursesSection() {
   };
 
   const remove = async (id) => {
-    await api.delete(`/admin/courses/${id}`).catch(console.error);
+    await api.delete(`/admin/courses/${id}`).catch(logError);
     setCourses(p => p.filter(c => c._id !== id));
     setConfirmDelete(null);
   };
@@ -1092,7 +1115,7 @@ function MessagesSection() {
   useEffect(() => {
     api.get('/admin/messages')
       .then(({ data }) => setMessages(data))
-      .catch(console.error)
+      .catch(logError)
       .finally(() => setLoading(false));
   }, []);
 
@@ -1178,7 +1201,7 @@ function ActivitySection() {
   useEffect(() => {
     api.get('/admin/activity')
       .then(({ data }) => setActivity(data))
-      .catch(console.error)
+      .catch(logError)
       .finally(() => setLoading(false));
   }, []);
 
@@ -1208,8 +1231,9 @@ function ActivitySection() {
           {activity.map((a, i) => {
             const Icon = iconMap[a.icon] || Activity;
             const color = colorMap[a.type] || '#64748B';
+            const stableKey = a._id || a.id || `${a.type}-${a.timestamp || a.createdAt || i}`;
             return (
-              <div key={i} style={{ position: 'relative', marginBottom: '20px' }}>
+              <div key={stableKey} style={{ position: 'relative', marginBottom: '20px' }}>
                 {/* Dot */}
                 <div style={{
                   position: 'absolute', left: -24, top: 4, width: 20, height: 20,

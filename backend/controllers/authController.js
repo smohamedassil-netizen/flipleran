@@ -317,17 +317,21 @@ export const rejectUser = async (req, res) => {
   }
 };
 
-// GET /api/auth/status?email=... — permet au front de voir le statut d'un compte (sans login)
+// GET /api/auth/status?email=... — permet au front de voir le statut d'un compte (sans login).
+// Endpoint volontairement minimal : pas d'exposition de `rejectionReason` (envoyé par email
+// au moment du rejet via emailService, pas via API publique). Réponse uniforme pour limiter
+// l'énumération : on renvoie `exists: false` aussi si l'email est mal formé.
 export const checkStatus = async (req, res) => {
   try {
     const { email } = req.query;
-    if (!email) return res.status(400).json({ message: 'Email requis.' });
-    const user = await User.findOne({ email: email.toLowerCase() }).select('status rejectionReason');
+    if (!email || typeof email !== 'string' || !email.includes('@')) {
+      return res.json({ exists: false });
+    }
+    const user = await User.findOne({ email: email.toLowerCase() }).select('status');
     if (!user) return res.json({ exists: false });
     res.json({
       exists: true,
       status: user.status,
-      rejectionReason: user.status === 'rejected' ? user.rejectionReason : '',
     });
   } catch (err) {
     res.status(500).json({ message: err.message });

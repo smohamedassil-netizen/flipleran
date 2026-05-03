@@ -215,11 +215,35 @@ export const getCourseDashboard = async (req, res) => {
 /**
  * GET /api/professor/courses
  * Liste des cours du professeur connecté (pour le sélecteur).
+ * Triée par nombre d'étudiants inscrits décroissant : le 1er cours sélectionné
+ * par défaut côté UI est celui qui a des étudiants à montrer (évite d'ouvrir
+ * sur un cours vide qui donnerait l'illusion d'une plateforme inactive).
  */
 export const getProfessorCourses = async (req, res) => {
   try {
-    const courses = await Course.find({ professorId: req.user.id }).sort({ createdAt: -1 });
-    res.json(courses);
+    const courses = await Course.find({ professorId: req.user.id }).lean();
+    if (courses.length === 0) return res.json([]);
+
+    // Compter les étudiants inscrits pour chaque cours en une seule agrégation
+    const courseIds = courses.map((c) => c._id);
+    const enrollments = await Progress.aggregate([
+      { $match: { courseId: { $in: courseIds } } },
+      { $group: { _id: '$courseId', students: { $addToSet: '$userId' } } },
+      { $project: { _id: 1, count: { $size: '$students' } } },
+    ]);
+    const countByCourse = Object.fromEntries(
+      enrollments.map((e) => [String(e._id), e.count])
+    );
+
+    // Tri : 1) plus d'étudiants d'abord, 2) plus récent en cas d'égalité
+    const sorted = courses
+      .map((c) => ({ ...c, _studentsCount: countByCourse[String(c._id)] || 0 }))
+      .sort((a, b) => {
+        if (b._studentsCount !== a._studentsCount) return b._studentsCount - a._studentsCount;
+        return new Date(b.createdAt) - new Date(a.createdAt);
+      });
+
+    res.json(sorted);
   } catch (err) {
     res.status(500).json({ message: err.message });
   }

@@ -228,6 +228,16 @@ const authLimiter = rateLimit({
 app.use('/api/auth/login', authLimiter);
 app.use('/api/auth/register', authLimiter);
 
+// Rate limit dédié à /api/auth/status pour empêcher l'énumération massive d'emails
+const statusLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { exists: false },
+});
+app.use('/api/auth/status', statusLimiter);
+
 const aiLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,        // 1 hour
   max: 30,

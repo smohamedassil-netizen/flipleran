@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, Link } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext.jsx';
 import { GamificationProvider } from './context/GamificationContext.jsx';
@@ -5,57 +6,66 @@ import { ToastProvider } from './context/ToastContext.jsx';
 import { NotificationProvider } from './context/NotificationContext.jsx';
 import { ThemeProvider } from './context/ThemeContext.jsx';
 import ProtectedRoute from './components/ProtectedRoute.jsx';
+import ErrorBoundary  from './components/ErrorBoundary.jsx';
 
+// Pages publiques + entrée d'app : eager loading (utilisées au premier rendu).
 import Login                from './pages/Login.jsx';
 import Register             from './pages/Register.jsx';
-import Dashboard            from './pages/Dashboard.jsx';
-import DashboardRouter      from './components/DashboardRouter.jsx';
-import Decks                from './pages/Decks.jsx';
-import Study                from './pages/Study.jsx';
-import CoursesPage          from './pages/CoursesPage.jsx';
-import StudentCourse        from './pages/StudentCourse.jsx';
-import CourseValidate       from './pages/CourseValidate.jsx';
-import ChapterPractice      from './pages/ChapterPractice.jsx';
-import CourseGrades         from './pages/CourseGrades.jsx';
-import VideoPartsEditor     from './pages/VideoPartsEditor.jsx';
-import WatchVideo           from './pages/WatchVideo.jsx';
-import QCMPage              from './pages/QCMPage.jsx';
-import ProfessorUpload      from './pages/ProfessorUpload.jsx';
-import ProfessorCreateQCM   from './pages/ProfessorCreateQCM.jsx';
-import ProfessorVideoQuestions from './pages/ProfessorVideoQuestions.jsx';
-import ProfessorDashboard   from './pages/ProfessorDashboard.jsx';
-import Leaderboard          from './pages/Leaderboard.jsx';
-import StudentProfile       from './pages/StudentProfile.jsx';
-import ChatPage             from './pages/ChatPage.jsx';
-import ResourceLibrary      from './pages/ResourceLibrary.jsx';
-import QuizBattle           from './pages/QuizBattle.jsx';
-import AdminDashboard       from './pages/AdminDashboard.jsx';
-import ChatContacts         from './pages/ChatContacts.jsx';
-import Settings             from './pages/Settings.jsx';
-import ResourcesHub         from './pages/ResourcesHub.jsx';
-import ProfessorQCMHub      from './pages/ProfessorQCMHub.jsx';
-import BadgeManagement      from './pages/BadgeManagement.jsx';
-import Support              from './pages/Support.jsx';
 import LandingPage          from './pages/LandingPage.jsx';
-import ProjectList          from './pages/ProjectList.jsx';
-import ProjectDetail        from './pages/ProjectDetail.jsx';
-import ProjectCreate        from './pages/ProjectCreate.jsx';
-import ProjectTemplateLibrary from './pages/ProjectTemplateLibrary.jsx';
-import PrositList           from './pages/PrositList.jsx';
-import PrositCreate         from './pages/PrositCreate.jsx';
-import PrositDetail         from './pages/PrositDetail.jsx';
-import PrositPeerAssessment from './pages/PrositPeerAssessment.jsx';
-import NotificationsPage    from './pages/NotificationsPage.jsx';
-import ProfessorTracking    from './pages/ProfessorTracking.jsx';
-import ModuleAssistant      from './pages/ModuleAssistant.jsx';
-import Rewards              from './pages/Rewards.jsx';
-import LearningPathBuilder  from './pages/LearningPathBuilder.jsx';
-import CourseLearningOutcomes from './pages/CourseLearningOutcomes.jsx';
-import CesiMethodGuide       from './pages/CesiMethodGuide.jsx';
-import AutoPrepReview        from './pages/AutoPrepReview.jsx';
-import MyTutor               from './pages/MyTutor.jsx';
-import MyJourney             from './pages/MyJourney.jsx';
-import ClassReadiness, { ClassReadinessHub } from './pages/ClassReadiness.jsx';
+import DashboardRouter      from './components/DashboardRouter.jsx';
+
+// Toutes les autres pages : lazy loading via React.lazy() — chaque page devient
+// un chunk indépendant chargé à la demande, ce qui réduit fortement la taille du
+// bundle initial (utile en 3G/4G algérienne, cf. ENF-PERF-2 du mémoire).
+const Dashboard            = lazy(() => import('./pages/Dashboard.jsx'));
+const Decks                = lazy(() => import('./pages/Decks.jsx'));
+const Study                = lazy(() => import('./pages/Study.jsx'));
+const CoursesPage          = lazy(() => import('./pages/CoursesPage.jsx'));
+const StudentCourse        = lazy(() => import('./pages/StudentCourse.jsx'));
+const CourseValidate       = lazy(() => import('./pages/CourseValidate.jsx'));
+const ChapterPractice      = lazy(() => import('./pages/ChapterPractice.jsx'));
+const CourseGrades         = lazy(() => import('./pages/CourseGrades.jsx'));
+const VideoPartsEditor     = lazy(() => import('./pages/VideoPartsEditor.jsx'));
+const WatchVideo           = lazy(() => import('./pages/WatchVideo.jsx'));
+const QCMPage              = lazy(() => import('./pages/QCMPage.jsx'));
+const ProfessorUpload      = lazy(() => import('./pages/ProfessorUpload.jsx'));
+const ProfessorCreateQCM   = lazy(() => import('./pages/ProfessorCreateQCM.jsx'));
+const ProfessorVideoQuestions = lazy(() => import('./pages/ProfessorVideoQuestions.jsx'));
+const ProfessorDashboard   = lazy(() => import('./pages/ProfessorDashboard.jsx'));
+const Leaderboard          = lazy(() => import('./pages/Leaderboard.jsx'));
+const StudentProfile       = lazy(() => import('./pages/StudentProfile.jsx'));
+const ChatPage             = lazy(() => import('./pages/ChatPage.jsx'));
+const ResourceLibrary      = lazy(() => import('./pages/ResourceLibrary.jsx'));
+const QuizBattle           = lazy(() => import('./pages/QuizBattle.jsx'));
+const AdminDashboard       = lazy(() => import('./pages/AdminDashboard.jsx'));
+const ChatContacts         = lazy(() => import('./pages/ChatContacts.jsx'));
+const Settings             = lazy(() => import('./pages/Settings.jsx'));
+const ResourcesHub         = lazy(() => import('./pages/ResourcesHub.jsx'));
+const ProfessorQCMHub      = lazy(() => import('./pages/ProfessorQCMHub.jsx'));
+const BadgeManagement      = lazy(() => import('./pages/BadgeManagement.jsx'));
+const Support              = lazy(() => import('./pages/Support.jsx'));
+const ProjectList          = lazy(() => import('./pages/ProjectList.jsx'));
+const ProjectDetail        = lazy(() => import('./pages/ProjectDetail.jsx'));
+const ProjectCreate        = lazy(() => import('./pages/ProjectCreate.jsx'));
+const ProjectTemplateLibrary = lazy(() => import('./pages/ProjectTemplateLibrary.jsx'));
+const PrositList           = lazy(() => import('./pages/PrositList.jsx'));
+const PrositCreate         = lazy(() => import('./pages/PrositCreate.jsx'));
+const PrositDetail         = lazy(() => import('./pages/PrositDetail.jsx'));
+const PrositPeerAssessment = lazy(() => import('./pages/PrositPeerAssessment.jsx'));
+const NotificationsPage    = lazy(() => import('./pages/NotificationsPage.jsx'));
+const ProfessorTracking    = lazy(() => import('./pages/ProfessorTracking.jsx'));
+const ModuleAssistant      = lazy(() => import('./pages/ModuleAssistant.jsx'));
+const Rewards              = lazy(() => import('./pages/Rewards.jsx'));
+const LearningPathBuilder  = lazy(() => import('./pages/LearningPathBuilder.jsx'));
+const CourseLearningOutcomes = lazy(() => import('./pages/CourseLearningOutcomes.jsx'));
+const CesiMethodGuide      = lazy(() => import('./pages/CesiMethodGuide.jsx'));
+const AutoPrepReview       = lazy(() => import('./pages/AutoPrepReview.jsx'));
+const MyTutor              = lazy(() => import('./pages/MyTutor.jsx'));
+const MyJourney            = lazy(() => import('./pages/MyJourney.jsx'));
+// Le module ClassReadiness exporte 2 composants. Pour le lazy loading on importe
+// l'un comme defaut et l'autre via une seconde lazy avec un alias.
+const ClassReadiness       = lazy(() => import('./pages/ClassReadiness.jsx'));
+const ClassReadinessHub    = lazy(() => import('./pages/ClassReadiness.jsx').then(m => ({ default: m.ClassReadinessHub })));
 
 /* ── Pages d'erreur ────────────────────────────────────────────────────────── */
 function ErrorPage({ code, title, description }) {
@@ -94,6 +104,25 @@ function NotFound() {
   return <ErrorPage code="404" title="Page introuvable" description="La page que vous cherchez n'existe pas ou a été déplacée." />;
 }
 
+/* Fallback de chargement pour Suspense (lazy routes) */
+function PageLoading() {
+  return (
+    <div style={{
+      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+      minHeight: '60vh', gap: 14, color: 'var(--color-text-secondary, #64748b)',
+    }}>
+      <div style={{
+        width: 36, height: 36,
+        border: '3px solid #e2e8f0',
+        borderTopColor: 'var(--color-primary, #1B4F72)',
+        borderRadius: '50%',
+        animation: 'spin 0.85s linear infinite',
+      }} />
+      <span style={{ fontSize: 13, fontWeight: 500 }}>Chargement…</span>
+    </div>
+  );
+}
+
 export default function App() {
   return (
     <ThemeProvider>
@@ -102,6 +131,8 @@ export default function App() {
       <ToastProvider>
       <NotificationProvider>
       <GamificationProvider>
+        <ErrorBoundary>
+        <Suspense fallback={<PageLoading />}>
         <Routes>
           {/* Public */}
           <Route path="/welcome"      element={<LandingPage />} />
@@ -184,6 +215,8 @@ export default function App() {
 
           <Route path="*" element={<NotFound />} />
         </Routes>
+        </Suspense>
+        </ErrorBoundary>
       </GamificationProvider>
       </NotificationProvider>
       </ToastProvider>

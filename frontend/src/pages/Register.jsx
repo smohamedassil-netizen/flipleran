@@ -34,7 +34,7 @@ export default function Register() {
   const [loading, setLoading] = useState(false);
   const [serverWaking, setServerWaking] = useState(false);
   const [submitted, setSubmitted] = useState(null); // { email } après succès
-  const [statusCheck, setStatusCheck] = useState(null); // { status, rejectionReason } après vérif
+  const [statusCheck, setStatusCheck] = useState(null); // { exists, status } après vérif
 
   const { register } = useAuth();
   const navigate = useNavigate();
@@ -94,7 +94,7 @@ export default function Register() {
     setStatusCheck({ loading: true });
     try {
       const { data } = await api.get('/auth/status', { params: { email: submitted.email } });
-      setStatusCheck(data); // { exists, status, rejectionReason }
+      setStatusCheck(data); // { exists, status }
     } catch {
       setStatusCheck({ error: true });
     }
@@ -135,9 +135,7 @@ export default function Register() {
             {isActive
               ? `Ton compte FlipLearn est maintenant activé. Tu peux te connecter.`
               : isRejected
-                ? (statusCheck.rejectionReason
-                    ? `Ton inscription a été refusée : ${statusCheck.rejectionReason}`
-                    : "Ton inscription a été refusée par un administrateur.")
+                ? "Ton inscription a été refusée par un administrateur. Le motif détaillé t'a été envoyé par email."
                 : (submitted.message || "Ton inscription a bien été enregistrée. Un administrateur va vérifier ton compte avant que tu puisses te connecter.")}
           </p>
 

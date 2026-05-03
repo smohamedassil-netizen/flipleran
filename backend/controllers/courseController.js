@@ -1,4 +1,5 @@
 import Course from '../models/Course.js';
+import Video from '../models/Video.js';
 import { BLOOM_LEVELS } from '../models/LearningOutcome.js';
 import { generateInsights, generateStudentSuggestion, clearCache as clearInsightsCache } from '../services/teacherInsights.js';
 
@@ -17,7 +18,27 @@ export const getCourses = async (req, res) => {
         promotion: req.user.promotion,
       };
     }
-    const courses = await Course.find(filter).populate('professorId', 'nom prenom avatar').sort({ createdAt: -1 });
+    const courses = await Course.find(filter).populate('professorId', 'nom prenom avatar').lean();
+    if (courses.length === 0) return res.json([]);
+
+    // Pour les étudiants : trier les cours qui ont du contenu en premier (vidéos > 0)
+    // afin que l'UI ouvre par défaut sur un cours démontrable plutôt qu'un cours vide.
+    if (req.user.role === 'etudiant') {
+      const courseIds = courses.map((c) => c._id);
+      const videoCounts = await Video.aggregate([
+        { $match: { courseId: { $in: courseIds } } },
+        { $group: { _id: '$courseId', count: { $sum: 1 } } },
+      ]);
+      const cntByCourse = Object.fromEntries(videoCounts.map((v) => [String(v._id), v.count]));
+      courses.sort((a, b) => {
+        const ca = cntByCourse[String(a._id)] || 0;
+        const cb = cntByCourse[String(b._id)] || 0;
+        if (cb !== ca) return cb - ca;                          // plus de vidéos d'abord
+        return new Date(b.createdAt) - new Date(a.createdAt);   // sinon plus récent d'abord
+      });
+    } else {
+      courses.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    }
     res.json(courses);
   } catch (err) { res.status(500).json({ message: err.message }); }
 };

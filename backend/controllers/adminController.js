@@ -18,10 +18,16 @@ export const getUsers = async (req, res) => {
       filter.$or = [{ nom: re }, { prenom: re }, { email: re }];
     }
 
+    // Pagination : protège contre les requêtes massives à grande échelle.
+    const limit = Math.min(parseInt(req.query.limit, 10) || 100, 500);
+    const skip  = Math.max(parseInt(req.query.skip,  10) || 0, 0);
+
     const users = await User.find(filter)
       .select('-password')
       .populate('badges', 'nom icon color')
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
 
     res.json(users);
   } catch (err) { res.status(500).json({ message: err.message }); }
@@ -68,20 +74,46 @@ export const deleteUser = async (req, res) => {
    COURSES
 ═══════════════════════════════════════════════════════════════════════════ */
 
-/* GET /api/admin/courses */
-export const getCourses = async (req, res) => {
+/* GET /api/admin/courses
+ * Vue admin : tous les cours enrichis avec studentCount + videoCount.
+ * Distinct de courseController.getCourses qui filtre par rôle/filière/promo
+ * sans enrichissement statistique. */
+export const getAllCoursesWithStats = async (req, res) => {
   try {
+    // Pagination optionnelle (anti-runaway sur grosses bases)
+    const limit = Math.min(parseInt(req.query.limit, 10) || 200, 500);
+    const skip  = Math.max(parseInt(req.query.skip,  10) || 0, 0);
+
     const courses = await Course.find()
       .populate('professorId', 'nom prenom email')
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .lean();
 
-    // Ajouter le nombre d'étudiants et de vidéos
-    const enriched = await Promise.all(courses.map(async (c) => {
-      const [studentCount, videoCount] = await Promise.all([
-        Progress.countDocuments({ courseId: c._id }),
-        Video.countDocuments({ courseId: c._id }),
-      ]);
-      return { ...c.toObject(), studentCount, videoCount };
+    if (courses.length === 0) return res.json([]);
+
+    const courseIds = courses.map((c) => c._id);
+
+    // Une seule agrégation pour les compteurs étudiants + une pour les vidéos.
+    // Évite le N+1 (1 + 2N requêtes) → 3 requêtes au total quel que soit N.
+    const [studentAgg, videoAgg] = await Promise.all([
+      Progress.aggregate([
+        { $match: { courseId: { $in: courseIds } } },
+        { $group: { _id: '$courseId', count: { $sum: 1 } } },
+      ]),
+      Video.aggregate([
+        { $match: { courseId: { $in: courseIds } } },
+        { $group: { _id: '$courseId', count: { $sum: 1 } } },
+      ]),
+    ]);
+    const studByCourse = Object.fromEntries(studentAgg.map((s) => [String(s._id), s.count]));
+    const vidByCourse  = Object.fromEntries(videoAgg.map((v)  => [String(v._id), v.count]));
+
+    const enriched = courses.map((c) => ({
+      ...c,
+      studentCount: studByCourse[String(c._id)] || 0,
+      videoCount:   vidByCourse[String(c._id)]  || 0,
     }));
 
     res.json(enriched);
@@ -127,18 +159,68 @@ export const deleteCourse = async (req, res) => {
 ═══════════════════════════════════════════════════════════════════════════ */
 export const getStats = async (req, res) => {
   try {
-    const [totalUsers, totalCourses, totalVideos, totalMessages] = await Promise.all([
+    const Message = (await import('../models/Message.js')).default;
+
+    const now = new Date();
+    const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const fourteenDaysAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
+
+    // Comptes globaux + comptes 7j courants + comptes 7j-14j (pour calcul du delta)
+    const [
+      totalUsers, totalCourses, totalVideos, totalMessages,
+      usersCurr, usersPrev,
+      coursesCurr, coursesPrev,
+      videosCurr, videosPrev,
+      messagesCurr, messagesPrev,
+      byRole,
+      regsAgg,
+    ] = await Promise.all([
       User.countDocuments(),
       Course.countDocuments(),
       Video.countDocuments(),
-      (await import('../models/Message.js')).default.countDocuments(),
+      Message.countDocuments(),
+      User.countDocuments({ createdAt: { $gte: sevenDaysAgo } }),
+      User.countDocuments({ createdAt: { $gte: fourteenDaysAgo, $lt: sevenDaysAgo } }),
+      Course.countDocuments({ createdAt: { $gte: sevenDaysAgo } }),
+      Course.countDocuments({ createdAt: { $gte: fourteenDaysAgo, $lt: sevenDaysAgo } }),
+      Video.countDocuments({ createdAt: { $gte: sevenDaysAgo } }),
+      Video.countDocuments({ createdAt: { $gte: fourteenDaysAgo, $lt: sevenDaysAgo } }),
+      Message.countDocuments({ createdAt: { $gte: sevenDaysAgo } }),
+      Message.countDocuments({ createdAt: { $gte: fourteenDaysAgo, $lt: sevenDaysAgo } }),
+      User.aggregate([{ $group: { _id: '$role', count: { $sum: 1 } } }]),
+      // Inscriptions par jour sur les 7 derniers jours
+      User.aggregate([
+        { $match: { createdAt: { $gte: sevenDaysAgo } } },
+        {
+          $group: {
+            _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt', timezone: 'UTC' } },
+            count: { $sum: 1 },
+          },
+        },
+      ]),
     ]);
 
-    const byRole = await User.aggregate([
-      { $group: { _id: '$role', count: { $sum: 1 } } }
-    ]);
+    // Construire le tableau registrationsByDay sur 7 jours, dans l'ordre chronologique,
+    // avec libellés courts FR ('Lun', 'Mar', etc.).
+    const dayLabels = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'];
+    const regMap = Object.fromEntries(regsAgg.map(r => [r._id, r.count]));
+    const registrationsByDay = [];
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
+      const key = d.toISOString().slice(0, 10);
+      registrationsByDay.push({ label: dayLabels[d.getUTCDay()], value: regMap[key] || 0 });
+    }
 
-    res.json({ totalUsers, totalCourses, totalVideos, totalMessages, byRole });
+    res.json({
+      totalUsers, totalCourses, totalVideos, totalMessages,
+      byRole,
+      // Deltas sur 7 jours = nouveau cette semaine - nouveau semaine précédente
+      deltaUsers7d:    usersCurr - usersPrev,
+      deltaCourses7d:  coursesCurr - coursesPrev,
+      deltaVideos7d:   videosCurr - videosPrev,
+      deltaMessages7d: messagesCurr - messagesPrev,
+      registrationsByDay,
+    });
   } catch (err) { res.status(500).json({ message: err.message }); }
 };
 
