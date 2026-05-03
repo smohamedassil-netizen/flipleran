@@ -6,12 +6,13 @@ par environnement et tracées en base dans la collection `_migrations`.
 ## Pourquoi ce dossier existe
 
 Une fois (28/04/2026), une "migration" appelée à chaque démarrage du serveur
-([videoMigration.deprecated.js](../services/videoMigration.deprecated.js))
-a écrasé en silence les vidéos pédagogiques des professeurs par des MP4
-samples Google. Le fichier est conservé en mémoire institutionnelle.
+(ancien fichier `videoMigration.deprecated.js`, depuis supprimé)
+avait écrasé en silence les vidéos pédagogiques des professeurs par des MP4
+samples Google.
 
 À partir de ce dossier, toute modification structurelle ou correctrice de
-la base passe par un fichier de migration **versionné, idempotent et tracé**.
+la base passe par un fichier de migration **versionné, idempotent et tracé**,
+exécuté manuellement via `npm run migrate` — jamais automatiquement.
 
 ## Convention de nommage
 
