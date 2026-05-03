@@ -5,6 +5,7 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import Layout from '../components/Layout.jsx';
 import api from '../utils/api.js';
 import { useAuth } from '../context/AuthContext.jsx';
+import { logError } from '../utils/logger.js';
 
 /* ─── Medal colours for top 3 ─────────────────────────────────────────────── */
 const PODIUM = [
@@ -168,7 +169,7 @@ export default function Leaderboard() {
 
     api.get(url)
       .then((r) => setData(r.data))
-      .catch(console.error)
+      .catch(logError)
       .finally(() => setLoading(false));
   }, [mode, courseId]);
 

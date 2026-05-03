@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import Layout from '../components/Layout.jsx';
 import api from '../utils/api.js';
+import { logWarn } from '../utils/logger.js';
 import {
   ArrowLeft, Lightbulb, Save, X, Plus, Trash2, BookOpen, Calendar, Users, Target, Sparkles,
 } from 'lucide-react';
@@ -76,7 +77,7 @@ export default function PrositCreate() {
       if (courseIdParam) setCourseId(courseIdParam);
       setAiPrefilled(true);
     } catch (err) {
-      console.warn('[PrositCreate] prefill parse error:', err.message);
+      logWarn('[PrositCreate] prefill parse error:', err.message);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);

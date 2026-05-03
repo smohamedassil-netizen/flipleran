@@ -41,7 +41,7 @@ function ThreadCard({ thread, projectId, canPin, currentUserId, onUpdated }) {
     try {
       await api.patch(`/projects/${projectId}/threads/${thread._id}`, { pinnedByProf: !thread.pinnedByProf });
       onUpdated?.();
-    } catch (err) { console.error(err); }
+    } catch (err) { logError(err); }
     finally { setBusy(false); }
   };
 
@@ -50,7 +50,7 @@ function ThreadCard({ thread, projectId, canPin, currentUserId, onUpdated }) {
     try {
       await api.patch(`/projects/${projectId}/threads/${thread._id}`, { isResolved: !thread.isResolved });
       onUpdated?.();
-    } catch (err) { console.error(err); }
+    } catch (err) { logError(err); }
     finally { setBusy(false); }
   };
 
@@ -72,7 +72,7 @@ function ThreadCard({ thread, projectId, canPin, currentUserId, onUpdated }) {
     try {
       await api.delete(`/projects/${projectId}/threads/${thread._id}`);
       onUpdated?.();
-    } catch (err) { console.error(err); }
+    } catch (err) { logError(err); }
     finally { setBusy(false); }
   };
 

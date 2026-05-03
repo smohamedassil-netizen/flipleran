@@ -56,7 +56,7 @@ export default function Study() {
       setShowAddCard(false);
       setCompleted(false);
     } catch (err) {
-      console.error(err);
+      logError(err);
     } finally {
       setAddingCard(false);
     }

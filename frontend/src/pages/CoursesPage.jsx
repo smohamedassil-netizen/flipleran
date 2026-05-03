@@ -7,6 +7,7 @@ import {
   BookOpen, Users, Video, ChevronRight, Search,
   Plus, Upload, BarChart2, FileText, Route, Target,
 } from 'lucide-react';
+import { logError } from '../utils/logger.js';
 
 /* ─── Course card ──────────────────────────────────────────────────────────── */
 function CourseCard({ course, role, onOpen }) {
@@ -134,7 +135,7 @@ export default function CoursesPage() {
   useEffect(() => {
     api.get('/courses')
       .then(({ data }) => setCourses(data))
-      .catch(console.error)
+      .catch(logError)
       .finally(() => setLoading(false));
   }, []);
 
@@ -164,7 +165,7 @@ export default function CoursesPage() {
       setNewCourse({ titre: '', description: '', filiere: '', promotion: '' });
       setShowCreate(false);
     } catch (err) {
-      console.error(err);
+      logError(err);
       alert(err.response?.data?.message ?? 'Erreur lors de la création du cours');
     } finally {
       setCreating(false);

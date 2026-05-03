@@ -6,6 +6,7 @@ import api from '../utils/api.js';
 import {
   ArrowLeft, Plus, Trash2, Save, AlertCircle, X, BookOpen, Wand2,
 } from 'lucide-react';
+import { logError } from '../utils/logger.js';
 
 /* Phases par défaut (utilisé en fallback si l'API templates est indisponible) */
 const DEFAULT_PHASES = [
@@ -53,7 +54,7 @@ export default function ProjectCreate() {
   useEffect(() => {
     api.get('/courses')
       .then(({ data }) => setCourses(data))
-      .catch(console.error);
+      .catch(logError);
   }, []);
 
   /* F10 — Pré-remplissage depuis ProjectTemplateLibrary via sessionStorage */
@@ -83,7 +84,7 @@ export default function ProjectCreate() {
         setRubricFromTemplate(tpl.rubric);
       }
       setFromTemplateName(tpl.title || '');
-    } catch (e) { console.error('prefill error:', e); }
+    } catch (e) { logError('prefill error:', e); }
   }, []);
 
   /* F8 — Charge le template phases + rubric à chaque changement de type,

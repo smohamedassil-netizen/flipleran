@@ -51,7 +51,7 @@ export default function ProfessorQCMHub() {
         );
         setQcmData(qcmMap);
       } catch (err) {
-        console.error(err);
+        logError(err);
       } finally {
         setLoading(false);
       }

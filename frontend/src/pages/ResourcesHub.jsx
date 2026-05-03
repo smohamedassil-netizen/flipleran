@@ -44,23 +44,20 @@ export default function ResourcesHub() {
 
   const loadResources = async () => {
     try {
-      const { data: coursesData } = await api.get('/courses');
-      setCourses(coursesData);
-
+      // Un seul appel : /api/resources/all retourne tout en une fois (groupé par cours).
+      // Et un appel séparé pour la liste complète des cours (pour les sélecteurs upload).
+      const [resourcesRes, coursesRes] = await Promise.all([
+        api.get('/resources/all'),
+        api.get('/courses'),
+      ]);
+      setCourses(coursesRes.data);
       const resourceMap = {};
-      await Promise.all(
-        coursesData.map(async (course) => {
-          try {
-            const { data } = await api.get(`/resources/course/${course._id}`);
-            if (data.length > 0) {
-              resourceMap[course._id] = { course, resources: data };
-            }
-          } catch { /* no resources for this course */ }
-        })
-      );
+      for (const entry of resourcesRes.data) {
+        resourceMap[entry.course._id] = entry;
+      }
       setResources(resourceMap);
     } catch (err) {
-      console.error(err);
+      logError(err);
     } finally {
       setLoading(false);
     }

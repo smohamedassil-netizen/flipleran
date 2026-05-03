@@ -8,6 +8,7 @@ import {
   BookOpen, GraduationCap, ChevronRight,
   ArrowLeft, MessageCircle, Video, ClipboardList, Check,
 } from 'lucide-react';
+import { logError } from '../utils/logger.js';
 
 /* ─── Role config ──────────────────────────────────────────────────────── */
 const ROLE_CONFIG = {
@@ -181,7 +182,7 @@ export default function ChatContacts() {
   useEffect(() => {
     api.get('/messages/contacts')
       .then(({ data }) => setContacts(data))
-      .catch(console.error)
+      .catch(logError)
       .finally(() => setLoading(false));
   }, []);
 

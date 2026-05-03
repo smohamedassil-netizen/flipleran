@@ -128,7 +128,7 @@ function StudentReviewsView({ projectId }) {
     try {
       const { data } = await api.get(`/projects/${projectId}/peer-reviews/mine`);
       setReviews(data.reviews || []);
-    } catch (err) { console.error(err); }
+    } catch (err) { logError(err); }
     finally { setLoading(false); }
   }, [projectId]);
 
@@ -193,7 +193,7 @@ function ProfReviewsView({ projectId, livrables }) {
     try {
       const { data } = await api.get(`/projects/${projectId}/peer-reviews/summary`);
       setSummary(data.summary || []);
-    } catch (err) { console.error(err); }
+    } catch (err) { logError(err); }
     finally { setLoading(false); }
   }, [projectId]);
 

@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
-import { useNotifications } from '../context/NotificationContext.jsx';
+import { useNotifications } from '../context/useNotifications.js';
 import Logo from './Logo.jsx';
 import TeacherCoursesSubNav from './TeacherCoursesSubNav.jsx';
 import TutorBubble from './TutorBubble.jsx';

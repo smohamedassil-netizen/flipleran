@@ -10,7 +10,7 @@ import AskVideoPanel from '../components/AskVideoPanel.jsx';
 import InlineQuestionsList from '../components/InlineQuestionsList.jsx';
 import { useGamification } from '../context/GamificationContext.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
-import { useToast } from '../context/ToastContext.jsx';
+import { useToast } from '../context/useToast.js';
 
 export default function WatchVideo() {
   const { videoId } = useParams();

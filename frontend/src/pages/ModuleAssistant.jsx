@@ -169,7 +169,7 @@ export default function ModuleAssistant() {
         setMessages([{ _id: 'welcome', type: 'bot', content: data.persona.description, createdAt: new Date().toISOString() }]);
       }
     } catch (err) {
-      console.error(err);
+      logError(err);
     } finally {
       setLoading(false);
     }

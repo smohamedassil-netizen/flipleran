@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout.jsx';
 import api from '../utils/api.js';
 import ReadinessRow from '../components/ReadinessRow.jsx';
-import { useToast } from '../context/ToastContext.jsx';
+import { useToast } from '../context/useToast.js';
 import { ArrowLeft, BarChart3, Send, X } from 'lucide-react';
 
 const DEFAULT_REMINDER_TEMPLATE = (courseTitre) =>

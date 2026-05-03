@@ -9,6 +9,7 @@ import Layout from '../components/Layout.jsx';
 import Breadcrumb from '../components/Breadcrumb.jsx';
 import api    from '../utils/api.js';
 import { useAuth } from '../context/AuthContext.jsx';
+import { logError } from '../utils/logger.js';
 
 /* ─── Helpers ────────────────────────────────────────────────────────────── */
 const TYPE_META = {
@@ -287,7 +288,7 @@ export default function ResourceLibrary() {
     ]).then(([rRes, , cRes]) => {
       setResources(rRes.data);
       if (cRes.data) setCourse(cRes.data);
-    }).catch(console.error).finally(() => setLoading(false));
+    }).catch(logError).finally(() => setLoading(false));
   }, [courseId]);
 
   useEffect(() => {
@@ -295,14 +296,14 @@ export default function ResourceLibrary() {
     setLoadingVideos(true);
     api.get(`/videos/course/${courseId}`)
       .then(({ data }) => setVideos(data))
-      .catch(console.error)
+      .catch(logError)
       .finally(() => setLoadingVideos(false));
   }, [activeTab, courseId]);
 
   const handleAdd = (r) => setResources((prev) => [r, ...prev]);
   const handleDelete = async (id) => {
     if (!confirm('Supprimer cette ressource ?')) return;
-    await api.delete(`/resources/${id}`).catch(console.error);
+    await api.delete(`/resources/${id}`).catch(logError);
     setResources((prev) => prev.filter((r) => r._id !== id));
   };
 

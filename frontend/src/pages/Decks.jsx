@@ -5,6 +5,7 @@ import Breadcrumb from '../components/Breadcrumb.jsx';
 import { useDecks } from '../hooks/useDecks.js';
 import api from '../utils/api.js';
 import { Plus, Trash2, Play, BookOpen, ArrowLeft, Sparkles, X, Loader, Wand2, Clock, RefreshCw } from 'lucide-react';
+import { logError } from '../utils/logger.js';
 
 /* ─── AI Generate Modal ─────────────────────────────────────────────────── */
 function AIGenerateModal({ onSuccess, onClose }) {
@@ -18,7 +19,7 @@ function AIGenerateModal({ onSuccess, onClose }) {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    api.get('/courses').then(({ data }) => setCourses(data)).catch(console.error);
+    api.get('/courses').then(({ data }) => setCourses(data)).catch(logError);
   }, []);
 
   useEffect(() => {
@@ -26,7 +27,7 @@ function AIGenerateModal({ onSuccess, onClose }) {
     setLoadingVideos(true);
     api.get(`/videos/course/${selectedCourse}`)
       .then(({ data }) => { setVideos(data); setSelectedVideo(''); })
-      .catch(console.error)
+      .catch(logError)
       .finally(() => setLoadingVideos(false));
   }, [selectedCourse]);
 

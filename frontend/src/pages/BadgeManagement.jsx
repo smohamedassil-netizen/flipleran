@@ -41,7 +41,7 @@ export default function BadgeManagement() {
     try {
       const { data } = await api.get('/badges');
       setBadges(data);
-    } catch (err) { console.error(err); }
+    } catch (err) { logError(err); }
     finally { setLoading(false); }
   };
 

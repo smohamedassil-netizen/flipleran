@@ -15,6 +15,7 @@ import {
   Calendar, Clock, FileText, CheckCircle, AlertCircle,
   Layers,
 } from 'lucide-react';
+import { logError } from '../utils/logger.js';
 
 /* ─── Quick action card ──────────────────────────────────────────────── */
 function QuickAction({ icon: Icon, label, description, to, color }) {
@@ -230,7 +231,7 @@ export default function Dashboard() {
         setCourses(coursesRes.data ?? []);
         setProgresses(Array.isArray(progressRes.data) ? progressRes.data : []);
       })
-      .catch(console.error)
+      .catch(logError)
       .finally(() => setLoading(false));
   }, []);
 

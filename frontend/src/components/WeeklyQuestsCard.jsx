@@ -50,7 +50,7 @@ export default function WeeklyQuestsCard({ onUpdated }) {
       setData(fresh);
       onUpdated?.();
     } catch (err) {
-      console.error(err);
+      logError(err);
     } finally { setRefreshing(false); }
   };
 

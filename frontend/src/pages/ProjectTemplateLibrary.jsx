@@ -7,6 +7,7 @@ import {
   ArrowLeft, BookOpen, Sparkles, Search, Filter, Loader, X, Send, FileText,
   Layers, Clock, Award, ChevronRight, Wand2,
 } from 'lucide-react';
+import { logError } from '../utils/logger.js';
 
 /**
  * ProjectTemplateLibrary — Bibliothèque de templates projets (F10 sprint-final).
@@ -66,7 +67,7 @@ function GenerateModal({ onClose, onGenerated }) {
       sessionStorage.setItem('projectCreate.prefill', JSON.stringify(preview));
       onClose();
       window.location.href = '/projects/create?from-template=ai';
-    } catch (e) { console.error(e); }
+    } catch (e) { logError(e); }
   };
 
   return (
@@ -171,7 +172,7 @@ export default function ProjectTemplateLibrary() {
     const params = Object.fromEntries(Object.entries(filters).filter(([, v]) => v));
     api.get('/project-templates', { params })
       .then((r) => setTemplates(r.data.templates || []))
-      .catch(console.error)
+      .catch(logError)
       .finally(() => setLoading(false));
   };
 
@@ -182,7 +183,7 @@ export default function ProjectTemplateLibrary() {
       await api.post(`/project-templates/${tpl._id}/use`).catch(() => {});
       sessionStorage.setItem('projectCreate.prefill', JSON.stringify(tpl));
       navigate('/projects/create?from-template=' + tpl._id);
-    } catch (e) { console.error(e); }
+    } catch (e) { logError(e); }
   };
 
   const counts = useMemo(() => {

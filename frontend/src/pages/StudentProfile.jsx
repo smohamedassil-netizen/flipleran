@@ -7,6 +7,7 @@ import { useAuth } from '../context/AuthContext.jsx';
 import BadgeCard from '../components/BadgeCard.jsx';
 import XPBreakdownCard from '../components/XPBreakdownCard.jsx';
 import { capitalizeWords, formatFullName } from '../utils/format.js';
+import { logError } from '../utils/logger.js';
 
 /* ─── All possible badges (for "locked" display) ─────────────────────────── */
 const ALL_BADGE_KEYS = [
@@ -41,7 +42,7 @@ export default function StudentProfile() {
       });
       refreshMe?.();
     } catch (err) {
-      console.error('Avatar upload failed:', err);
+      logError('Avatar upload failed:', err);
     }
   };
 
@@ -59,7 +60,7 @@ export default function StudentProfile() {
           const students = courses.reduce((s, c) => s + (c.students?.length ?? 0), 0);
           setProfStats({ courses: courses.length, videos, qcms: 0, students });
         })
-        .catch(console.error)
+        .catch(logError)
         .finally(() => setLoading(false));
     } else {
       Promise.all([
@@ -70,7 +71,7 @@ export default function StudentProfile() {
           setAllBadges(badgesRes.data ?? []);
           setProgresses(Array.isArray(progressRes.data) ? progressRes.data : []);
         })
-        .catch(console.error)
+        .catch(logError)
         .finally(() => setLoading(false));
     }
 

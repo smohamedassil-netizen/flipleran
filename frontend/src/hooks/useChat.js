@@ -49,7 +49,7 @@ export function useChat(roomId) {
     socket.on('disconnect', () => setConnected(false));
 
     socket.on('connect_error', (err) => {
-      console.warn('[Chat] Connexion impossible :', err.message);
+      logWarn('[Chat] Connexion impossible :', err.message);
     });
 
     /* Historique initial */

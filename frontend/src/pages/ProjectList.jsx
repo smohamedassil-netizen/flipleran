@@ -7,6 +7,7 @@ import {
   FolderKanban, Plus, Search, Users, Calendar,
   ChevronRight, Layers,
 } from 'lucide-react';
+import { logError } from '../utils/logger.js';
 
 /* ─── Type & status config ────────────────────────────────────────────────── */
 const STATUS_BADGE = {
@@ -127,7 +128,7 @@ export default function ProjectList() {
     const url = courseId ? `/projects?courseId=${courseId}` : '/projects';
     api.get(url)
       .then(({ data }) => setProjects(data))
-      .catch(console.error)
+      .catch(logError)
       .finally(() => setLoading(false));
   }, [courseId]);
 

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout.jsx';
-import { useNotifications } from '../context/NotificationContext.jsx';
+import { useNotifications } from '../context/useNotifications.js';
 import {
   ArrowLeft, Bell, Check, CheckCheck, Trash2, ExternalLink,
   AlertCircle, Info, Video as VideoIcon, FileText, FolderKanban, MessageSquare, Clock,
