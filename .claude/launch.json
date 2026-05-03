@@ -3,10 +3,9 @@
   "configurations": [
     {
       "name": "backend",
-      "runtimeExecutable": "node",
-      "runtimeArgs": ["server.js"],
-      "port": 5000,
-      "cwd": "backend"
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev:backend"],
+      "port": 5000
     },
     {
       "name": "frontend",

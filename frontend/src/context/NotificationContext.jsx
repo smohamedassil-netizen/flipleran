@@ -1,10 +1,10 @@
-import { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
+import { createContext, useState, useCallback, useEffect, useRef } from 'react';
 import { io } from 'socket.io-client';
 import { SOCKET_URL, makeSocketConfig } from '../utils/socketConfig.js';
 import api from '../utils/api.js';
-import { useToast } from './ToastContext.jsx';
+import { useToast } from './useToast.js';
 
-const NotificationContext = createContext();
+export const NotificationContext = createContext();
 
 export function NotificationProvider({ children }) {
   const [notifications, setNotifications] = useState([]);
@@ -138,4 +138,4 @@ export function NotificationProvider({ children }) {
   );
 }
 
-export const useNotifications = () => useContext(NotificationContext);
+// useNotifications est déplacé dans ./useNotifications.js pour Vite Fast Refresh.
