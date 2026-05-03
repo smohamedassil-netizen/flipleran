@@ -46,13 +46,23 @@ const STATUS_META = {
   unlinked:   { label: 'À rattacher',color: '#94A3B8', bg: '#F1F5F9', Icon: Circle },
 };
 
-export default function PedagogicalHeader({ contract, outcomes, videos }) {
+export default function PedagogicalHeader({ contract, outcomes, videos, isProfOrAdmin = false }) {
   const [contractOpen, setContractOpen] = useState(true);
   const [outcomesOpen, setOutcomesOpen] = useState(true);
 
-  const masteredCount = (outcomes || []).reduce(
+  // Côté étudiant : on filtre les objectifs "unlinked" (non rattachés à une vidéo)
+  // car le statut "À rattacher" est une action prof, pas une info utile à
+  // l'apprenant. Côté prof/admin, on garde tout pour permettre la liaison.
+  const visibleOutcomes = isProfOrAdmin
+    ? (outcomes || [])
+    : (outcomes || []).filter((o) => statusOf(o, videos) !== 'unlinked');
+
+  const masteredCount = visibleOutcomes.reduce(
     (n, o) => statusOf(o, videos) === 'mastered' ? n + 1 : n, 0
   );
+
+  // Si rien à afficher (étudiant + 0 outcome rattaché + pas de contrat), on rend null
+  if (!contract && visibleOutcomes.length === 0) return null;
 
   return (
     <section style={{
@@ -85,8 +95,8 @@ export default function PedagogicalHeader({ contract, outcomes, videos }) {
         </div>
       )}
 
-      {/* Objectifs d'apprentissage */}
-      {outcomes && outcomes.length > 0 && (
+      {/* Objectifs d'apprentissage — filtré côté étudiant pour ne montrer que les rattachés */}
+      {visibleOutcomes.length > 0 && (
         <div style={{ background: 'white', borderRadius: 12, border: '1px solid #E5E7EB', overflow: 'hidden' }}>
           <button
             type="button"
@@ -109,7 +119,7 @@ export default function PedagogicalHeader({ contract, outcomes, videos }) {
           {outcomesOpen && (
             <div style={{ padding: '6px 14px 14px' }}>
               <div style={{ display: 'grid', gap: 6 }}>
-                {outcomes.map((o, i) => {
+                {visibleOutcomes.map((o, i) => {
                   const status = statusOf(o, videos);
                   const stMeta = STATUS_META[status];
                   const StIcon = stMeta.Icon;

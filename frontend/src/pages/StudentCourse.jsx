@@ -398,6 +398,7 @@ export default function StudentCourse() {
           contract={outcomesData.pedagogicalContract}
           outcomes={outcomesData.learningOutcomes}
           videos={videos}
+          isProfOrAdmin={isProfOrAdmin}
         />
       )}
 
