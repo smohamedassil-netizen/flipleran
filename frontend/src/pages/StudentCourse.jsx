@@ -372,9 +372,7 @@ export default function StudentCourse() {
           {/* Professor action buttons */}
           {isProfOrAdmin && (
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              <button className="btn btn-secondary btn-sm" onClick={() => navigate(`/professor/courses/${courseId}/outcomes`)}>
-                <Target size={14} /> Objectifs Bloom
-              </button>
+              {/* Bouton Objectifs Bloom retiré : feature peu utilisée en pratique. */}
               <button className="btn btn-primary btn-sm" onClick={() => navigate(`/professor/courses/${courseId}/path-builder`)}>
                 <Route size={14} /> Parcours pédagogique
               </button>
@@ -392,11 +390,14 @@ export default function StudentCourse() {
         </div>
       </div>
 
-      {/* ── Contrat pédagogique + Objectifs Bloom (Biggs 1996, Anderson & Krathwohl 2001) ── */}
-      {(outcomesData.pedagogicalContract || outcomesData.learningOutcomes.length > 0) && (
+      {/* ── Contrat pédagogique (Biggs 1996) — sans la section Objectifs Bloom qui
+            n'apportait pas de valeur en pratique ni à l'étudiant ni au prof.
+            La taxonomie de Bloom reste utilisée en interne pour équilibrer les
+            QCM générés par l'auto-prep IA (mix Mémoriser/Comprendre/Appliquer). ── */}
+      {outcomesData.pedagogicalContract && (
         <PedagogicalHeader
           contract={outcomesData.pedagogicalContract}
-          outcomes={outcomesData.learningOutcomes}
+          outcomes={[]}
           videos={videos}
           isProfOrAdmin={isProfOrAdmin}
         />

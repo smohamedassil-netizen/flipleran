@@ -57,7 +57,9 @@ const ProfessorTracking    = lazy(() => import('./pages/ProfessorTracking.jsx'))
 const ModuleAssistant      = lazy(() => import('./pages/ModuleAssistant.jsx'));
 const Rewards              = lazy(() => import('./pages/Rewards.jsx'));
 const LearningPathBuilder  = lazy(() => import('./pages/LearningPathBuilder.jsx'));
-const CourseLearningOutcomes = lazy(() => import('./pages/CourseLearningOutcomes.jsx'));
+// CourseLearningOutcomes : page désactivée (route commentée plus bas).
+// Le fichier existe encore (réactivable rapidement) mais n'est plus chargé.
+// const CourseLearningOutcomes = lazy(() => import('./pages/CourseLearningOutcomes.jsx'));
 const CesiMethodGuide      = lazy(() => import('./pages/CesiMethodGuide.jsx'));
 const AutoPrepReview       = lazy(() => import('./pages/AutoPrepReview.jsx'));
 const MyTutor              = lazy(() => import('./pages/MyTutor.jsx'));
@@ -189,7 +191,9 @@ export default function App() {
             <Route path="/professor/dashboard"                   element={<ProfessorDashboard />} />
             <Route path="/professor/courses/:courseId/upload"    element={<ProfessorUpload />} />
             <Route path="/professor/courses/:courseId/path-builder" element={<LearningPathBuilder />} />
-            <Route path="/professor/courses/:courseId/outcomes"     element={<CourseLearningOutcomes />} />
+            {/* Route /outcomes désactivée : la page n'apportait pas de valeur en pratique.
+                La taxonomie de Bloom reste utilisée en interne pour l'auto-prep IA (mix QCM). */}
+            {/* <Route path="/professor/courses/:courseId/outcomes" element={<CourseLearningOutcomes />} /> */}
             <Route path="/professor/courses/:courseId/videos/:videoId/auto-prep" element={<AutoPrepReview />} />
             <Route path="/professor/videos/:videoId/qcm"        element={<ProfessorCreateQCM />} />
             <Route path="/professor/videos/:videoId/questions"  element={<ProfessorVideoQuestions />} />
