@@ -3,7 +3,7 @@ import authMiddleware from '../middleware/authMiddleware.js';
 import requireRole from '../middleware/roleMiddleware.js';
 import {
   getUsers, toggleUser, updateUser, deleteUser,
-  getCourses, createCourse, updateCourse, deleteCourse,
+  getAllCoursesWithStats, createCourse, updateCourse, deleteCourse,
   getStats, getProfessors,
   getRecentMessages, getActivity, createUser,
   seedL3IsilEndpoint,
@@ -28,7 +28,7 @@ router.get('/messages', getRecentMessages);
 router.get('/activity', getActivity);
 
 // Courses
-router.get('/courses',        getCourses);
+router.get('/courses',        getAllCoursesWithStats);
 router.post('/courses',       createCourse);
 router.put('/courses/:id',    updateCourse);
 router.delete('/courses/:id', deleteCourse);

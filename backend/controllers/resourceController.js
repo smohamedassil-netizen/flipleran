@@ -73,6 +73,63 @@ export const getResourcesByCourse = async (req, res) => {
   }
 };
 
+/* ─── GET /api/resources/all ─────────────────────────────────────────────── */
+/**
+ * Retourne TOUTES les ressources accessibles à l'utilisateur courant en une
+ * seule requête, groupées par cours. Évite le pattern N+1 où le frontend
+ * faisait 1 appel par cours.
+ *
+ * Réponse : [{ course: {_id, titre, filiere, promotion}, resources: [...] }, ...]
+ */
+export const getAllAccessibleResources = async (req, res) => {
+  try {
+    const Course = (await import('../models/Course.js')).default;
+
+    // Filtrer les cours accessibles selon le rôle
+    let courseFilter = {};
+    if (req.user.role === 'etudiant') {
+      courseFilter = {
+        isActive: true,
+        filiere: req.user.filiere,
+        promotion: req.user.promotion,
+      };
+    } else if (req.user.role === 'professeur') {
+      courseFilter = { professorId: req.user.id };
+    }
+    // admin : pas de filtre (tous les cours)
+
+    const courses = await Course.find(courseFilter)
+      .select('_id titre filiere promotion')
+      .lean();
+    if (courses.length === 0) return res.json([]);
+
+    const courseIds = courses.map((c) => c._id);
+    const resources = await Resource.find({ courseId: { $in: courseIds } })
+      .populate('uploadedBy', 'nom prenom')
+      .sort({ createdAt: -1 })
+      .lean();
+
+    // Grouper par courseId
+    const byCourse = {};
+    for (const r of resources) {
+      const key = String(r.courseId);
+      if (!byCourse[key]) byCourse[key] = [];
+      byCourse[key].push(r);
+    }
+
+    const result = courses
+      .map((c) => ({
+        course: c,
+        resources: byCourse[String(c._id)] || [],
+      }))
+      .filter((entry) => entry.resources.length > 0);
+
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
 /* ─── DELETE /api/resources/:id ──────────────────────────────────────────── */
 export const deleteResource = async (req, res) => {
   try {
