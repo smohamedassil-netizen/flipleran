@@ -1,4 +1,5 @@
 import OpenAI, { toFile } from 'openai';
+import { YoutubeTranscript } from 'youtube-transcript';
 import VideoAnalysis from '../models/VideoAnalysis.js';
 import Video from '../models/Video.js';
 
@@ -78,10 +79,45 @@ async function transcribeBuffer(audioBuffer, filename = 'audio.mp3') {
 }
 
 /**
- * Gère la transcription complète, avec découpage si nécessaire.
+ * Récupère le transcript natif YouTube (sous-titres auto ou éditoriaux).
+ * Évite Whisper et le téléchargement d'audio — beaucoup plus rapide et économique.
+ * Essaie d'abord en français, puis fallback sur la langue par défaut.
  */
-async function transcribe(videoUrl, videoDuration) {
-  const { buffer } = await downloadAudioFromCloudinary(videoUrl);
+async function transcribeYouTube(youtubeId) {
+  let segments;
+  let detectedLang = 'fr';
+  try {
+    segments = await YoutubeTranscript.fetchTranscript(youtubeId, { lang: 'fr' });
+  } catch (errFr) {
+    try {
+      segments = await YoutubeTranscript.fetchTranscript(youtubeId);
+      detectedLang = 'auto';
+    } catch (err) {
+      throw new Error(
+        `Aucun sous-titre disponible pour cette vidéo YouTube. ` +
+        `Active les sous-titres sur YouTube ou choisis une autre vidéo. (${err.message})`
+      );
+    }
+  }
+  if (!segments || segments.length === 0) {
+    throw new Error('Sous-titres YouTube vides pour cette vidéo.');
+  }
+  const text = segments.map((s) => s.text).join(' ').replace(/\s+/g, ' ').trim();
+  console.log(`[VideoAnalyzer] Transcript YouTube récupéré (${text.length} caractères, lang=${detectedLang})`);
+  return { text, language: detectedLang === 'auto' ? 'fr' : detectedLang };
+}
+
+/**
+ * Gère la transcription complète selon la source de la vidéo.
+ *   - YouTube : sous-titres natifs (gratuit, pas d'audio à télécharger)
+ *   - Cloudinary : pipeline Whisper (avec découpage si > 25 MB)
+ */
+async function transcribe(video) {
+  if (video.provider === 'youtube' && video.youtubeId) {
+    return transcribeYouTube(video.youtubeId);
+  }
+
+  const { buffer } = await downloadAudioFromCloudinary(video.url);
 
   // Si le fichier est assez petit, transcription directe
   if (buffer.length <= WHISPER_MAX_SIZE) {
@@ -92,15 +128,15 @@ async function transcribe(videoUrl, videoDuration) {
   console.log(`[VideoAnalyzer] Audio trop gros (${(buffer.length / 1024 / 1024).toFixed(1)}MB), découpage en chunks...`);
 
   const chunks = [];
-  for (let start = 0; start < videoDuration; start += CHUNK_DURATION) {
-    const end = Math.min(start + CHUNK_DURATION, videoDuration);
+  for (let start = 0; start < video.duration; start += CHUNK_DURATION) {
+    const end = Math.min(start + CHUNK_DURATION, video.duration);
     chunks.push({ start, end });
   }
 
   const transcriptions = [];
   for (const chunk of chunks) {
     console.log(`[VideoAnalyzer] Chunk ${chunk.start}s-${chunk.end}s...`);
-    const chunkBuffer = await downloadAudioChunk(videoUrl, chunk.start, chunk.end);
+    const chunkBuffer = await downloadAudioChunk(video.url, chunk.start, chunk.end);
     const result = await transcribeBuffer(chunkBuffer, `chunk_${chunk.start}.mp3`);
     transcriptions.push(result.text);
   }
@@ -223,8 +259,8 @@ export async function analyzeVideo(videoId, userId) {
     analysis.error  = '';
     await analysis.save();
 
-    console.log(`[VideoAnalyzer] Transcription de "${video.titre}"...`);
-    const { text, language } = await transcribe(video.url, video.duration);
+    console.log(`[VideoAnalyzer] Transcription de "${video.titre}" (provider=${video.provider})...`);
+    const { text, language } = await transcribe(video);
 
     if (!text || text.trim().length < 10) {
       throw new Error('Transcription trop courte ou vide — la vidéo contient-elle de l\'audio ?');
