@@ -3,22 +3,23 @@
 > **Pour qui** : Mohamed Assil SERAY, L3 ISIL, EM Alger Business School
 > **Quand** : Test complet de l'application — 05 mai 2026
 > **App déployée** : https://fliplearn-5lsz.onrender.com
-> **Durée estimée** : 1h45 (setup) + 30 min (test étudiant) = **~2h15**
+> **Durée estimée** : 1h35 (setup) + 30 min (test étudiant) = **~2h05**
 
 Ce document est ton **plan de bataille unique** pour demain. Tout est ici : liens YouTube directs (déjà testés), comptes, étapes, dépannage. Pas besoin d'aller chercher ailleurs.
+
+> **Les données sont déjà incrustées en base** : 4 profs ISIL L3, 11 étudiants ISIL L3, 8 modules (4 S5 + 4 S6). Pas de bouton démo à cliquer — tout est prêt.
 
 ---
 
 ## SOMMAIRE
 
 1. [PRÉPARATION (5 min)](#0-préparation-5-min)
-2. [ÉTAPE 1 — Seed L3 ISIL en admin (2 min)](#étape-1--seed-l3-isil-en-admin-2-min)
-3. [ÉTAPE 2 — Vidéos YouTube par module (45 min)](#étape-2--vidéos-youtube-par-module-45-min)
-4. [ÉTAPE 3 — QCM générés par IA (15 min)](#étape-3--qcm-générés-par-ia-15-min)
-5. [ÉTAPE 4 — Créer 2 Prosits + 1 Projet (20 min)](#étape-4--créer-2-prosits--1-projet-20-min)
-6. [ÉTAPE 5 — Test côté étudiant (30 min)](#étape-5--test-côté-étudiant-30-min)
-7. [CHECKLIST DE FIN DE TEST](#checklist-de-fin-de-test)
-8. [DÉPANNAGE](#dépannage)
+2. [ÉTAPE 1 — Vidéos YouTube par module (45 min)](#étape-1--vidéos-youtube-par-module-45-min)
+3. [ÉTAPE 2 — QCM générés par IA (15 min)](#étape-2--qcm-générés-par-ia-15-min)
+4. [ÉTAPE 3 — Créer 2 Prosits + 1 Projet (20 min)](#étape-3--créer-2-prosits--1-projet-20-min)
+5. [ÉTAPE 4 — Test côté étudiant (30 min)](#étape-4--test-côté-étudiant-30-min)
+6. [CHECKLIST DE FIN DE TEST](#checklist-de-fin-de-test)
+7. [DÉPANNAGE](#dépannage)
 
 ---
 
@@ -49,21 +50,7 @@ Garde un onglet YouTube ouvert dans une fenêtre normale. Tu y copieras les URLs
 
 ---
 
-## ÉTAPE 1 — Seed L3 ISIL en admin (2 min)
-
-1. Connecte-toi : `admin@fliplearn.dz` / `admin1234`
-2. Sidebar gauche → **Utilisateurs** (ou URL : `/admin?section=users`)
-3. En haut à droite, clique le bouton violet **« Seed L3 ISIL (démo) »**
-4. Confirme la modale → attends ~5 s
-5. Bandeau vert attendu : *« Seed L3 ISIL terminé : 3 profs, 10 étudiants, 8 modules. »*
-
-✅ **Vérification** : tu dois maintenant voir dans la liste des utilisateurs les profs Tarek/Sami/Yasmine et 10 étudiants `*.l3@fliplearn.dz`.
-
-> Le seed est **idempotent** — si tu cliques 2 fois, pas de doublons. Skip automatique des comptes existants.
-
----
-
-## ÉTAPE 2 — Vidéos YouTube par module (45 min)
+## ÉTAPE 1 — Vidéos YouTube par module (45 min)
 
 ### Méthode universelle (pour chaque vidéo)
 
@@ -168,7 +155,7 @@ Garde un onglet YouTube ouvert dans une fenêtre normale. Tu y copieras les URLs
 
 ---
 
-## ÉTAPE 3 — QCM générés par IA (15 min)
+## ÉTAPE 2 — QCM générés par IA (15 min)
 
 Pour chaque module, on crée **1 QCM** lié à la **première vidéo** (1.1, 2.1, 3.1, etc.) — soit 8 QCM au total. L'IA Groq (Llama 3.3) lit le titre + description et génère 5 questions QCM en français.
 
@@ -200,9 +187,9 @@ Pour chaque module, on crée **1 QCM** lié à la **première vidéo** (1.1, 2.1
 
 ---
 
-## ÉTAPE 4 — Créer 2 Prosits + 1 Projet (20 min)
+## ÉTAPE 3 — Créer 2 Prosits + 1 Projet (20 min)
 
-### 4.1 PROSIT 1 — Sécuriser une application web bancaire (Module 4 — Réseaux/Sécu)
+### 3.1 PROSIT 1 — Sécuriser une application web bancaire (Module 4 — Réseaux/Sécu)
 
 **Connexion** : `omar.isil.l3@fliplearn.dz`
 
@@ -245,7 +232,7 @@ Rédiger un rapport de sécurité professionnel
 
 ---
 
-### 4.2 PROSIT 2 — Architecture e-commerce scalable (Module 5 — Archi SI)
+### 3.2 PROSIT 2 — Architecture e-commerce scalable (Module 5 — Archi SI)
 
 **Connexion** : `sami.isil.l3@fliplearn.dz`
 
@@ -277,7 +264,7 @@ Livrable : architecture document + diagramme + estimation budgétaire.
 
 ---
 
-### 4.3 PROJET — Mini-LMS sécurisé (multi-modules)
+### 3.3 PROJET — Mini-LMS sécurisé (multi-modules)
 
 **Connexion** : `yasmine.isil.l3@fliplearn.dz` (ou n'importe quel prof L3)
 
@@ -324,19 +311,19 @@ Livrables : code GitHub + démo déployée + rapport 15 pages + soutenance 20 mi
 
 ---
 
-## ÉTAPE 5 — Test côté étudiant (30 min)
+## ÉTAPE 4 — Test côté étudiant (30 min)
 
 C'est le **vrai test fonctionnel**. Tu joues l'étudiant L3 ISIL et tu valides chaque feature.
 
 **Connexion** : `assil.isil.l3@fliplearn.dz` / `test1234`
 (ou un étudiant frais comme `yacine.boudjedra.l3@fliplearn.dz` pour avoir 0% partout — démo plus crédible)
 
-### 5.1 Mon Parcours (CAI) — vérifier l'affichage des modules
+### 4.1 Mon Parcours (CAI) — vérifier l'affichage des modules
 - Sidebar → **Mon Parcours**
 - ✅ Tu dois voir les **8 modules ISIL L3** (4 S5 + 4 S6) avec indicateur de préparation
 - ✅ Les modules S6 (Architecture, Web/Mobile, IA, DevOps) sont marqués "semestre courant"
 
-### 5.2 Visionner une vidéo + flashcards auto
+### 4.2 Visionner une vidéo + flashcards auto
 - Sidebar → **Mes cours** → ouvre **Sécurité Informatique** (ou Cybersécurité)
 - Clique sur une vidéo (ex. Docker — débuter de zéro)
 - Lance la lecture, **scrub à 90%** (déplace le curseur en avant pour gagner du temps)
@@ -344,41 +331,41 @@ C'est le **vrai test fonctionnel**. Tu joues l'étudiant L3 ISIL et tu valides c
 - Sidebar → **Mes decks** → ouvre le deck auto-généré
 - ✅ Tu dois voir 5-10 cartes (front/back) basées sur le transcript de la vidéo
 
-### 5.3 Faire un QCM
+### 4.3 Faire un QCM
 - Retour sur le cours → bouton **« QCM »** sous la vidéo
 - Réponds aux 5 questions (au moins 1 juste pour gagner des points)
 - ✅ À la fin : score affiché + points ajoutés (gamification)
 
-### 5.4 Tuteur IA personnel
+### 4.4 Tuteur IA personnel
 - Sidebar → **Mon tuteur IA** (ou bulle flottante en bas à droite)
 - Question test : `Explique-moi ce qu'est le XSS en 3 phrases`
 - ✅ Réponse Groq en français en ~5 s
 - 2ᵉ test : `Quelle est la différence entre monolithe et microservices ?`
 - ✅ Réponse cohérente, pas de hallucinations
 
-### 5.5 Ask-the-video (RAG sur transcript)
+### 4.5 Ask-the-video (RAG sur transcript)
 - Reviens sur une vidéo (idéalement une longue genre Docker 1/3)
 - Trouve l'onglet **« Pose une question sur la vidéo »**
 - Question : `Comment créer une image Docker ?`
 - ✅ Réponse + timestamp cliquable qui te ramène au bon moment de la vidéo
 
-### 5.6 Prosit en groupe
+### 4.6 Prosit en groupe
 - Sidebar → **Prosits** → ouvre **« Sécuriser application bancaire »**
 - ✅ Tu vois la phase **Aller** active
 - Remplis 2-3 mots-clés dans le champ
 - Si tu veux tester la formation de groupe : ouvre un 2ᵉ onglet incognito avec `lina.benkhelifa.l3@fliplearn.dz`, demande à rejoindre
 
-### 5.7 Projet timeline
+### 4.7 Projet timeline
 - Sidebar → **Projets** → ouvre **Mini-LMS sécurisé**
 - ✅ Timeline visible avec 6 phases
 - ✅ Possibilité d'uploader un livrable (test : un PDF random)
 
-### 5.8 Chat temps réel
+### 4.8 Chat temps réel
 - Sidebar → **Chat** → choisis un autre étudiant L3 ISIL
 - Envoie un message — l'autre doit le recevoir en temps réel
 - (à tester avec 2 onglets/fenêtres)
 
-### 5.9 Leaderboard + badges
+### 4.9 Leaderboard + badges
 - Sidebar → **Classement**
 - ✅ Tu apparais avec les points gagnés au QCM
 - Sidebar → **Mes badges** ou profil → ✅ tes premiers badges débloqués
@@ -391,10 +378,9 @@ Coche au fur et à mesure pour valider que **tout** marche :
 
 ### Setup
 - [ ] App répond (https://fliplearn-5lsz.onrender.com)
-- [ ] Seed L3 ISIL exécuté avec succès
-- [ ] 3 nouveaux profs visibles dans la liste
-- [ ] 10 nouveaux étudiants visibles
-- [ ] 8 modules ISIL L3 créés
+- [ ] Connecté en admin → liste utilisateurs affiche les 4 profs ISIL L3
+- [ ] Liste utilisateurs affiche les 11 étudiants ISIL L3 (toi + 10)
+- [ ] Liste cours affiche les 8 modules ISIL L3 (4 S5 + 4 S6)
 
 ### Vidéos (24 au total)
 - [ ] M1 — Génie Logiciel : 3 vidéos uploadées
@@ -435,11 +421,16 @@ Coche au fur et à mesure pour valider que **tout** marche :
 - Recharge la page 2-3 fois si erreur 502
 - Si toujours pas : vérifie le statut sur https://dashboard.render.com (côté admin Render)
 
-### Le bouton « Seed L3 ISIL » fait rien
-1. Vérifie que tu es bien admin (pas étudiant)
-2. F12 → onglet **Network** → clique le bouton → regarde l'appel `POST /api/admin/seed/l3-isil`
-3. Si **401/403** : reconnecte-toi en admin
-4. Si **500** : regarde le message d'erreur dans le bandeau rouge ou les logs Render
+### Un compte ISIL L3 a disparu / la base a été nettoyée
+Re-lance le seed CLI depuis ton PC (idempotent, ne crée pas de doublons) :
+```bash
+cd "C:\Users\assil\OneDrive\Documents\projet pfe\fliplearn\backend"
+node scripts/seed-l3-isil.js
+```
+Pour vérifier l'état actuel de la base :
+```bash
+node scripts/check-l3-isil.js
+```
 
 ### La vidéo YouTube ne s'affiche pas
 - L'URL doit être au format `https://www.youtube.com/watch?v=XXXX` ou `https://youtu.be/XXXX`
@@ -464,10 +455,10 @@ Coche au fur et à mesure pour valider que **tout** marche :
 
 ### Reset complet si besoin
 ```bash
-# Sur ton PC, dans le dossier fliplearn/
-node backend/scripts/seed-soutenance.js --reset
+cd "C:\Users\assil\OneDrive\Documents\projet pfe\fliplearn\backend"
+node scripts/seed-soutenance.js --reset
+node scripts/seed-l3-isil.js
 ```
-Puis re-clique le bouton « Seed L3 ISIL » côté admin.
 
 ---
 

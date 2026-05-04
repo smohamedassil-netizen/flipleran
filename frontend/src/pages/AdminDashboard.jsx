@@ -7,7 +7,7 @@ import {
   Clock, TrendingUp, TrendingDown, Eye, Mail, Filter,
   MoreHorizontal, RefreshCw, Download, HelpCircle,
   Ticket, Send, ShieldCheck, User as UserIcon, Inbox, Flag,
-  Gift, Award, Package, UserCheck, Sparkles,
+  Gift, Award, Package, UserCheck,
 } from 'lucide-react';
 import Layout from '../components/Layout.jsx';
 import api from '../utils/api.js';
@@ -381,8 +381,6 @@ function UsersSection() {
   const [selectedUsers, setSelectedUsers] = useState(new Set());
   const [expandedRow, setExpandedRow] = useState(null);
   const [actionMenu, setActionMenu] = useState(null);
-  const [seedingL3, setSeedingL3] = useState(false);
-  const [seedResult, setSeedResult] = useState(null);
 
   const load = useCallback(() => {
     setLoading(true);
@@ -459,21 +457,6 @@ function UsersSection() {
     setSelectedUsers(new Set());
   };
 
-  const seedL3Isil = async () => {
-    if (!confirm("Cette action va créer 3 profs, 10 étudiants et 8 modules ISIL L3 (idempotent — sans doublons). Continuer ?")) return;
-    setSeedingL3(true);
-    setSeedResult(null);
-    try {
-      const { data } = await api.post('/admin/seed/l3-isil');
-      setSeedResult({ ok: true, ...data });
-      load(); // recharge la liste pour voir les nouveaux comptes
-    } catch (err) {
-      setSeedResult({ ok: false, message: err.response?.data?.message || 'Erreur' });
-    } finally {
-      setSeedingL3(false);
-    }
-  };
-
   const roleButtons = [
     { value: '', label: 'Tous' },
     { value: 'admin', label: 'Admins' },
@@ -489,53 +472,10 @@ function UsersSection() {
           Gestion des utilisateurs
           <span style={{ fontSize: '13px', fontWeight: 400, color: '#94A3B8', marginLeft: 8 }}>({users.length})</span>
         </h2>
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          <button
-            style={{ ...btnGhost, borderColor: '#9333EA', color: '#9333EA' }}
-            onClick={seedL3Isil}
-            disabled={seedingL3}
-            title="Crée 3 profs, 10 étudiants et 8 modules ISIL L3 d'un coup. Idempotent."
-          >
-            {seedingL3
-              ? <RefreshCw size={14} style={{ animation: 'spin 1s linear infinite' }} />
-              : <Sparkles size={14} />}
-            {seedingL3 ? 'Seed en cours…' : 'Seed L3 ISIL (démo)'}
-          </button>
-          <button style={btnPrimary} onClick={() => setCreateModal(true)}>
-            <UserPlus size={15} /> Créer un utilisateur
-          </button>
-        </div>
+        <button style={btnPrimary} onClick={() => setCreateModal(true)}>
+          <UserPlus size={15} /> Créer un utilisateur
+        </button>
       </div>
-
-      {/* Résultat seed L3 ISIL */}
-      {seedResult && (
-        <div style={{
-          padding: '12px 16px',
-          marginBottom: 14,
-          borderRadius: 8,
-          background: seedResult.ok ? '#F0FDF4' : '#FEF2F2',
-          border: `1px solid ${seedResult.ok ? '#BBF7D0' : '#FCA5A5'}`,
-          fontSize: 13,
-          color: seedResult.ok ? '#15803D' : '#991B1B',
-        }}>
-          {seedResult.ok ? (
-            <>
-              <strong>Seed L3 ISIL terminé.</strong>{' '}
-              {seedResult.summary.profsCreated} prof(s) créé(s) sur {seedResult.summary.profsTotal},{' '}
-              {seedResult.summary.studentsCreated} étudiant(s) créé(s) sur {seedResult.summary.studentsTotal},{' '}
-              {seedResult.summary.coursesCreated} module(s) créé(s) sur {seedResult.summary.coursesTotal}.
-            </>
-          ) : (
-            <><strong>Erreur :</strong> {seedResult.message}</>
-          )}
-          <button
-            style={{ marginLeft: 12, background: 'none', border: 'none', cursor: 'pointer', color: 'inherit', textDecoration: 'underline' }}
-            onClick={() => setSeedResult(null)}
-          >
-            Fermer
-          </button>
-        </div>
-      )}
 
       {/* Search + Role filters */}
       <div style={{ display: 'flex', gap: '12px', marginBottom: '16px', flexWrap: 'wrap', alignItems: 'center' }}>
