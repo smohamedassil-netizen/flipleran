@@ -4,6 +4,39 @@ Historique des modifications par date de session.
 
 ---
 
+## 6 Mai 2026 — Refonte des livrables documentaires
+
+Session orientée documentation : mise à jour exhaustive des deux livrables Word principaux pour refléter l'état actuel de la plateforme avant la soutenance.
+
+### Tutoriel utilisateur (`livrables/Tutoriel_FlipLearn.docx`)
+- Réécriture complète : 8 964 mots, 76 titres, 60 KB.
+- Couverture exhaustive des **trois rôles** : 25 fonctionnalités étudiant (Mon Parcours, Quiz Battle avec power-ups, Tuteur IA personnel, Assistant Module avec persona, Récompenses, Prosits avec rotation des rôles CESI, Projets PBL, peer assessment 70/30, validation métacognitive de cours, etc.), 20 fonctionnalités professeur (Class Readiness, Auto-prep IA Whisper+GPT-4o+Groq, Learning Path Builder, Insights IA de classe, Feedback ciblé étudiant, etc.), 8 fonctionnalités admin (validation inscriptions, catalogue récompenses, claims, seed L3 ISIL, etc.).
+- Ajout d'un **glossaire de 18 termes** (APP, Bloom, MVC, SM-2, free-rider, etc.).
+- Ajout des **6 fonctionnalités transversales** : notifications multi-canal, thème filière (bleu ISIL / orange Management / vert Finance), responsive mobile, quotas IA, streak avec freezes, page 404.
+
+### Guide de compréhension technique (`livrables/Guide_Comprendre_FlipLearn.docx`)
+- Réécriture complète : 9 725 mots, 120 titres, 65 KB.
+- **Architecture détaillée** : analogie restaurant maintenue, stack 12 technologies justifiées (React/Vite, Express/Mongoose, MongoDB, Cloudinary, Groq, OpenAI, Brevo/Resend, Vercel/Render, Tailwind, Socket.io, JWT).
+- **Base de données** : inventaire des 33 modèles MongoDB regroupés en 8 domaines, exemples de relations et populate.
+- **Authentification** : flow complet inscription → login → JWT → refresh token httpOnly, étape par étape avec extraits de code.
+- **Sécurité** : 11 couches détaillées (bcrypt, JWT, HTTPS, helmet, rate limiting, CORS, validation d'entrées, permissions par rôle, ACL Socket.io, secrets en env vars, sessionStorage).
+- **Gamification** : XP transactions avec dedupKey, courbe de niveaux, streaks avec freezes Duolingo-style, génération de quêtes hebdo IA, claim/approval des récompenses, 3 leaderboards (personnel/mensuel/cohorte).
+- **Algorithmes pédagogiques** : SM-2 (Wozniak 1990) avec extraits, scoring Quiz Battle (basePoints + speedBonus + streakBonus × powerupMultiplier), score Prosit 70 % prof + 30 % pairs avec détection free-rider et désignation MVC, détection plagiat IA (heuristiques + Groq), class readiness.
+- **Services IA** : 9 services détaillés (Module Assistant, Tuteur IA personnel, génération QCM, auto-flashcards, auto-prep complet, coaches Project/Prosit, génération de quêtes, insights enseignant, quotas mensuels avec reset automatique).
+- **Socket.io** : conventions de rooms (user_, course_, private_, bot_, prosit_, project_, BATTLE-), ACL canJoinRoom, catalogue d'événements, flow complet d'un Quiz Battle.
+- **Scénarios bout-en-bout** : 6 parcours détaillés (connexion, vidéo + question intégrée, Quiz Battle, cycle Prosit complet, auto-prep prof, claim récompense premium).
+- **Section soutenance** : 18 questions probables du jury avec réponses argumentées.
+
+### Système de tracking (`scripts/`)
+- Entrée #001 ajoutée via `doc_updater.py` dans `scripts/Documentation_PFE.docx` et `scripts/Tutoriel_FlipLearn.docx`.
+- 3 anomalies signalées : risque de désynchronisation des routes URL après nouveaux sprints, vérification du quota IA à confirmer côté `backend/middleware/aiQuota.js`, distinction `archive/` vs `livrables/`.
+
+### Note méthodologique
+- Aucune modification de code applicatif dans cette session — uniquement de la documentation.
+- Inventaire exhaustif du code (33 modèles, 30+ groupes de routes, 51 pages, 47 composants, 7 contextes, 3 hooks) réalisé en amont via deux agents d'exploration parallèles, garantissant que la documentation reflète l'état actuel du code et non d'anciennes versions.
+
+---
+
 ## 3 Mai 2026 — Audit complet + correctifs critiques + nettoyage structure
 
 Session orientée qualité : audit jury PFE, corrections des défauts visibles, refactor de structure.
