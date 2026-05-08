@@ -17,6 +17,7 @@ docs/agents/
 ├── pedagogie.md           ← vision IA + règle "pas de vs IA dans peer features"
 ├── deadlines.md           ← rendu mémoire 20/05/2026, soutenance 15/06/2026
 ├── status.md              ← état actuel : déployé, features livrées, ce qui reste
+├── repo-structure.md      ← une seule branche main + tags d'archive
 └── sessions/              ← recaps datés des sessions Claude Code passées
     ├── 2026-04-28.md
     ├── 2026-04-30.md
@@ -30,6 +31,10 @@ docs/agents/
 3. Lis [`status.md`](status.md) — pour savoir ce qui est déjà livré (ne pas réimplémenter).
 4. Lis le dernier fichier de [`sessions/`](sessions/) — pour reprendre dans la continuité.
 5. Lis [`../../CLAUDE.md`](../../CLAUDE.md) — commandes (`npm run dev`, comptes test, env vars).
+
+## Si on te parle de branches / structure du repo
+
+Lis [`repo-structure.md`](repo-structure.md). Une seule branche active (`main`), 7 tags d'archive pour les snapshots historiques. Convention pour gérer les branches `claude/...` créées par d'autres agents externes.
 
 ## Si on te demande "explique-moi l'app"
 
