@@ -199,6 +199,9 @@ export default function QuizBattle() {
 
   useEffect(() => { if (phase === 'lobby') refreshRooms(); }, [phase, refreshRooms]);
 
+  // Mode de la modale de config : 'multi' (1v1 humain) ou 'solo' (vs IA, démo)
+  const [configMode, setConfigMode] = useState('multi');
+
   const createRoom = () => {
     if (eligible === false) {
       setError('Tu dois avoir complété au moins 1 vidéo à 80% pour participer.');
@@ -208,12 +211,44 @@ export default function QuizBattle() {
     // Le check socket est differe a confirmCreateRoom (l'utilisateur peut configurer
     // pendant que le socket finit de se connecter).
     setError('');
+    setConfigMode('multi');
+    setShowConfigModal(true);
+  };
+
+  // Mode démo (solo vs IA) — accessible même sans avoir complété de vidéo, pour
+  // qu'on puisse démontrer la fonctionnalité dès le début (PFE / soutenance).
+  const startSoloDemo = () => {
+    setError('');
+    setConfigMode('solo');
     setShowConfigModal(true);
   };
 
   const confirmCreateRoom = () => {
     if (!socketRef.current?.connected) {
       setError('Connexion au serveur en cours… Réessayez.');
+      return;
+    }
+    if (configMode === 'solo') {
+      // Mode démo : crée la salle ET démarre immédiatement (pas d'attente)
+      socketRef.current.emit('battle:create_solo', {
+        name: `${user?.prenom ?? ''} ${user?.nom ?? ''}`.trim() || 'Joueur',
+        userId: user?._id,
+        courseId: selectedCourseId || null,
+      }, (res) => {
+        if (!res || !res.roomId) {
+          setError(res?.error || 'Impossible de lancer le mode démo.');
+          return;
+        }
+        setShowConfigModal(false);
+        setRoomId(res.roomId);
+        setIsHost(true);
+        setPlayers([
+          { name: `${user?.prenom ?? ''} ${user?.nom ?? ''}`.trim() || 'Joueur' },
+          { name: '🤖 IA Adversaire' },
+        ]);
+        // L'événement battle:started arrivera juste après et passera phase à 'playing'
+        setError('');
+      });
       return;
     }
     socketRef.current.emit('battle:create', {
@@ -255,14 +290,25 @@ export default function QuizBattle() {
     setUsedPowerups(prev => new Set([...prev, id]));
 
     if (id === 'fifty') {
-      // Cache 2 options incorrectes
-      const correct = null;
-      const options = ['A', 'B', 'C', 'D'];
-      // On ne connaît pas la correcte côté client, donc on stratégie : on cache 2 aléatoires
-      // Fallback : montrer les 2 qui restent aléatoirement (utile même sans savoir la bonne)
-      // Ici on va ne cacher que 2 non-sélectionnées au hasard pour garder la contrainte stratégique
-      const shuffled = options.sort(() => Math.random() - 0.5);
-      setHiddenOptions(shuffled.slice(0, 2));
+      // Le serveur connaît la bonne réponse — il garantit qu'on ne masque
+      // jamais la bonne option (sinon le power-up est inutile).
+      socketRef.current?.emit(
+        'battle:powerup_fifty',
+        { roomId, questionIndex },
+        (res) => {
+          if (res?.hidden && Array.isArray(res.hidden)) {
+            setHiddenOptions(res.hidden);
+          } else {
+            // Fallback : si le serveur échoue, on rembourse le power-up
+            setUsedPowerups(prev => {
+              const next = new Set(prev);
+              next.delete('fifty');
+              return next;
+            });
+            setError(res?.error || 'Power-up indisponible, réessaie.');
+          }
+        }
+      );
     } else if (id === 'freeze') {
       setTimer(t => t + 8);
     } else if (id === 'double') {
@@ -547,10 +593,25 @@ export default function QuizBattle() {
                 background: eligible === false ? '#94A3B8' : 'linear-gradient(135deg, #1B4F72, #2874A6)',
                 color: 'white', border: 'none', fontSize: 16, fontWeight: 700,
                 cursor: eligible === false ? 'not-allowed' : 'pointer',
-                marginBottom: 24, boxShadow: '0 4px 14px rgba(27,79,114,.3)',
+                marginBottom: 12, boxShadow: '0 4px 14px rgba(27,79,114,.3)',
                 opacity: eligible === false ? 0.6 : 1,
               }}>
-              <Plus size={20} /> Créer une salle
+              <Plus size={20} /> Créer une salle (1 vs 1)
+            </button>
+
+            {/* Bouton mode démo vs IA — toujours accessible (utile pour la
+                soutenance / découverte de la fonctionnalité sans 2e joueur). */}
+            <button
+              onClick={startSoloDemo}
+              aria-label="Lancer une partie démo contre l'IA"
+              style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
+                width: '100%', padding: '13px', borderRadius: 12,
+                background: 'white', color: '#1B4F72',
+                border: '2px solid #1B4F72', fontSize: 15, fontWeight: 700,
+                cursor: 'pointer', marginBottom: 24,
+              }}>
+              <Sparkles size={18} /> Mode démo (vs IA)
             </button>
 
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
@@ -617,10 +678,11 @@ export default function QuizBattle() {
               }}
             >
               <h2 id="battle-config-title" style={{ fontSize: '1.1rem', fontWeight: 700, color: '#1B4F72', margin: '0 0 4px' }}>
-                Configurer ta partie
+                {configMode === 'solo' ? 'Mode démo — Configurer ta partie' : 'Configurer ta partie'}
               </h2>
               <p style={{ fontSize: 12, color: '#64748B', margin: '0 0 18px', lineHeight: 1.5 }}>
-                Choisis la matière sur laquelle porteront les questions. Mode actuel : <strong>1 contre 1</strong>.
+                Choisis la matière sur laquelle porteront les questions.
+                Mode actuel : <strong>{configMode === 'solo' ? 'vs IA (démo)' : '1 contre 1'}</strong>.
               </p>
 
               <label htmlFor="battle-course" style={{ display: 'block', fontSize: 12, color: '#475569', fontWeight: 600, marginBottom: 6 }}>
@@ -670,7 +732,7 @@ export default function QuizBattle() {
                     color: 'white', cursor: 'pointer', fontSize: 13, fontWeight: 700,
                   }}
                 >
-                  <Plus size={14} /> Créer la salle
+                  {configMode === 'solo' ? <><Sparkles size={14} /> Lancer la démo</> : <><Plus size={14} /> Créer la salle</>}
                 </button>
               </div>
             </div>

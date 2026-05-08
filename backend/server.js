@@ -359,6 +359,205 @@ const battleRooms = new Map();
 /* ── roomUsers: roomId → Map<socketId, userInfo> ──────────────────────── */
 const roomUsers = new Map();
 
+/**
+ * Charge des questions pour un battle. Si un courseId est fourni, restreint aux
+ * QCMs des vidéos de ce cours. Toujours fallback sur 5 questions de démo si <2
+ * questions trouvées en base — garantit qu'un battle peut toujours se jouer.
+ */
+async function loadBattleQuestions(courseId) {
+  let questions = [];
+  try {
+    const QCM = (await import('./models/QCM.js')).default;
+    let qcmQuery = {};
+    if (courseId) {
+      const Video = (await import('./models/Video.js')).default;
+      const videoIds = await Video.find({ courseId }).select('_id');
+      qcmQuery = { videoId: { $in: videoIds.map(v => v._id) } };
+    }
+    const qcms = await QCM.find(qcmQuery).select('questions').limit(20);
+    const allQuestions = qcms.flatMap(q => q.questions || []);
+    questions = allQuestions.sort(() => Math.random() - 0.5).slice(0, 5).map(q => ({
+      texte: q.texte, options: q.options, correctAnswer: q.correctAnswer,
+    }));
+  } catch { /* DB indisponible — fallback démo ci-dessous */ }
+
+  if (questions.length < 2) {
+    questions = [
+      { texte: 'Qu\'est-ce qu\'un algorithme ?', options: { A: 'Un programme', B: 'Une suite d\'instructions', C: 'Un langage', D: 'Un compilateur' }, correctAnswer: 'B' },
+      { texte: 'Quelle est la complexité d\'un tri fusion ?', options: { A: 'O(n)', B: 'O(n²)', C: 'O(n log n)', D: 'O(log n)' }, correctAnswer: 'C' },
+      { texte: 'SQL est un langage :', options: { A: 'Compilé', B: 'De requête', C: 'Objet', D: 'Fonctionnel' }, correctAnswer: 'B' },
+      { texte: 'HTTP est un protocole de :', options: { A: 'Réseau', B: 'Transport', C: 'Application', D: 'Liaison' }, correctAnswer: 'C' },
+      { texte: 'Un processus est :', options: { A: 'Un programme en mémoire', B: 'Un fichier', C: 'Un thread', D: 'Un CPU' }, correctAnswer: 'A' },
+    ];
+  }
+  return questions;
+}
+
+/**
+ * Soumet une réponse pour un joueur (humain ou bot). Centralise toute la
+ * logique de scoring + détection fin de manche / fin de partie pour qu'elle
+ * soit réutilisable par le bot IA en mode solo.
+ */
+async function submitBattleAnswer({ io, roomId, playerSocketId, questionIndex, answer, powerup }) {
+  const room = battleRooms.get(roomId);
+  if (!room) return;
+  if (questionIndex !== room.currentQ) return; // évite réponse en retard
+  const playerIdx = room.players.findIndex(p => p.id === playerSocketId);
+  if (playerIdx === -1) return;
+
+  if (!room.answers[questionIndex]) room.answers[questionIndex] = {};
+  if (room.answers[questionIndex][playerSocketId]) return; // anti-double
+
+  const player = room.players[playerIdx];
+  player.streak       = player.streak || 0;
+  player.bestStreak   = player.bestStreak || 0;
+  player.correctCount = player.correctCount || 0;
+
+  const correct = answer != null && room.questions[questionIndex]?.correctAnswer === answer;
+
+  let gained = 0;
+  if (correct) {
+    gained = 10;
+    if (powerup === 'double') gained += 10;
+    player.streak += 1;
+    if (player.streak >= 5) gained += 10;
+    else if (player.streak >= 3) gained += 5;
+    if (player.streak > player.bestStreak) player.bestStreak = player.streak;
+    player.correctCount += 1;
+  } else {
+    player.streak = 0;
+  }
+  player.score += gained;
+
+  room.answers[questionIndex][playerSocketId] = { answer, correct, gained };
+
+  // Notifier l'adversaire qu'un power-up a été utilisé (effet visuel)
+  if (powerup) {
+    const opponent = room.players.find(p => p.id !== playerSocketId);
+    if (opponent && !opponent.id.startsWith('AI_BOT_')) {
+      io.to(opponent.id).emit('battle:opponent_powerup', { powerup });
+    }
+  }
+
+  // Quand les deux joueurs ont répondu : passer à la question suivante / finir
+  const expectedAnswers = room.players.length;
+  if (Object.keys(room.answers[questionIndex]).length === expectedAnswers) {
+    const nextQ = questionIndex + 1;
+
+    if (nextQ >= room.questions.length) {
+      io.to(roomId).emit('battle:finished', {
+        players: room.players.map(p => ({
+          name: p.name, score: p.score,
+          bestStreak: p.bestStreak || 0, correctCount: p.correctCount || 0,
+        })),
+        totalQuestions: room.questions.length,
+        correctAnswer: room.questions[questionIndex].correctAnswer,
+      });
+
+      // Persistance : seulement les matches 1v1 humains (pas vs IA)
+      if (!room.aiBotId) {
+        try {
+          const BattleResult = (await import('./models/BattleResult.js')).default;
+          const { addPoints } = await import('./services/points.js');
+          const [p1, p2] = room.players;
+          if (p1 && p2 && p1.odgerId && p2.odgerId) {
+            const draw = p1.score === p2.score;
+            const p1Outcome = draw ? 'draw' : (p1.score > p2.score ? 'win' : 'loss');
+            const p2Outcome = draw ? 'draw' : (p2.score > p1.score ? 'win' : 'loss');
+            const total = room.questions.length;
+            const insertedResults = await BattleResult.insertMany([
+              { userId: p1.odgerId, opponentId: p2.odgerId, courseId: room.courseId,
+                score: p1.score, correctCount: p1.correctCount || 0, totalQuestions: total,
+                bestStreak: p1.bestStreak || 0, outcome: p1Outcome },
+              { userId: p2.odgerId, opponentId: p1.odgerId, courseId: room.courseId,
+                score: p2.score, correctCount: p2.correctCount || 0, totalQuestions: total,
+                bestStreak: p2.bestStreak || 0, outcome: p2Outcome },
+            ]);
+
+            const xpFor = (o) => o === 'win' ? 10 : o === 'draw' ? 5 : 0;
+            const players = [
+              { id: p1.odgerId, outcome: p1Outcome, resultId: insertedResults[0]?._id },
+              { id: p2.odgerId, outcome: p2Outcome, resultId: insertedResults[1]?._id },
+            ];
+            for (const pl of players) {
+              const xp = xpFor(pl.outcome);
+              if (xp > 0) {
+                try {
+                  await addPoints(pl.id, xp, `battle_${pl.outcome}`, {
+                    source: 'battle', relatedType: 'BattleResult',
+                    relatedId: pl.resultId,
+                    dedupKey: pl.resultId ? `battle_${pl.resultId}` : null,
+                  });
+                } catch (e) { console.error('[battle XP]', e.message); }
+              }
+            }
+          }
+        } catch (err) {
+          console.error('[battle] persist results error:', err.message);
+        }
+      }
+
+      setTimeout(() => battleRooms.delete(roomId), 5000);
+    } else {
+      room.currentQ = nextQ;
+      io.to(roomId).emit('battle:next', {
+        questionIndex: nextQ,
+        question: { texte: room.questions[nextQ].texte, options: room.questions[nextQ].options },
+        scores: room.players.map(p => ({
+          name: p.name, score: p.score,
+          streak: p.streak || 0, bestStreak: p.bestStreak || 0,
+        })),
+        previousCorrect: room.questions[questionIndex].correctAnswer,
+        gained: Object.fromEntries(
+          Object.entries(room.answers[questionIndex]).map(([sid, a]) => {
+            const pIdx = room.players.findIndex(p => p.id === sid);
+            return [room.players[pIdx]?.name || 'Player', a.gained];
+          })
+        ),
+      });
+
+      // Mode solo : programmer la réponse du bot pour la question suivante
+      if (room.aiBotId) scheduleAiBotAnswer(io, roomId, nextQ);
+    }
+  }
+}
+
+/**
+ * Mode démo solo : simule la réponse d'un adversaire IA après un délai
+ * aléatoire, avec une précision moyenne (≈65%). Permet une démonstration
+ * du Quiz Battle sans avoir besoin d'un second joueur connecté.
+ */
+function scheduleAiBotAnswer(io, roomId, questionIndex) {
+  const room = battleRooms.get(roomId);
+  if (!room || !room.aiBotId) return;
+
+  // Délai 2-6s pour donner le temps à l'humain de répondre + paraître naturel
+  const delay = 2000 + Math.random() * 4000;
+  const ACCURACY = 0.65; // précision du bot pour rester challengeant mais battable
+
+  setTimeout(async () => {
+    const r = battleRooms.get(roomId);
+    if (!r || r.currentQ !== questionIndex) return;
+    const correctLetter = r.questions[questionIndex]?.correctAnswer;
+    if (!correctLetter) return;
+    const willBeCorrect = Math.random() < ACCURACY;
+    let chosen;
+    if (willBeCorrect) {
+      chosen = correctLetter;
+    } else {
+      const wrong = ['A', 'B', 'C', 'D'].filter(l => l !== correctLetter);
+      chosen = wrong[Math.floor(Math.random() * wrong.length)];
+    }
+    await submitBattleAnswer({
+      io, roomId,
+      playerSocketId: r.aiBotId,
+      questionIndex,
+      answer: chosen,
+      powerup: null,
+    });
+  }, delay);
+}
+
 /* ═══════════════════════════════════════════════════════════════════════
    Socket Room ACL — canJoinRoom(socket, roomId)
    Returns true if the user is allowed to join the room.
@@ -722,40 +921,9 @@ io.on('connection', (socket) => {
     const room = battleRooms.get(roomId);
     if (!room || room.players.length < 2) return;
     room.started = true;
+    room.currentQ = 0;
 
-    // Charger des questions aléatoires depuis les QCMs existants.
-    // Si un courseId est sélectionné, ne tirer que les QCMs des vidéos de ce cours.
-    let questions = [];
-    try {
-      const QCM = (await import('./models/QCM.js')).default;
-      let qcmQuery = {};
-      if (room.courseId) {
-        const Video = (await import('./models/Video.js')).default;
-        const videoIds = await Video.find({ courseId: room.courseId }).select('_id');
-        qcmQuery = { videoId: { $in: videoIds.map(v => v._id) } };
-      }
-      const qcms = await QCM.find(qcmQuery).select('questions').limit(20);
-      const allQuestions = qcms.flatMap(q => q.questions || []);
-      // Mélanger et prendre 5
-      questions = allQuestions.sort(() => Math.random() - 0.5).slice(0, 5).map(q => ({
-        texte: q.texte,
-        options: q.options,
-        correctAnswer: q.correctAnswer,
-      }));
-    } catch { /* pas de QCM disponible */ }
-
-    if (questions.length < 2) {
-      // Questions de démo si aucun QCM en base
-      questions = [
-        { texte: 'Qu\'est-ce qu\'un algorithme ?', options: { A: 'Un programme', B: 'Une suite d\'instructions', C: 'Un langage', D: 'Un compilateur' }, correctAnswer: 'B' },
-        { texte: 'Quelle est la complexité d\'un tri fusion ?', options: { A: 'O(n)', B: 'O(n²)', C: 'O(n log n)', D: 'O(log n)' }, correctAnswer: 'C' },
-        { texte: 'SQL est un langage :', options: { A: 'Compilé', B: 'De requête', C: 'Objet', D: 'Fonctionnel' }, correctAnswer: 'B' },
-        { texte: 'HTTP est un protocole de :', options: { A: 'Réseau', B: 'Transport', C: 'Application', D: 'Liaison' }, correctAnswer: 'C' },
-        { texte: 'Un processus est :', options: { A: 'Un programme en mémoire', B: 'Un fichier', C: 'Un thread', D: 'Un CPU' }, correctAnswer: 'A' },
-      ];
-    }
-
-    room.questions = questions;
+    room.questions = await loadBattleQuestions(room.courseId);
 
     io.to(roomId).emit('battle:started', {
       totalQuestions: room.questions.length,
@@ -765,140 +933,85 @@ io.on('connection', (socket) => {
       },
       questionIndex: 0,
     });
+
+    // Mode solo : déclencher la 1ère réponse du bot après l'envoi de la question
+    if (room.aiBotId) scheduleAiBotAnswer(io, roomId, 0);
   });
 
-  /* Soumettre une réponse */
+  /* Mode démo SOLO : créer une salle vs IA et la démarrer immédiatement.
+     Pratique pour démontrer la fonctionnalité sans avoir 2 joueurs connectés. */
+  socket.on('battle:create_solo', async (data, callback) => {
+    try {
+      const roomId = 'BATTLE-SOLO-' + Math.random().toString(36).substring(2, 8).toUpperCase();
+      const aiBotId = 'AI_BOT_' + roomId;
+
+      battleRooms.set(roomId, {
+        players: [
+          { id: socket.id, name: data?.name || 'Joueur', odgerId: data?.userId, score: 0 },
+          { id: aiBotId, name: '🤖 IA Adversaire', odgerId: null, score: 0 },
+        ],
+        questions: [],
+        currentQ: 0,
+        answers: {},
+        started: true,
+        courseId: data?.courseId || null,
+        aiBotId,
+      });
+      socket.join(roomId);
+
+      const room = battleRooms.get(roomId);
+      room.questions = await loadBattleQuestions(room.courseId);
+
+      if (typeof callback === 'function') callback({ roomId });
+
+      // Notifier qu'un adversaire (IA) est trouvé pour cohérence d'UI
+      io.to(roomId).emit('battle:players', room.players.map(p => ({
+        name: p.name, odgerId: p.odgerId, score: p.score,
+      })));
+
+      // Lancer la partie immédiatement
+      io.to(roomId).emit('battle:started', {
+        totalQuestions: room.questions.length,
+        question: {
+          texte: room.questions[0].texte,
+          options: room.questions[0].options,
+        },
+        questionIndex: 0,
+      });
+      scheduleAiBotAnswer(io, roomId, 0);
+    } catch (err) {
+      console.error('[battle:create_solo]', err.message);
+      if (typeof callback === 'function') callback({ error: 'Impossible de créer la salle solo.' });
+    }
+  });
+
+  /* Soumettre une réponse — délègue à submitBattleAnswer (mutualisé avec le bot). */
   socket.on('battle:answer', async ({ roomId, questionIndex, answer, powerup }) => {
+    await submitBattleAnswer({
+      io, roomId,
+      playerSocketId: socket.id,
+      questionIndex, answer, powerup,
+    });
+  });
+
+  /* Power-up 50/50 sécurisé : le serveur décide quelles 2 lettres masquer
+     (en garantissant que la bonne réponse n'est JAMAIS masquée). Le client
+     ne connaît pas la bonne réponse, donc le calcul doit être côté serveur. */
+  socket.on('battle:powerup_fifty', ({ roomId, questionIndex }, callback) => {
+    if (typeof callback !== 'function') return;
     const room = battleRooms.get(roomId);
-    if (!room) return;
+    if (!room) return callback({ error: 'Salle introuvable' });
+    const q = room.questions?.[questionIndex];
+    if (!q) return callback({ error: 'Question introuvable' });
 
-    const playerIdx = room.players.findIndex(p => p.id === socket.id);
-    if (playerIdx === -1) return;
-
-    if (!room.answers[questionIndex]) room.answers[questionIndex] = {};
-
-    // Prevent duplicate answers
-    if (room.answers[questionIndex][socket.id]) return;
-
-    const player = room.players[playerIdx];
-    player.streak = player.streak || 0;
-    player.bestStreak = player.bestStreak || 0;
-    player.correctCount = player.correctCount || 0;
-
-    const correct = answer != null && room.questions[questionIndex]?.correctAnswer === answer;
-
-    let gained = 0;
-    if (correct) {
-      gained = 10;
-      if (powerup === 'double') gained += 10;      // Double points power-up
-      player.streak += 1;
-      // Streak bonus: +5 à partir de 3 combos, +10 à partir de 5
-      if (player.streak >= 5) gained += 10;
-      else if (player.streak >= 3) gained += 5;
-      if (player.streak > player.bestStreak) player.bestStreak = player.streak;
-      player.correctCount += 1;
-    } else {
-      player.streak = 0;
+    const correct = q.correctAnswer;
+    const wrongLetters = ['A', 'B', 'C', 'D'].filter(l => l !== correct);
+    // Mélange Fisher-Yates puis prend 2 mauvaises options
+    for (let i = wrongLetters.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [wrongLetters[i], wrongLetters[j]] = [wrongLetters[j], wrongLetters[i]];
     }
-    player.score += gained;
-
-    room.answers[questionIndex][socket.id] = { answer, correct, gained };
-
-    // Notifier l'adversaire qu'un power-up a été utilisé (effet visuel)
-    if (powerup) {
-      socket.to(roomId).emit('battle:opponent_powerup', { powerup });
-    }
-
-    // Check if both players answered
-    if (Object.keys(room.answers[questionIndex]).length === 2) {
-      const nextQ = questionIndex + 1;
-
-      if (nextQ >= room.questions.length) {
-        io.to(roomId).emit('battle:finished', {
-          players: room.players.map(p => ({
-            name: p.name,
-            score: p.score,
-            bestStreak: p.bestStreak || 0,
-            correctCount: p.correctCount || 0,
-          })),
-          totalQuestions: room.questions.length,
-          correctAnswer: room.questions[questionIndex].correctAnswer,
-        });
-
-        // Persister les résultats pour le classement interne du Quiz Battle
-        // (BattleResult — classement séparé) ET attribuer une XP modeste
-        // d'engagement au gagnant (+10 XP, +5 si match nul). L'XP Battle est
-        // marquée source='battle' pour rester distincte de l'XP académique
-        // dans le breakdown étudiant — le QB reste un système ludique
-        // séparé pédagogiquement.
-        try {
-          const BattleResult = (await import('./models/BattleResult.js')).default;
-          const { addPoints } = await import('./services/points.js');
-          const [p1, p2] = room.players;
-          if (p1 && p2 && p1.odgerId && p2.odgerId) {
-            const draw = p1.score === p2.score;
-            const p1Outcome = draw ? 'draw' : (p1.score > p2.score ? 'win' : 'loss');
-            const p2Outcome = draw ? 'draw' : (p2.score > p1.score ? 'win' : 'loss');
-            const total = room.questions.length;
-            const insertedResults = await BattleResult.insertMany([
-              {
-                userId: p1.odgerId, opponentId: p2.odgerId, courseId: room.courseId,
-                score: p1.score, correctCount: p1.correctCount || 0, totalQuestions: total,
-                bestStreak: p1.bestStreak || 0, outcome: p1Outcome,
-              },
-              {
-                userId: p2.odgerId, opponentId: p1.odgerId, courseId: room.courseId,
-                score: p2.score, correctCount: p2.correctCount || 0, totalQuestions: total,
-                bestStreak: p2.bestStreak || 0, outcome: p2Outcome,
-              },
-            ]);
-
-            // XP d'engagement (Hamari 2014) — 10 pour victoire, 5 pour nul, 0 pour défaite
-            const xpFor = (outcome) => outcome === 'win' ? 10 : outcome === 'draw' ? 5 : 0;
-            const players = [
-              { id: p1.odgerId, outcome: p1Outcome, resultId: insertedResults[0]?._id },
-              { id: p2.odgerId, outcome: p2Outcome, resultId: insertedResults[1]?._id },
-            ];
-            for (const pl of players) {
-              const xp = xpFor(pl.outcome);
-              if (xp > 0) {
-                try {
-                  await addPoints(pl.id, xp, `battle_${pl.outcome}`, {
-                    source: 'battle',
-                    relatedType: 'BattleResult',
-                    relatedId: pl.resultId,
-                    dedupKey: pl.resultId ? `battle_${pl.resultId}` : null,
-                  });
-                } catch (e) { console.error('[battle XP]', e.message); }
-              }
-            }
-          }
-        } catch (err) {
-          console.error('[battle] persist results error:', err.message);
-        }
-
-        setTimeout(() => battleRooms.delete(roomId), 5000);
-      } else {
-        io.to(roomId).emit('battle:next', {
-          questionIndex: nextQ,
-          question: {
-            texte: room.questions[nextQ].texte,
-            options: room.questions[nextQ].options,
-          },
-          scores: room.players.map(p => ({
-            name: p.name, score: p.score,
-            streak: p.streak || 0, bestStreak: p.bestStreak || 0,
-          })),
-          previousCorrect: room.questions[questionIndex].correctAnswer,
-          gained: Object.fromEntries(
-            Object.entries(room.answers[questionIndex]).map(([sid, a]) => {
-              const pIdx = room.players.findIndex(p => p.id === sid);
-              return [room.players[pIdx]?.name || 'Player', a.gained];
-            })
-          ),
-        });
-      }
-    }
+    callback({ hidden: wrongLetters.slice(0, 2) });
   });
 
   /* Lister les salles disponibles */
@@ -906,7 +1019,8 @@ io.on('connection', (socket) => {
     if (typeof callback !== 'function') return;
     const available = [];
     battleRooms.forEach((room, id) => {
-      if (!room.started && room.players.length === 1) {
+      // N'inclure ni les salles solo ni les salles déjà commencées
+      if (!room.started && !room.aiBotId && room.players.length === 1) {
         available.push({ roomId: id, host: room.players[0].name });
       }
     });
