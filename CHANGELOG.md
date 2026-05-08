@@ -4,31 +4,35 @@ Historique des modifications par date de session.
 
 ---
 
-## 8 Mai 2026 — Audit + correctifs Quiz Battle (mode démo solo)
+## 8 Mai 2026 — Audit + correctifs Quiz Battle
 
-Session de debug + audit suite à un blocage rapporté : impossibilité de
-lancer une démonstration du Quiz Battle (besoin de 2 joueurs simultanés).
+Session de debug + audit suite à un blocage rapporté sur le Quiz Battle.
 
 ### Bugs corrigés
 
-- **Quiz Battle non démontrable seul** — ajout d'un mode démo solo accessible
-  depuis le lobby (bouton "Mode démo (vs IA)"). Crée une salle et démarre
-  immédiatement contre un bot IA. Le bot répond après un délai aléatoire
-  (2-6 s) avec une précision moyenne (≈65 %) pour rester challengeant mais
-  battable. Permet la démonstration complète de la fonctionnalité — y
-  compris les combos, power-ups et écran de résultats — sans avoir besoin
-  d'un second joueur connecté. Essentiel pour la soutenance.
 - **Power-up 50/50 buggé** — auparavant, le client tirait 2 lettres au
   hasard sans connaître la bonne réponse, donc pouvait éliminer la
   bonne option et rendre le power-up nuisible au lieu d'utile. Désormais
   le serveur calcule les 2 lettres à masquer (toujours parmi les 3
-  mauvaises) via un nouvel événement Socket.io `battle:powerup_fifty`.
+  mauvaises) via un nouvel événement Socket.io `battle:powerup_fifty`
+  qui garantit que la bonne option n'est jamais éliminée.
 - **Refactor backend** — la logique de scoring + transitions de manche
-  (gain de points, streaks, badges, fin de partie, persistance
-  BattleResult, attribution XP) est centralisée dans la fonction
-  `submitBattleAnswer()` réutilisable par le bot. Le code dupliqué de
-  `battle:start` / `battle:answer` a été remplacé par
-  `loadBattleQuestions()` + appels mutualisés.
+  (gain de points, streaks, fin de partie, persistance BattleResult,
+  attribution XP) est centralisée dans la fonction `submitBattleAnswer()`.
+  Le code dupliqué de `battle:start` / `battle:answer` a été remplacé
+  par `loadBattleQuestions()` + appels mutualisés.
+
+### Décision pédagogique : pas de mode "vs IA"
+
+Une première version proposait un mode démo "solo (vs IA)" pour faciliter
+la démonstration en soutenance. **Cette idée a été abandonnée** après
+discussion : le Quiz Battle tire son sens pédagogique de l'émulation
+**entre étudiants** (cadre de classe inversée). Mettre une IA comme
+adversaire dénature la fonctionnalité, vide la mécanique de sa valeur
+éducative et envoie un mauvais signal pour la soutenance.
+
+Pour la démo, ouvrir 2 navigateurs / profils différents avec 2 comptes
+étudiants (option pédagogiquement cohérente).
 
 ### Audit de la plateforme
 
@@ -39,8 +43,8 @@ Projects, Prosits, MyTutor, MyJourney, Synthèse de classe, QCM Hub.
 
 ### Fichiers modifiés
 
-- `fliplearn/backend/server.js` — +176 / -171 lignes (refactor + 2 nouveaux events Socket.io)
-- `fliplearn/frontend/src/pages/QuizBattle.jsx` — +75 / -13 lignes (bouton mode démo + 50/50 sécurisé)
+- `fliplearn/backend/server.js` — refactor + event Socket.io `battle:powerup_fifty`
+- `fliplearn/frontend/src/pages/QuizBattle.jsx` — power-up 50/50 sécurisé côté serveur
 
 ---
 

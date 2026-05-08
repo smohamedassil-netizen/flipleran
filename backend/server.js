@@ -394,9 +394,10 @@ async function loadBattleQuestions(courseId) {
 }
 
 /**
- * Soumet une réponse pour un joueur (humain ou bot). Centralise toute la
- * logique de scoring + détection fin de manche / fin de partie pour qu'elle
- * soit réutilisable par le bot IA en mode solo.
+ * Soumet une réponse pour un joueur. Centralise la logique de scoring +
+ * détection fin de manche / fin de partie. Le mode 1v1 humain est le seul
+ * mode supporté — pas de mode solo vs IA (volontairement, le Quiz Battle
+ * tire son sens pédagogique de l'émulation entre étudiants).
  */
 async function submitBattleAnswer({ io, roomId, playerSocketId, questionIndex, answer, powerup }) {
   const room = battleRooms.get(roomId);
@@ -434,14 +435,11 @@ async function submitBattleAnswer({ io, roomId, playerSocketId, questionIndex, a
   // Notifier l'adversaire qu'un power-up a été utilisé (effet visuel)
   if (powerup) {
     const opponent = room.players.find(p => p.id !== playerSocketId);
-    if (opponent && !opponent.id.startsWith('AI_BOT_')) {
-      io.to(opponent.id).emit('battle:opponent_powerup', { powerup });
-    }
+    if (opponent) io.to(opponent.id).emit('battle:opponent_powerup', { powerup });
   }
 
   // Quand les deux joueurs ont répondu : passer à la question suivante / finir
-  const expectedAnswers = room.players.length;
-  if (Object.keys(room.answers[questionIndex]).length === expectedAnswers) {
+  if (Object.keys(room.answers[questionIndex]).length === room.players.length) {
     const nextQ = questionIndex + 1;
 
     if (nextQ >= room.questions.length) {
@@ -454,47 +452,45 @@ async function submitBattleAnswer({ io, roomId, playerSocketId, questionIndex, a
         correctAnswer: room.questions[questionIndex].correctAnswer,
       });
 
-      // Persistance : seulement les matches 1v1 humains (pas vs IA)
-      if (!room.aiBotId) {
-        try {
-          const BattleResult = (await import('./models/BattleResult.js')).default;
-          const { addPoints } = await import('./services/points.js');
-          const [p1, p2] = room.players;
-          if (p1 && p2 && p1.odgerId && p2.odgerId) {
-            const draw = p1.score === p2.score;
-            const p1Outcome = draw ? 'draw' : (p1.score > p2.score ? 'win' : 'loss');
-            const p2Outcome = draw ? 'draw' : (p2.score > p1.score ? 'win' : 'loss');
-            const total = room.questions.length;
-            const insertedResults = await BattleResult.insertMany([
-              { userId: p1.odgerId, opponentId: p2.odgerId, courseId: room.courseId,
-                score: p1.score, correctCount: p1.correctCount || 0, totalQuestions: total,
-                bestStreak: p1.bestStreak || 0, outcome: p1Outcome },
-              { userId: p2.odgerId, opponentId: p1.odgerId, courseId: room.courseId,
-                score: p2.score, correctCount: p2.correctCount || 0, totalQuestions: total,
-                bestStreak: p2.bestStreak || 0, outcome: p2Outcome },
-            ]);
+      // Persistance pour le classement interne + XP d'engagement (matches 1v1)
+      try {
+        const BattleResult = (await import('./models/BattleResult.js')).default;
+        const { addPoints } = await import('./services/points.js');
+        const [p1, p2] = room.players;
+        if (p1 && p2 && p1.odgerId && p2.odgerId) {
+          const draw = p1.score === p2.score;
+          const p1Outcome = draw ? 'draw' : (p1.score > p2.score ? 'win' : 'loss');
+          const p2Outcome = draw ? 'draw' : (p2.score > p1.score ? 'win' : 'loss');
+          const total = room.questions.length;
+          const insertedResults = await BattleResult.insertMany([
+            { userId: p1.odgerId, opponentId: p2.odgerId, courseId: room.courseId,
+              score: p1.score, correctCount: p1.correctCount || 0, totalQuestions: total,
+              bestStreak: p1.bestStreak || 0, outcome: p1Outcome },
+            { userId: p2.odgerId, opponentId: p1.odgerId, courseId: room.courseId,
+              score: p2.score, correctCount: p2.correctCount || 0, totalQuestions: total,
+              bestStreak: p2.bestStreak || 0, outcome: p2Outcome },
+          ]);
 
-            const xpFor = (o) => o === 'win' ? 10 : o === 'draw' ? 5 : 0;
-            const players = [
-              { id: p1.odgerId, outcome: p1Outcome, resultId: insertedResults[0]?._id },
-              { id: p2.odgerId, outcome: p2Outcome, resultId: insertedResults[1]?._id },
-            ];
-            for (const pl of players) {
-              const xp = xpFor(pl.outcome);
-              if (xp > 0) {
-                try {
-                  await addPoints(pl.id, xp, `battle_${pl.outcome}`, {
-                    source: 'battle', relatedType: 'BattleResult',
-                    relatedId: pl.resultId,
-                    dedupKey: pl.resultId ? `battle_${pl.resultId}` : null,
-                  });
-                } catch (e) { console.error('[battle XP]', e.message); }
-              }
+          const xpFor = (o) => o === 'win' ? 10 : o === 'draw' ? 5 : 0;
+          const players = [
+            { id: p1.odgerId, outcome: p1Outcome, resultId: insertedResults[0]?._id },
+            { id: p2.odgerId, outcome: p2Outcome, resultId: insertedResults[1]?._id },
+          ];
+          for (const pl of players) {
+            const xp = xpFor(pl.outcome);
+            if (xp > 0) {
+              try {
+                await addPoints(pl.id, xp, `battle_${pl.outcome}`, {
+                  source: 'battle', relatedType: 'BattleResult',
+                  relatedId: pl.resultId,
+                  dedupKey: pl.resultId ? `battle_${pl.resultId}` : null,
+                });
+              } catch (e) { console.error('[battle XP]', e.message); }
             }
           }
-        } catch (err) {
-          console.error('[battle] persist results error:', err.message);
         }
+      } catch (err) {
+        console.error('[battle] persist results error:', err.message);
       }
 
       setTimeout(() => battleRooms.delete(roomId), 5000);
@@ -515,47 +511,8 @@ async function submitBattleAnswer({ io, roomId, playerSocketId, questionIndex, a
           })
         ),
       });
-
-      // Mode solo : programmer la réponse du bot pour la question suivante
-      if (room.aiBotId) scheduleAiBotAnswer(io, roomId, nextQ);
     }
   }
-}
-
-/**
- * Mode démo solo : simule la réponse d'un adversaire IA après un délai
- * aléatoire, avec une précision moyenne (≈65%). Permet une démonstration
- * du Quiz Battle sans avoir besoin d'un second joueur connecté.
- */
-function scheduleAiBotAnswer(io, roomId, questionIndex) {
-  const room = battleRooms.get(roomId);
-  if (!room || !room.aiBotId) return;
-
-  // Délai 2-6s pour donner le temps à l'humain de répondre + paraître naturel
-  const delay = 2000 + Math.random() * 4000;
-  const ACCURACY = 0.65; // précision du bot pour rester challengeant mais battable
-
-  setTimeout(async () => {
-    const r = battleRooms.get(roomId);
-    if (!r || r.currentQ !== questionIndex) return;
-    const correctLetter = r.questions[questionIndex]?.correctAnswer;
-    if (!correctLetter) return;
-    const willBeCorrect = Math.random() < ACCURACY;
-    let chosen;
-    if (willBeCorrect) {
-      chosen = correctLetter;
-    } else {
-      const wrong = ['A', 'B', 'C', 'D'].filter(l => l !== correctLetter);
-      chosen = wrong[Math.floor(Math.random() * wrong.length)];
-    }
-    await submitBattleAnswer({
-      io, roomId,
-      playerSocketId: r.aiBotId,
-      questionIndex,
-      answer: chosen,
-      powerup: null,
-    });
-  }, delay);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════
@@ -933,59 +890,9 @@ io.on('connection', (socket) => {
       },
       questionIndex: 0,
     });
-
-    // Mode solo : déclencher la 1ère réponse du bot après l'envoi de la question
-    if (room.aiBotId) scheduleAiBotAnswer(io, roomId, 0);
   });
 
-  /* Mode démo SOLO : créer une salle vs IA et la démarrer immédiatement.
-     Pratique pour démontrer la fonctionnalité sans avoir 2 joueurs connectés. */
-  socket.on('battle:create_solo', async (data, callback) => {
-    try {
-      const roomId = 'BATTLE-SOLO-' + Math.random().toString(36).substring(2, 8).toUpperCase();
-      const aiBotId = 'AI_BOT_' + roomId;
-
-      battleRooms.set(roomId, {
-        players: [
-          { id: socket.id, name: data?.name || 'Joueur', odgerId: data?.userId, score: 0 },
-          { id: aiBotId, name: '🤖 IA Adversaire', odgerId: null, score: 0 },
-        ],
-        questions: [],
-        currentQ: 0,
-        answers: {},
-        started: true,
-        courseId: data?.courseId || null,
-        aiBotId,
-      });
-      socket.join(roomId);
-
-      const room = battleRooms.get(roomId);
-      room.questions = await loadBattleQuestions(room.courseId);
-
-      if (typeof callback === 'function') callback({ roomId });
-
-      // Notifier qu'un adversaire (IA) est trouvé pour cohérence d'UI
-      io.to(roomId).emit('battle:players', room.players.map(p => ({
-        name: p.name, odgerId: p.odgerId, score: p.score,
-      })));
-
-      // Lancer la partie immédiatement
-      io.to(roomId).emit('battle:started', {
-        totalQuestions: room.questions.length,
-        question: {
-          texte: room.questions[0].texte,
-          options: room.questions[0].options,
-        },
-        questionIndex: 0,
-      });
-      scheduleAiBotAnswer(io, roomId, 0);
-    } catch (err) {
-      console.error('[battle:create_solo]', err.message);
-      if (typeof callback === 'function') callback({ error: 'Impossible de créer la salle solo.' });
-    }
-  });
-
-  /* Soumettre une réponse — délègue à submitBattleAnswer (mutualisé avec le bot). */
+  /* Soumettre une réponse — délègue à submitBattleAnswer. */
   socket.on('battle:answer', async ({ roomId, questionIndex, answer, powerup }) => {
     await submitBattleAnswer({
       io, roomId,
@@ -1019,8 +926,7 @@ io.on('connection', (socket) => {
     if (typeof callback !== 'function') return;
     const available = [];
     battleRooms.forEach((room, id) => {
-      // N'inclure ni les salles solo ni les salles déjà commencées
-      if (!room.started && !room.aiBotId && room.players.length === 1) {
+      if (!room.started && room.players.length === 1) {
         available.push({ roomId: id, host: room.players[0].name });
       }
     });
