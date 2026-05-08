@@ -2,6 +2,9 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+> **Agent IA distant ?** (Claude Code dispatch, Claude.ai mobile, autre)
+> Lis [`docs/agents/README.md`](docs/agents/README.md) **avant** de toucher au code. Il contient les conventions, la vision pédagogique, les deadlines, les recaps de sessions précédentes — tout ce qu'il faut pour bosser dans la continuité.
+
 ## Project Overview
 
 FlipLearn is a full-stack e-learning platform built around the Flipped Classroom model. Three roles: `etudiant`, `professeur`, `admin`. The app uses JWT auth stored in `sessionStorage` under key `fliplearn_user`.
