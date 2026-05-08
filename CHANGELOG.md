@@ -4,6 +4,46 @@ Historique des modifications par date de session.
 
 ---
 
+## 8 Mai 2026 — Audit + correctifs Quiz Battle (mode démo solo)
+
+Session de debug + audit suite à un blocage rapporté : impossibilité de
+lancer une démonstration du Quiz Battle (besoin de 2 joueurs simultanés).
+
+### Bugs corrigés
+
+- **Quiz Battle non démontrable seul** — ajout d'un mode démo solo accessible
+  depuis le lobby (bouton "Mode démo (vs IA)"). Crée une salle et démarre
+  immédiatement contre un bot IA. Le bot répond après un délai aléatoire
+  (2-6 s) avec une précision moyenne (≈65 %) pour rester challengeant mais
+  battable. Permet la démonstration complète de la fonctionnalité — y
+  compris les combos, power-ups et écran de résultats — sans avoir besoin
+  d'un second joueur connecté. Essentiel pour la soutenance.
+- **Power-up 50/50 buggé** — auparavant, le client tirait 2 lettres au
+  hasard sans connaître la bonne réponse, donc pouvait éliminer la
+  bonne option et rendre le power-up nuisible au lieu d'utile. Désormais
+  le serveur calcule les 2 lettres à masquer (toujours parmi les 3
+  mauvaises) via un nouvel événement Socket.io `battle:powerup_fifty`.
+- **Refactor backend** — la logique de scoring + transitions de manche
+  (gain de points, streaks, badges, fin de partie, persistance
+  BattleResult, attribution XP) est centralisée dans la fonction
+  `submitBattleAnswer()` réutilisable par le bot. Le code dupliqué de
+  `battle:start` / `battle:answer` a été remplacé par
+  `loadBattleQuestions()` + appels mutualisés.
+
+### Audit de la plateforme
+
+Toutes les pages critiques ont été testées en preview navigateur (rôle
+étudiant + rôle professeur) sans aucune erreur console : Login, Dashboard,
+Cours, Decks, Leaderboard, Profile, Rewards, Notifications, Chat, Resources,
+Projects, Prosits, MyTutor, MyJourney, Synthèse de classe, QCM Hub.
+
+### Fichiers modifiés
+
+- `fliplearn/backend/server.js` — +176 / -171 lignes (refactor + 2 nouveaux events Socket.io)
+- `fliplearn/frontend/src/pages/QuizBattle.jsx` — +75 / -13 lignes (bouton mode démo + 50/50 sécurisé)
+
+---
+
 ## 6 Mai 2026 — Refonte des livrables documentaires
 
 Session orientée documentation : mise à jour exhaustive des deux livrables Word principaux pour refléter l'état actuel de la plateforme avant la soutenance.
