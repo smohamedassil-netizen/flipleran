@@ -17,11 +17,11 @@ const DEFAULT_PHASES = [
   'Soutenance',
 ];
 
-/* F8 — Métadonnées des 3 types pour le toggle */
+/* F8 — Métadonnées des 3 types pour le toggle (refonte 2026-05 : labels clarifiés) */
 const TYPE_META = [
-  { key: 'mono',   label: 'Module unique',  hint: '1 module · 3 phases' },
-  { key: 'groupe', label: 'Multi-modules',  hint: '≥2 modules · 5 phases' },
-  { key: 'pfe',    label: 'PFE',            hint: 'Projet de fin d\'études · 7 phases' },
+  { key: 'mono',   label: 'Projet d\'application',  hint: '1 module · 3 phases · 3 rôles (animateur/scribe/membre)' },
+  { key: 'groupe', label: 'Projet multi-modules',   hint: '≥2 modules · 5 phases · 3 rôles' },
+  { key: 'pfe',    label: 'Projet de fin d\'études', hint: '7 phases · 5 rôles spécialisés (chef_projet/scribe/animateur/chrono/analyste)' },
 ];
 
 export default function ProjectCreate() {
@@ -48,6 +48,10 @@ export default function ProjectCreate() {
   const [rubricFromTemplate, setRubricFromTemplate] = useState([]); // F8 : payload envoyé au backend
   const [fromTemplateName, setFromTemplateName] = useState(''); // F10 : badge "Issu de template X"
 
+  // Refonte 2026-05 : lien optionnel CAI étape 3 → étape 4
+  const [linkedCasPratiqueId, setLinkedCasPratiqueId] = useState('');
+  const [casPratiques, setCasPratiques] = useState([]);
+
   const [saving, setSaving] = useState(false);
   const [error, setError]   = useState('');
 
@@ -55,6 +59,10 @@ export default function ProjectCreate() {
     api.get('/courses')
       .then(({ data }) => setCourses(data))
       .catch(logError);
+    // Charger les cas pratiques évalués pour permettre le rattachement
+    api.get('/cas-pratiques', { params: { statut: 'evalue' } })
+      .then(({ data }) => setCasPratiques(Array.isArray(data) ? data : []))
+      .catch(() => setCasPratiques([]));
   }, []);
 
   /* F10 — Pré-remplissage depuis ProjectTemplateLibrary via sessionStorage */
@@ -184,6 +192,7 @@ export default function ProjectCreate() {
       if (dateDebut) payload.dateDebut = dateDebut;
       if (dateFin) payload.dateFin = dateFin;
       if (dateSoutenance) payload.dateSoutenance = dateSoutenance;
+      if (linkedCasPratiqueId) payload.linkedCasPratiqueId = linkedCasPratiqueId;
 
       const { data } = await api.post('/projects', payload);
       navigate(`/projects/${data._id}`);
@@ -235,6 +244,23 @@ export default function ProjectCreate() {
           </div>
         )}
 
+        {/* Bandeau pédagogique CAI — Étape 4 Production */}
+        <div style={{
+          padding: '12px 16px', marginBottom: 16,
+          background: '#FFFBEB', border: '1px solid #FCD34D', borderRadius: 10,
+          fontSize: 13, color: '#78350F', display: 'flex', gap: 10,
+        }}>
+          <span style={{ fontSize: 18 }}>🚀</span>
+          <div>
+            <strong>Étape 4 du Cycle CAI — Production</strong>
+            <div style={{ marginTop: 4 }}>
+              Un <strong>projet</strong> = créer quelque chose d'original (livrable productif).
+              C'est différent du <strong>cas pratique</strong> (résoudre un problème donné en groupe court).
+              Vise une production qui prolonge ce que les étudiants ont appris.
+            </div>
+          </div>
+        </div>
+
         <form onSubmit={handleSubmit}>
           {error && (
             <div className="alert alert-error" style={{ marginBottom: 16 }}>
@@ -273,6 +299,29 @@ export default function ProjectCreate() {
                 onChange={(e) => setDescription(e.target.value)}
               />
             </div>
+
+            {/* Refonte 2026-05 : lien optionnel vers cas pratique précédent */}
+            {casPratiques.length > 0 && (
+              <div style={{ marginBottom: 14 }}>
+                <label className="form-label">
+                  Prolonger un cas pratique <span style={{ color: 'var(--color-text-secondary)', fontWeight: 400 }}>(facultatif)</span>
+                </label>
+                <select
+                  className="form-input"
+                  style={{ width: '100%' }}
+                  value={linkedCasPratiqueId}
+                  onChange={(e) => setLinkedCasPratiqueId(e.target.value)}
+                >
+                  <option value="">— Aucun (projet autonome) —</option>
+                  {casPratiques.map((cp) => (
+                    <option key={cp._id} value={cp._id}>{cp.titre}</option>
+                  ))}
+                </select>
+                <div style={{ fontSize: 12, color: 'var(--color-text-secondary)', marginTop: 4 }}>
+                  Lie ce projet à un cas pratique évalué pour souligner la continuité Étape 3 (Application) → Étape 4 (Production) du Cycle CAI.
+                </div>
+              </div>
+            )}
 
             {/* Rattachement : 1 module ou plusieurs */}
             <div>

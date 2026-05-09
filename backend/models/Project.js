@@ -1,10 +1,32 @@
 import mongoose from 'mongoose';
 
+/**
+ * Rôles projet — union legacy (5) + simplifiés (3) pour rétrocompatibilité.
+ *
+ * Refonte 2026-05-09 : pour cohérence avec la classe inversée et les Cas
+ * pratiques (3 rôles), les projets `mono` et `groupe` utilisent désormais
+ * uniquement [animateur, scribe, membre]. Les projets `pfe` (fin d'études)
+ * gardent l'enrichissement à 5 rôles car la complexité le justifie.
+ *
+ * Mapping migration :
+ *   chef_projet → animateur
+ *   scribe      → scribe
+ *   animateur   → animateur
+ *   chrono      → membre
+ *   analyste    → membre
+ *
+ * L'enum reste permissif (accepte toutes les valeurs) pour ne pas casser
+ * les données existantes ; l'UI filtre par type pour proposer le bon choix.
+ */
+const PROJECT_ROLES_ALL = ['chef_projet', 'scribe', 'animateur', 'chrono', 'analyste', 'membre'];
+const PROJECT_ROLES_SIMPLE = ['animateur', 'scribe', 'membre'];          // mono / groupe
+const PROJECT_ROLES_PFE    = ['chef_projet', 'scribe', 'animateur', 'chrono', 'analyste']; // pfe
+
 const membreSchema = new mongoose.Schema({
   userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   role: {
     type: String,
-    enum: ['chef_projet', 'scribe', 'animateur', 'chrono', 'analyste'],
+    enum: PROJECT_ROLES_ALL,
     required: true
   }
 }, { _id: false });
@@ -190,9 +212,20 @@ const projectSchema = new mongoose.Schema({
 
   // F8 — rubric d'évaluation transparente (Helle et al. 2006)
   rubric: { type: [rubricCriterionSchema], default: [] },
+
+  // Refonte 2026-05 : lien optionnel vers un Cas pratique précédent.
+  // Si rempli, le projet est présenté comme un prolongement de l'étape 3
+  // (Application) du CAI vers l'étape 4 (Production).
+  linkedCasPratiqueId: { type: mongoose.Schema.Types.ObjectId, ref: 'Prosit', default: null },
 }, { timestamps: true });
 
 projectSchema.index({ courseId: 1, createdBy: 1 });
+projectSchema.index({ linkedCasPratiqueId: 1 });
+
+projectSchema.statics.PROJECT_ROLES_ALL    = PROJECT_ROLES_ALL;
+projectSchema.statics.PROJECT_ROLES_SIMPLE = PROJECT_ROLES_SIMPLE;
+projectSchema.statics.PROJECT_ROLES_PFE    = PROJECT_ROLES_PFE;
 
 const Project = mongoose.model('Project', projectSchema);
 export default Project;
+export { PROJECT_ROLES_ALL, PROJECT_ROLES_SIMPLE, PROJECT_ROLES_PFE };

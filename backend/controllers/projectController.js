@@ -61,7 +61,7 @@ export const createProject = async (req, res) => {
       return res.status(403).json({ message: 'Seul un professeur peut créer un projet.' });
     }
 
-    const { titre, description, type, courseId, modules = [], enonce, motsCles, dateDebut, dateFin, dateSoutenance, phases, rubric } = req.body;
+    const { titre, description, type, courseId, modules = [], enonce, motsCles, dateDebut, dateFin, dateSoutenance, phases, rubric, linkedCasPratiqueId } = req.body;
     if (!titre || !type) {
       return res.status(400).json({ message: 'titre et type sont requis.' });
     }
@@ -96,6 +96,7 @@ export const createProject = async (req, res) => {
       phases: finalPhases,
       rubric: finalRubric,
       createdBy: req.user.id,
+      linkedCasPratiqueId: linkedCasPratiqueId || null,
     };
 
     const project = await Project.create(data);
@@ -179,7 +180,8 @@ export const getProject = async (req, res) => {
       .populate('livrables.uploadedBy', 'nom prenom')
       .populate('evaluations.evaluateur', 'nom prenom')
       .populate('evaluations.cible', 'nom prenom')
-      .populate('activity.authorId', 'nom prenom role');
+      .populate('activity.authorId', 'nom prenom role')
+      .populate('linkedCasPratiqueId', 'titre statut');
 
     if (!project) return res.status(404).json({ message: 'Projet introuvable.' });
 

@@ -151,11 +151,16 @@ export default function ProjectList() {
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24, flexWrap: 'wrap', gap: 12 }}>
           <div>
-            <h1 className="page-title">Projets</h1>
+            <h1 className="page-title">
+              Projets {' '}
+              <span style={{ fontSize: 13, fontWeight: 500, color: '#D97706', marginLeft: 8 }}>
+                {'\ud83d\ude80 \u00c9tape 4 \u2014 Production'}
+              </span>
+            </h1>
             <p className="page-subtitle">
               {role === 'professeur'
-                ? 'Vos projets : mono-module ou multi-modules.'
-                : 'Les projets de votre fili\u00e8re auxquels vous participez.'}
+                ? '\u00c9tape 4 du Cycle CAI : production originale par les \u00e9tudiants. Mono-module, multi-modules ou PFE.'
+                : '\u00c9tape 4 du Cycle CAI \u2014 cr\u00e9er une production originale qui prolonge ce que tu as appris.'}
             </p>
           </div>
           {(role === 'professeur' || role === 'admin') && (
@@ -180,8 +185,9 @@ export default function ProjectList() {
             fontSize: 13, color: '#1E293B', lineHeight: 1.5,
           }}>
             <strong style={{ color: '#1B4F72' }}>Qu'est-ce qu'un projet&nbsp;?</strong>
-            {' '}Un travail en groupe rattaché à un ou plusieurs cours, avec des phases, des livrables et des rôles
-            (chef de projet, scribe, animateur, chrono, analyste). L'étudiant apprend en faisant.
+            {' '}Un travail en groupe pour <strong>créer une production originale</strong> rattachée à un ou plusieurs cours.
+            Phases, livrables et rôles (animateur, scribe, membre — ou rôles spécialisés en PFE).
+            Différent du <strong>cas pratique</strong> qui consiste à <em>résoudre</em> un problème donné.
           </div>
         )}
 

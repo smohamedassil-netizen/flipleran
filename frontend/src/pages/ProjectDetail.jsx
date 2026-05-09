@@ -19,9 +19,9 @@ import {
 
 /* ─── Helpers ────────────────────────────────────────────────────────────── */
 const TYPE_BADGE = {
-  mono:   { label: 'Mono-module',     bg: '#F1F5F9', color: '#475569' },
-  groupe: { label: 'Multi-modules',   bg: '#F1F5F9', color: '#475569' },
-  pfe:    { label: 'PFE',             bg: '#F3E8FF', color: '#7c3aed' },
+  mono:   { label: 'Projet d\'application',  bg: '#F1F5F9', color: '#475569' },
+  groupe: { label: 'Projet multi-modules',   bg: '#F1F5F9', color: '#475569' },
+  pfe:    { label: 'Projet de fin d\'études', bg: '#F3E8FF', color: '#7c3aed' },
 };
 const STATUS_BADGE = {
   brouillon: { label: 'Brouillon', bg: '#F1F5F9', color: '#64748B' },
@@ -514,6 +514,29 @@ export default function ProjectDetail() {
         { label: project?.titre ?? 'Projet' },
       ]} />
 
+      {/* Bandeau : projet prolonge un cas pratique (refonte 2026-05) */}
+      {project.linkedCasPratiqueId && (
+        <div style={{
+          padding: '10px 14px', marginBottom: 16,
+          background: '#F0F9FF', borderLeft: '4px solid #0EA5E9', borderRadius: 6,
+          fontSize: 13, color: '#0C4A6E',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap',
+        }}>
+          <span>
+            🔗 <strong>Continuité CAI :</strong> ce projet (Étape 4 — Production) prolonge un cas pratique évalué (Étape 3 — Application).
+          </span>
+          <button
+            onClick={() => navigate(`/cas-pratiques/${project.linkedCasPratiqueId._id || project.linkedCasPratiqueId}`)}
+            style={{
+              padding: '4px 10px', background: '#0EA5E9', border: 'none',
+              borderRadius: 999, color: 'white', cursor: 'pointer', fontSize: 12, fontWeight: 500,
+            }}
+          >
+            Voir le cas pratique →
+          </button>
+        </div>
+      )}
+
       {/* ── Header section ──────────────────────────────────────────────── */}
       <div className="page-header" style={{ marginBottom: 24 }}>
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
@@ -603,7 +626,9 @@ export default function ProjectDetail() {
         {' '}c'est un travail en groupe pour les étudiants — exercice approfondi qui mobilise
         {project.type === 'pfe' ? ' plusieurs modules sur tout le semestre (PFE).' :
          project.type === 'groupe' ? ' plusieurs modules.' : ' un module.'}
-        {' '}Chaque membre a un rôle (chef de projet, scribe, animateur, chrono, analyste — voir la légende à droite).
+        {' '}Chaque membre a un rôle ({project.type === 'pfe'
+          ? 'chef de projet, scribe, animateur, chrono, analyste — voir la légende à droite'
+          : 'animateur, scribe, membre — rôles tournants comme en cas pratique'}).
         Le travail s'organise par phases avec une checklist, des livrables et une auto-évaluation entre pairs en fin de projet.
       </div>
 
