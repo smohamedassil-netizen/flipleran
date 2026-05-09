@@ -11,8 +11,6 @@ import { capitalizeWords } from '../utils/format.js';
 import {
   LayoutDashboard,
   BookOpen,
-  BarChart2,
-  BarChart3,
   Users,
   User,
   GraduationCap,
@@ -31,8 +29,6 @@ import {
   Swords,
   Library,
   Layers,
-  FolderOpen,
-  FolderKanban,
   ClipboardList,
   HelpCircle,
   Award,
@@ -41,29 +37,36 @@ import {
   Bot,
   Video,
   Lightbulb,
-  Target,
+  Compass,
+  Briefcase,
+  Notebook,
+  CalendarCheck,
+  LineChart,
 } from 'lucide-react';
 
 /* ─── Nav config per role ───────────────────────────────────────────────────── */
 const NAV = {
   etudiant: [
     {
-      section: 'Apprentissage',
+      section: 'Mon parcours',
       items: [
-        { label: 'Mon Parcours',    icon: Target,          to: '/my-journey', badge: 'CAI' },
-        { label: 'Tableau de bord', icon: LayoutDashboard, to: '/' },
+        { label: 'Mon Parcours',    icon: Compass,         to: '/my-journey', badge: 'CAI' },
         { label: 'Mes cours',       icon: BookOpen,        to: '/courses' },
-        { label: 'Mon tuteur IA',   icon: Sparkles,        to: '/my-tutor', badge: 'IA' },
-        { label: 'Ressources',      icon: FolderOpen,      to: '/resources' },
-        { label: 'Mes decks',       icon: Layers,          to: '/decks' },
-        { label: 'Projets',         icon: FolderKanban,    to: '/projects' },
       ],
     },
     {
-      section: 'Apprentissage par Problème',
+      section: 'Activités',
       items: [
         { label: 'Prosits',         icon: Lightbulb,       to: '/prosits' },
-        { label: 'Méthode Prosit',  icon: BookOpen,        to: '/method-guide' },
+        { label: 'Projets',         icon: Briefcase,       to: '/projects' },
+        { label: 'Mes flashcards',  icon: Layers,          to: '/decks' },
+      ],
+    },
+    {
+      section: 'Outils IA',
+      items: [
+        { label: 'Tuteur IA',       icon: Sparkles,        to: '/my-tutor', badge: 'IA' },
+        { label: 'Méthode Prosit',  icon: Notebook,        to: '/method-guide' },
       ],
     },
     {
@@ -88,38 +91,31 @@ const NAV = {
       section: 'Mon enseignement',
       items: [
         { label: 'Tableau de bord',     icon: LayoutDashboard, to: '/professor/dashboard' },
-        { label: 'Préparation classe',  icon: BarChart2,       to: '/professor/class-readiness', badge: 'CAI' },
-        { label: 'Suivi étudiants',     icon: BarChart3,       to: '/professor/tracking' },
-        { label: 'Mes cours',       icon: BookOpen,        to: '/courses' },
-        { label: 'Ressources',      icon: FolderOpen,      to: '/resources' },
-        { label: 'Projets',         icon: FolderKanban,    to: '/projects' },
+        { label: 'Briefings',           icon: CalendarCheck,   to: '/professor/class-readiness', badge: 'CAI' },
+        { label: 'Suivi étudiants',     icon: LineChart,       to: '/professor/tracking' },
+        { label: 'Mes cours',           icon: BookOpen,        to: '/courses' },
       ],
     },
     {
-      section: 'Apprentissage par Problème',
+      section: 'Activités',
       items: [
-        { label: 'Prosits',         icon: Lightbulb,       to: '/prosits' },
-        { label: 'Méthode Prosit',  icon: BookOpen,        to: '/method-guide' },
+        { label: 'Prosits',             icon: Lightbulb,       to: '/prosits' },
+        { label: 'Projets',             icon: Briefcase,       to: '/projects' },
       ],
     },
     {
       section: 'Création',
       items: [
-        { label: 'Gérer les QCM',         icon: ClipboardList, to: '/professor/qcm' },
-        { label: 'Gérer les badges',      icon: Award,         to: '/professor/badges' },
-      ],
-    },
-    {
-      section: 'Communication',
-      items: [
-        { label: 'Messages',        icon: MessageSquare,   to: '/chat' },
+        { label: 'Gérer les QCM',       icon: ClipboardList,   to: '/professor/qcm' },
+        { label: 'Gérer les badges',    icon: Award,           to: '/professor/badges' },
       ],
     },
     {
       section: 'Mon espace',
       items: [
-        { label: 'Mon profil',      icon: User,            to: '/profile' },
-        { label: 'Aide & Support',  icon: HelpCircle,      to: '/support' },
+        { label: 'Messages',            icon: MessageSquare,   to: '/chat' },
+        { label: 'Mon profil',          icon: User,            to: '/profile' },
+        { label: 'Aide & Support',      icon: HelpCircle,      to: '/support' },
       ],
     },
   ],
