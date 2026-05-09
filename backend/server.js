@@ -827,23 +827,34 @@ io.on('connection', (socket) => {
     socket.join(roomId);
     if (typeof callback === 'function') callback({ roomId });
 
-    // Notify all connected users about the new battle room
-    socket.broadcast.emit('notification', {
-      type: 'quiz_battle',
-      message: `${data.name} a créé une salle de Quiz Battle ! Rejoignez-le !`,
-      link: '/quiz-battle',
-      createdAt: new Date().toISOString(),
-    });
-
-    // Send email to classmates about quiz battle
+    // Notification persistée en DB + temps réel pour les autres étudiants.
+    // On persiste (au lieu d'un simple broadcast volatil) pour que la notif
+    // reste visible dans la cloche et la page /notifications même si l'autre
+    // étudiant arrive après la création de la salle.
     try {
-      const { sendNotificationEmail } = await import('./services/emailService.js');
+      const { pushNotificationToMany } = await import('./services/notificationService.js');
       const students = await User.find({
         role: 'etudiant',
         isActive: { $ne: false },
         _id: { $ne: data.userId },
-      }).select('email prenom').limit(30);
+      }).select('_id email prenom').limit(30);
 
+      const studentIds = students.map(s => s._id.toString());
+      if (studentIds.length > 0) {
+        await pushNotificationToMany(io, studentIds, {
+          type: 'quiz_battle',
+          title: 'Quiz Battle',
+          message: `${data.name} a créé une salle de Quiz Battle ! Rejoignez-le !`,
+          link: '/quiz-battle',
+          priority: 'normal',
+          // dedupKey lié au roomId pour qu'une seule notif soit créée par salle,
+          // même en cas de retry. pushNotificationToMany suffixe l'userId.
+          dedupKey: `battle_room_${roomId}`,
+        });
+      }
+
+      // Email d'invitation (best-effort, ne bloque pas la création)
+      const { sendNotificationEmail } = await import('./services/emailService.js');
       for (const student of students) {
         if (student.email) {
           sendNotificationEmail(
@@ -854,7 +865,7 @@ io.on('connection', (socket) => {
         }
       }
     } catch (err) {
-      console.error('Quiz battle email error:', err.message);
+      console.error('[battle:create] notification error:', err.message);
     }
   });
 

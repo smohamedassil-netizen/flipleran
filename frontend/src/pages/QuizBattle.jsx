@@ -45,6 +45,7 @@ export default function QuizBattle() {
   const [waitingForOpponent, setWaitingForOpponent] = useState(false);
   const [error, setError] = useState('');
   const [isHost, setIsHost] = useState(false);
+  const [joiningRoomId, setJoiningRoomId] = useState(null); // id de la salle en cours de jointure (loading)
 
   // Power-ups & streak state
   const [usedPowerups, setUsedPowerups] = useState(new Set());
@@ -235,12 +236,42 @@ export default function QuizBattle() {
       setError('Tu dois avoir complété au moins 1 vidéo à 80% pour rejoindre une battle.');
       return;
     }
-    socketRef.current?.emit('battle:join', {
+    if (!socketRef.current?.connected) {
+      setError('Connexion au serveur en cours… Réessaye dans une seconde.');
+      return;
+    }
+    if (joiningRoomId) return; // anti double-clic
+
+    setJoiningRoomId(rid);
+    setError('');
+
+    // Timeout : si le serveur ne répond pas en 6s, on débloque l'UI au lieu
+    // de laisser l'utilisateur cliquer dans le vide (cas d'une salle disparue
+    // entre le refresh de la liste et le clic, ou perte de paquet).
+    let settled = false;
+    const timeout = setTimeout(() => {
+      if (settled) return;
+      settled = true;
+      setJoiningRoomId(null);
+      setError('Le serveur ne répond pas. La salle a peut-être été fermée — actualise la liste.');
+      refreshRooms();
+    }, 6000);
+
+    socketRef.current.emit('battle:join', {
       roomId: rid,
       name: `${user.prenom} ${user.nom}`,
       userId: user._id,
     }, (res) => {
-      if (res.error) return setError(res.error);
+      if (settled) return;
+      settled = true;
+      clearTimeout(timeout);
+      setJoiningRoomId(null);
+
+      if (!res || res.error) {
+        setError(res?.error || 'Impossible de rejoindre la salle.');
+        refreshRooms();
+        return;
+      }
       setRoomId(rid);
       setIsHost(false);
       setPhase('waiting');
@@ -591,11 +622,23 @@ export default function QuizBattle() {
                       <div style={{ fontWeight: 700, color: '#1e293b' }}>⚔️ {r.host}</div>
                       <div style={{ fontSize: 12, color: '#94a3b8' }}>En attente d'un adversaire</div>
                     </div>
-                    <button onClick={() => joinRoom(r.roomId)} style={{
-                      padding: '9px 20px', borderRadius: 8, background: '#2874A6',
-                      color: 'white', border: 'none', fontSize: 14, fontWeight: 600, cursor: 'pointer',
-                    }}>
-                      Rejoindre
+                    <button
+                      onClick={() => joinRoom(r.roomId)}
+                      disabled={joiningRoomId !== null}
+                      style={{
+                        padding: '9px 20px', borderRadius: 8,
+                        background: joiningRoomId === r.roomId ? '#94A3B8' : '#2874A6',
+                        color: 'white', border: 'none', fontSize: 14, fontWeight: 600,
+                        cursor: joiningRoomId !== null ? 'not-allowed' : 'pointer',
+                        opacity: (joiningRoomId !== null && joiningRoomId !== r.roomId) ? 0.5 : 1,
+                        display: 'inline-flex', alignItems: 'center', gap: 6,
+                      }}
+                    >
+                      {joiningRoomId === r.roomId ? (
+                        <>
+                          <RefreshCw size={14} style={{ animation: 'spin 1s linear infinite' }} /> Connexion…
+                        </>
+                      ) : 'Rejoindre'}
                     </button>
                   </div>
                 ))}

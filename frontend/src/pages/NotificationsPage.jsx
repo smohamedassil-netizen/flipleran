@@ -5,6 +5,7 @@ import { useNotifications } from '../context/useNotifications.js';
 import {
   ArrowLeft, Bell, Check, CheckCheck, Trash2, ExternalLink,
   AlertCircle, Info, Video as VideoIcon, FileText, FolderKanban, MessageSquare, Clock,
+  Swords,
 } from 'lucide-react';
 
 const TYPE_META = {
@@ -15,6 +16,7 @@ const TYPE_META = {
   ticket_update:    { icon: AlertCircle,  color: '#0ea5e9', bg: '#e0f2fe' },
   project_status:   { icon: FolderKanban, color: '#059669', bg: '#d1fae5' },
   message:          { icon: MessageSquare,color: '#6366f1', bg: '#e0e7ff' },
+  quiz_battle:      { icon: Swords,       color: '#1B4F72', bg: '#dbeafe' },
   urgent:           { icon: AlertCircle,  color: '#dc2626', bg: '#fee2e2' },
   warning:          { icon: AlertCircle,  color: '#d97706', bg: '#fef3c7' },
   success:          { icon: Check,        color: '#059669', bg: '#d1fae5' },
