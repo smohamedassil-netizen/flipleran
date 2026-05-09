@@ -80,6 +80,13 @@
   /* Shadow — léger uniquement */
   --shadow-xs:  0 1px 2px rgba(0, 0, 0, 0.06);
   --shadow-sm:  0 1px 3px rgba(0, 0, 0, 0.08);
+  --shadow-md:  0 4px 12px rgba(0, 0, 0, 0.08);
+  --shadow-lg:  0 8px 24px rgba(0, 0, 0, 0.12);
+
+  /* Tokens icônes — éviter l'anarchie 9-48 px */
+  --icon-sm:    14px;   /* badges, inline */
+  --icon-md:    17px;   /* sidebar, navigation */
+  --icon-lg:    22px;   /* CTA, cards principales */
 
   /* Layout */
   --sidebar-width:          240px;

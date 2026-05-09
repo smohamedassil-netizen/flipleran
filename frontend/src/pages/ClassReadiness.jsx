@@ -4,7 +4,7 @@ import Layout from '../components/Layout.jsx';
 import api from '../utils/api.js';
 import ReadinessRow from '../components/ReadinessRow.jsx';
 import { useToast } from '../context/useToast.js';
-import { ArrowLeft, BarChart3, Send, X } from 'lucide-react';
+import { ArrowLeft, BarChart3, Calendar, Lightbulb, Send, X } from 'lucide-react';
 
 const DEFAULT_REMINDER_TEMPLATE = (courseTitre) =>
   `Bonjour, le prochain cours de "${courseTitre}" approche. Pense à regarder la vidéo et faire le QCM avant — ça te permettra de profiter pleinement du présentiel. Bonne préparation !`;
@@ -169,6 +169,48 @@ export default function ClassReadiness() {
   const [modalResource, setModalResource] = useState(null);
   const [sending, setSending] = useState(false);
 
+  // C1.4 — Date du prochain cours présentiel (étape 2 du Cycle CAI)
+  const [nextClassDateInput, setNextClassDateInput] = useState('');
+  const [savingDate, setSavingDate] = useState(false);
+
+  // Initialiser le champ quand `data` arrive (data.course.nextClassDate)
+  useEffect(() => {
+    if (data?.course?.nextClassDate) {
+      const d = new Date(data.course.nextClassDate);
+      const pad = (n) => String(n).padStart(2, '0');
+      const local = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+      setNextClassDateInput(local);
+    }
+  }, [data?.course?.nextClassDate]);
+
+  const saveNextClassDate = async () => {
+    if (!nextClassDateInput) return;
+    setSavingDate(true);
+    try {
+      await api.put(`/courses/${courseId}`, { nextClassDate: nextClassDateInput });
+      success('Date du prochain cours enregistrée.');
+      load();
+    } catch (err) {
+      errorToast(err.response?.data?.message || 'Erreur enregistrement date.');
+    } finally {
+      setSavingDate(false);
+    }
+  };
+
+  // C4 — Onglets : Préparation (existant) / Top blocages (nouveau)
+  const [activeTab, setActiveTab] = useState('preparation');
+  const [blocages, setBlocages] = useState(null);
+  const [loadingBlocages, setLoadingBlocages] = useState(false);
+
+  useEffect(() => {
+    if (activeTab !== 'blocages') return;
+    setLoadingBlocages(true);
+    api.get(`/class-readiness/${courseId}/top-blocages`)
+      .then(({ data }) => setBlocages(data))
+      .catch(() => setBlocages({ top: [], totalQuestions: 0 }))
+      .finally(() => setLoadingBlocages(false));
+  }, [activeTab, courseId]);
+
   const load = () => {
     setLoading(true);
     setError('');
@@ -205,6 +247,38 @@ export default function ClassReadiness() {
         <ArrowLeft size={16} /> Retour
       </button>
 
+      {/* C1.4 — Formulaire date du prochain cours (étape 2 du Cycle CAI) */}
+      <div className="card" style={{ padding: 12, marginBottom: 14, display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+        <Calendar size={18} color="#1B4F72" />
+        <span style={{ fontWeight: 600, fontSize: 14 }}>Prochain cours présentiel :</span>
+        <input
+          type="datetime-local"
+          value={nextClassDateInput}
+          onChange={(e) => setNextClassDateInput(e.target.value)}
+          className="form-input"
+          style={{ maxWidth: 220 }}
+        />
+        <button
+          className="btn btn-primary btn-sm"
+          onClick={saveNextClassDate}
+          disabled={savingDate || !nextClassDateInput}
+        >
+          {savingDate ? 'Enregistrement…' : 'Enregistrer'}
+        </button>
+      </div>
+
+      {/* C5 — Bouton "Activer un Prosit" (boucle étape 2 → étape 3 du Cycle CAI) */}
+      <div style={{ display: 'flex', gap: 8, marginBottom: 14, flexWrap: 'wrap' }}>
+        <button
+          className="btn btn-accent btn-sm"
+          onClick={() => navigate(`/prosits/new?courseId=${courseId}`)}
+          title="Créer un nouveau Prosit pour ce cours (étape 3 du Cycle CAI)"
+        >
+          <Lightbulb size={14} style={{ marginRight: 6 }} />
+          Activer un Prosit
+        </button>
+      </div>
+
       <div style={{ marginBottom: 18 }}>
         <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: 'var(--color-text)', display: 'inline-flex', alignItems: 'center', gap: 8 }}>
           <BarChart3 size={22} color="#1B4F72" />
@@ -215,26 +289,95 @@ export default function ClassReadiness() {
         </p>
       </div>
 
-      {loading && (
-        <div className="card" style={{ padding: 20 }}>
-          <p>Chargement…</p>
+      {/* C4 — Barre d'onglets */}
+      <div style={{ display: 'flex', gap: 8, marginBottom: 16, borderBottom: '1px solid #E5E7EB' }}>
+        <button
+          onClick={() => setActiveTab('preparation')}
+          style={{
+            background: 'none', border: 'none',
+            padding: '8px 16px',
+            fontSize: 14, fontWeight: 600,
+            color: activeTab === 'preparation' ? '#1B4F72' : '#64748B',
+            borderBottom: activeTab === 'preparation' ? '2px solid #1B4F72' : '2px solid transparent',
+            cursor: 'pointer',
+            marginBottom: -1,
+          }}
+        >
+          Préparation
+        </button>
+        <button
+          onClick={() => setActiveTab('blocages')}
+          style={{
+            background: 'none', border: 'none',
+            padding: '8px 16px',
+            fontSize: 14, fontWeight: 600,
+            color: activeTab === 'blocages' ? '#1B4F72' : '#64748B',
+            borderBottom: activeTab === 'blocages' ? '2px solid #1B4F72' : '2px solid transparent',
+            cursor: 'pointer',
+            marginBottom: -1,
+          }}
+        >
+          Top blocages
+        </button>
+      </div>
+
+      {activeTab === 'preparation' && (
+        <>
+          {loading && (
+            <div className="card" style={{ padding: 20 }}>
+              <p>Chargement…</p>
+            </div>
+          )}
+
+          {!loading && error && (
+            <div className="alert alert-error" style={{ marginBottom: 14 }}>{error}</div>
+          )}
+
+          {!loading && !error && data && data.resources.length === 0 && (
+            <div className="empty-state" style={{ padding: 32 }}>
+              <p className="empty-state-title">Aucune ressource</p>
+              <p className="empty-state-desc">Ce cours n'a pas encore de vidéos ou de QCM.</p>
+            </div>
+          )}
+
+          {!loading && !error && data && data.resources.map((r) => (
+            <ReadinessRow key={r._id} resource={r} onRemind={(res) => setModalResource(res)} />
+          ))}
+        </>
+      )}
+
+      {activeTab === 'blocages' && (
+        <div>
+          <p style={{ fontSize: 13, color: '#64748B', marginBottom: 12 }}>
+            Agrégation des 3 questions QCM les plus ratées par tes étudiants
+            — utile pour cibler ton cours en présentiel.
+          </p>
+          {loadingBlocages ? (
+            <div className="card" style={{ padding: 20 }}><p>Chargement…</p></div>
+          ) : !blocages || blocages.top.length === 0 ? (
+            <div className="card" style={{ padding: 14 }}>
+              <p style={{ fontSize: 13, color: '#64748B', margin: 0 }}>
+                Aucun blocage majeur détecté (≥30% d'échec) sur les questions
+                tentées au moins 2 fois. Ta classe maîtrise le module.
+              </p>
+            </div>
+          ) : (
+            blocages.top.map((b, i) => (
+              <div key={i} className="card" style={{ padding: 14, marginBottom: 10, borderLeft: '4px solid #EF4444' }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: '#64748B', letterSpacing: 0.5 }}>
+                  #{i + 1} — {b.videoTitre}
+                </div>
+                <div style={{ fontSize: 14, fontWeight: 600, marginTop: 4 }}>
+                  {b.questionLabel}
+                </div>
+                <div style={{ fontSize: 12, color: '#B91C1C', marginTop: 6 }}>
+                  {b.wrong}/{b.attempts} étudiants ont raté ({b.wrongRate}% d'échec)
+                </div>
+              </div>
+            ))
+          )}
         </div>
       )}
-
-      {!loading && error && (
-        <div className="alert alert-error" style={{ marginBottom: 14 }}>{error}</div>
-      )}
-
-      {!loading && !error && data && data.resources.length === 0 && (
-        <div className="empty-state" style={{ padding: 32 }}>
-          <p className="empty-state-title">Aucune ressource</p>
-          <p className="empty-state-desc">Ce cours n'a pas encore de vidéos ou de QCM.</p>
-        </div>
-      )}
-
-      {!loading && !error && data && data.resources.map((r) => (
-        <ReadinessRow key={r._id} resource={r} onRemind={(res) => setModalResource(res)} />
-      ))}
 
       {modalResource && (
         <RemindModal

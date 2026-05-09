@@ -274,6 +274,35 @@ export const saveProgress = async (req, res) => {
         { upsert: true }
       );
 
+      // ─── Étape 5 du Cycle CAI : auto-flashcards ────────────────────────
+      // Quand l'étudiant complète une vidéo pour la 1re fois, déclencher la
+      // génération de flashcards SM-2 basées sur le transcript Whisper.
+      // Idempotent : autoFlashcards.generateForVideo dédup par frontHash.
+      // Fire-and-forget pour ne pas bloquer la réponse HTTP.
+      if (!wasAlreadyCompleted) {
+        try {
+          const { generateForVideo } = await import('../services/autoFlashcards.js');
+          generateForVideo({ userId: req.user.id, videoId: video._id })
+            .then((result) => {
+              if (result?.cardsAdded > 0) {
+                const io = req.app.get('io');
+                if (io) {
+                  io.to(`user_${req.user.id}`).emit('notification', {
+                    type: 'achievement',
+                    priority: 'normal',
+                    title: '✨ Cartes ajoutées',
+                    message: `${result.cardsAdded} flashcards générées depuis "${video.titre}". Révise-les dans Mes flashcards.`,
+                    link: '/decks',
+                  });
+                }
+              }
+            })
+            .catch((e) => console.warn('[autoFlashcards videoCompleted]', e.message));
+        } catch (e) {
+          console.warn('[autoFlashcards import]', e.message);
+        }
+      }
+
       // Notif déblocage du chapitre suivant (Mastery Learning Bloom 1968)
       // Quand l'étudiant atteint le completionThreshold du chapitre courant,
       // on l'informe que le chapitre suivant est débloqué.
