@@ -225,7 +225,7 @@ export default function CesiMethodGuide() {
   const navigate = useNavigate();
 
   return (
-    <Layout title="Méthode Prosit (APP/CESI)">
+    <Layout title="Méthode Cas pratique">
       <article style={{ maxWidth: 800, margin: '0 auto', padding: '4px 0 32px', color: C.text, fontSize: 14, lineHeight: 1.6 }}>
 
         {/* Header */}
@@ -236,14 +236,33 @@ export default function CesiMethodGuide() {
             </div>
             <div>
               <h1 style={{ margin: 0, fontSize: 22, fontWeight: 800, color: C.primary }}>
-                La méthode des Prosits
+                La méthode des Cas pratiques
               </h1>
               <p style={{ margin: '2px 0 0', fontSize: 13, color: C.muted }}>
-                Pédagogie APP/CESI · Apprentissage Par Problème · Méthode active · Travail collaboratif
+                Pédagogie active · Apprentissage Par Problème · Travail collaboratif structuré
               </p>
             </div>
           </div>
         </header>
+
+        {/* Encart : version simplifiée FlipLearn vs CESI traditionnel */}
+        <aside style={{
+          padding: '14px 16px', marginBottom: 18,
+          background: '#F0F9FF', border: '1px solid #BAE6FD', borderRadius: 10,
+          fontSize: 13, color: '#0C4A6E',
+        }}>
+          <strong>Sur FlipLearn — version simplifiée :</strong> 3 rôles tournants (Animateur, Scribe, Membre) ·
+          3 phases (Cadrage, Travail individuel, Bilan). Cette page décrit la méthode CESI complète d'origine
+          (5 rôles, 3 phases Aller / Recherche / Retour) comme référence pédagogique. Les principes restent les mêmes,
+          la mise en œuvre est allégée.
+          <button onClick={() => navigate('/cas-pratiques')} style={{
+            display: 'inline-flex', alignItems: 'center', gap: 4, marginLeft: 8,
+            padding: '4px 10px', background: '#0EA5E9', border: 'none',
+            borderRadius: 999, color: 'white', cursor: 'pointer', fontSize: 12, fontWeight: 500,
+          }}>
+            Voir mes cas pratiques <ArrowRight size={12} />
+          </button>
+        </aside>
 
         {/* 1. Qu'est-ce qu'un Prosit ? */}
         <SectionTitle subtitle="Comprendre la philosophie avant de se lancer">

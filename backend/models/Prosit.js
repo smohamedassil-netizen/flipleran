@@ -1,33 +1,35 @@
 import mongoose from 'mongoose';
 
 /**
- * Modèle Prosit — méthodologie APP/CESI (Apprentissage Par Problème).
+ * Modèle Prosit — refondu en "Cas pratique" (mai 2026).
  *
- * Distinct du modèle Project :
- *   - 5 rôles spécifiques CESI : animateur, secretaire, scribe, gestionnaire, membre
- *   - 3 phases verrouillées : aller, recherche, retour (+ evalue, archive)
- *   - Espace collaboratif structuré (mots-clés, hypothèses, plan d'action)
- *   - Contributions individuelles par membre pendant la phase recherche
- *   - Grille d'évaluation pondérée (rubrics)
- *   - 3 modes de formation des groupes (random / manual / student_choice)
+ * UI label : "Cas pratique" (le nom interne "Prosit" reste pour rétrocompat DB).
  *
- * Workflow : brouillon → aller → recherche → retour → evalue → archive
+ * Refonte 2026-05-09 :
+ *   - 5 rôles → 3 rôles (animateur, scribe, membre)
+ *   - 5 phases → 3 phases (cadrage, travail individuel, bilan)
+ *   - 1 cas pratique = 1 groupe (avant : N groupes par Prosit)
+ *   - Énoncé + ressources documentaires (avant : mots-clés + pistes à entrer manuellement)
+ *   - Notation simplifiée : note individuelle (livrable) + note collective (documents)
+ *
+ * Workflow : planifie → cadrage_en_cours → travail_individuel → bilan_en_cours → evalue
+ *
+ * Champs LEGACY conservés pour rétrocompatibilité des données existantes :
+ *   enonce, motsCles, objectifsApprentissage, filiere, promotion, caseEntreprise,
+ *   dateAller, dateRetour, dureeRechercheJours, ressources, groupes (avec sous-docs),
+ *   groupesConfig, grilleEvaluation, peerAssessment* (Falchikov/Topping), status (ancien enum)
  */
 
-const PROSIT_ROLES = ['animateur', 'secretaire', 'scribe', 'gestionnaire', 'membre'];
+const PROSIT_ROLES_LEGACY = ['animateur', 'secretaire', 'scribe', 'gestionnaire', 'membre'];
+const CAS_PRATIQUE_ROLES = ['animateur', 'scribe', 'membre'];
+
+const STATUTS = ['planifie', 'cadrage_en_cours', 'travail_individuel', 'bilan_en_cours', 'evalue'];
+const STATUS_LEGACY = ['brouillon', 'aller', 'recherche', 'retour', 'evalue', 'archive'];
 
 /**
  * Critères d'évaluation par les pairs (peer assessment) — par défaut.
- *
- * @description Tels que définis dans la littérature sur le peer assessment
- * collaboratif (Topping, 1998 ; Falchikov, 2005), ces 5 critères couvrent
- * les dimensions comportementales que seuls les coéquipiers peuvent juger
- * (et que le prof ne peut pas observer en présentiel ponctuel).
- *
- * @see Topping, K. (1998). Peer Assessment Between Students in Colleges and
- *      Universities. *Review of Educational Research*, 68(3), 249–276.
- * @see Falchikov, N. (2005). *Improving Assessment through Student
- *      Involvement*. RoutledgeFalmer.
+ * @see Topping, K. (1998). Peer Assessment Between Students in Colleges and Universities.
+ * @see Falchikov, N. (2005). Improving Assessment through Student Involvement.
  */
 const DEFAULT_PEER_CRITERIA = [
   { name: 'participation',   description: 'Présence et engagement durant les séances de groupe' },
@@ -45,11 +47,24 @@ const fichierSchema = new mongoose.Schema({
 }, { _id: false });
 
 /**
- * Auto-évaluation d'un membre sur son propre travail dans le Prosit.
- * Falchikov (2005) souligne que la métacognition (réflexion sur son propre
- * apprentissage) est un levier essentiel quand elle est combinée à l'évaluation
- * par les pairs.
+ * Détection de texte généré par IA (F2 sprint-final).
+ * Score, flags, extrait court (200 chars). Texte intégral jamais stocké ici.
+ * @see Mitchell et al. (2023) DetectGPT, Krishna et al. (2023).
  */
+const aiDetectionSchema = new mongoose.Schema({
+  aiProbability:  { type: Number, default: 0, min: 0, max: 100 },
+  heuristicScore: { type: Number, default: 0, min: 0, max: 100 },
+  groqScore:      { type: Number, default: null },
+  flags:          [{ type: String }],
+  reasons:        [{ type: String }],
+  checkedAt:      { type: Date, default: null },
+  textPreview:    { type: String, default: '', maxlength: 200 },
+}, { _id: false });
+
+// ════════════════════════════════════════════════════════════════════
+// LEGACY SUB-SCHEMAS (rétrocompat — anciennes données)
+// ════════════════════════════════════════════════════════════════════
+
 const selfAssessmentSchema = new mongoose.Schema({
   userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   criteria: {
@@ -61,11 +76,6 @@ const selfAssessmentSchema = new mongoose.Schema({
   completedAt: { type: Date, default: Date.now },
 }, { _id: false });
 
-/**
- * Évaluation d'un coéquipier par un autre membre.
- * Topping (1998) recommande l'anonymat par défaut pour réduire le biais de
- * complaisance et le risque de représailles relationnelles.
- */
 const peerAssessmentSchema = new mongoose.Schema({
   evaluatorId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   targetId:    { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
@@ -81,10 +91,6 @@ const peerAssessmentSchema = new mongoose.Schema({
   completedAt: { type: Date, default: Date.now },
 }, { _id: false });
 
-/**
- * Note finale individualisée combinant la note de groupe du prof (70%) et
- * la moyenne des évaluations par les pairs reçues (30%).
- */
 const finalIndividualScoreSchema = new mongoose.Schema({
   userId:           { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   profGroupScore:   { type: Number, min: 0, max: 20 },
@@ -92,56 +98,29 @@ const finalIndividualScoreSchema = new mongoose.Schema({
   finalScore:       { type: Number, min: 0, max: 20 },
   xpAwarded:        { type: Number, default: 0 },
   isFreeRider:      { type: Boolean, default: false },
-  isMvc:            { type: Boolean, default: false },   // Most Valuable Contributor
+  isMvc:            { type: Boolean, default: false },
   computedAt:       { type: Date, default: Date.now },
-}, { _id: false });
-
-/**
- * Sous-document : rapport de détection de texte généré par IA (F2 sprint-final).
- * Stocké sur la contribution de chaque membre. On ne garde JAMAIS le texte
- * intégral ici — uniquement le score, les flags et un extrait court (200 chars).
- *
- * @see Mitchell et al. (2023) DetectGPT, Krishna et al. (2023).
- */
-const aiDetectionSchema = new mongoose.Schema({
-  aiProbability:  { type: Number, default: 0, min: 0, max: 100 },
-  heuristicScore: { type: Number, default: 0, min: 0, max: 100 },
-  groqScore:      { type: Number, default: null },
-  flags:          [{ type: String }],
-  reasons:        [{ type: String }],
-  checkedAt:      { type: Date, default: null },
-  textPreview:    { type: String, default: '', maxlength: 200 },
 }, { _id: false });
 
 const membreSchema = new mongoose.Schema({
   userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-  role:   { type: String, enum: PROSIT_ROLES, required: true, default: 'membre' },
-
-  // Contribution individuelle (phase recherche)
+  role:   { type: String, enum: PROSIT_ROLES_LEGACY, required: true, default: 'membre' },
   contributionTexte:   { type: String, default: '' },
   contributionFichier: fichierSchema,
   contributionAt:      { type: Date, default: null },
-
-  // Détection texte IA (F2 sprint-final) — calcul en background à la soumission
   aiDetection: { type: aiDetectionSchema, default: null },
 }, { _id: false });
 
 const groupeSchema = new mongoose.Schema({
   nom:     { type: String, required: true },
   membres: [membreSchema],
-
-  // Espace collaboratif — phase Aller
   motsClesIdentifies:    [String],
   problematiqueReformulee: { type: String, default: '' },
   hypotheses:            [String],
   planAction:            { type: String, default: '' },
-
-  // Solution finale — phase Retour
   solutionTexte:   { type: String, default: '' },
   solutionFichier: fichierSchema,
   presenteAt:      { type: Date, default: null },
-
-  // Évaluation par le tuteur (note de groupe)
   evaluation: {
     noteGlobale:  { type: Number, min: 0, max: 20, default: null },
     criteres:     [{
@@ -152,8 +131,6 @@ const groupeSchema = new mongoose.Schema({
     evaluePar:    { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
     evalueAt:     { type: Date, default: null },
   },
-
-  // Auto-évaluations + évaluations par les pairs (Falchikov 2005, Topping 1998)
   selfAssessments:       { type: [selfAssessmentSchema],       default: [] },
   peerAssessments:       { type: [peerAssessmentSchema],       default: [] },
   finalIndividualScores: { type: [finalIndividualScoreSchema], default: [] },
@@ -171,89 +148,183 @@ const ressourceSchema = new mongoose.Schema({
   type:  { type: String, enum: ['lien', 'document', 'video'], default: 'lien' },
 }, { _id: false });
 
+// ════════════════════════════════════════════════════════════════════
+// NEW SUB-SCHEMAS (Cas pratique 2026-05)
+// ════════════════════════════════════════════════════════════════════
+
+const resourceSchema = new mongoose.Schema({
+  type:        { type: String, enum: ['pdf', 'link', 'article'], default: 'link' },
+  title:       { type: String, default: '' },
+  url:         { type: String, default: '' },
+  description: { type: String, default: '' },
+}, { _id: false });
+
+const groupMemberSchema = new mongoose.Schema({
+  studentId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  role:      { type: String, enum: CAS_PRATIQUE_ROLES, default: 'membre' },
+}, { _id: false });
+
+const cadrageDocumentSchema = new mongoose.Schema({
+  motsCles:                [String],
+  problematiqueReformulee: { type: String, default: '' },
+  planAction:              [String],
+  questionsOuvertes:       [String],
+  redigePar:               { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
+  validatedBy:             [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+  valideParGroupe:         { type: Boolean, default: false },
+  completedAt:             { type: Date, default: null },
+}, { _id: false });
+
+const livrableSchema = new mongoose.Schema({
+  studentId:       { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  contenu:         { type: String, default: '' },
+  fichierUrl:      { type: String, default: '' },
+  fichierPublicId: { type: String, default: '' },
+  submittedAt:     { type: Date, default: Date.now },
+  aiDetection:     { type: aiDetectionSchema, default: null },
+}, { _id: false });
+
+const bilanDocumentSchema = new mongoose.Schema({
+  syntheseSolutions:  { type: String, default: '' },
+  pointsAccomplis:    [String],
+  pointsNonAccomplis: [String],
+  apprentissages:     [String],
+  redigePar:          { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
+  validatedBy:        [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+  completedAt:        { type: Date, default: null },
+}, { _id: false });
+
+const noteSchema = new mongoose.Schema({
+  studentId:        { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  noteIndividuelle: { type: Number, min: 0, max: 20, default: null },
+  noteCollective:   { type: Number, min: 0, max: 20, default: null },
+  feedback:         { type: String, default: '' },
+  notedAt:          { type: Date, default: Date.now },
+}, { _id: false });
+
+// ════════════════════════════════════════════════════════════════════
+// MAIN SCHEMA
+// ════════════════════════════════════════════════════════════════════
+
 const prositSchema = new mongoose.Schema({
-  // Métadonnées
-  titre:                  { type: String, required: true, trim: true },
-  description:            { type: String, default: '' },
-  enonce:                 { type: String, required: true },
+  // ─── Métadonnées ─────────────────────────────────────────────────
+  titre:       { type: String, required: true, trim: true },
+  description: { type: String, default: '' },
+
+  // NEW : énoncé structuré (contexte + problématique séparés)
+  contexte:       { type: String, default: '' },
+  problematique:  { type: String, default: '' },
+
+  // LEGACY : énoncé monobloc (avant la refonte)
+  enonce:                 { type: String, default: '' },
   motsCles:               [String],
   objectifsApprentissage: [String],
 
-  // Contexte pédagogique
-  // courseId rendu optionnel : un Prosit peut être autonome (transverse,
-  // workshop hors module) ou rattaché à un cours pour ancrage pédagogique.
-  courseId:       { type: mongoose.Schema.Types.ObjectId, ref: 'Course', default: null },
-  filiere:        { type: String, enum: ['ISIL', 'Management', 'Finance'], required: true },
-  promotion:      { type: String, enum: ['L1', 'L2', 'L3'], required: true },
+  // ─── Contexte pédagogique ────────────────────────────────────────
+  courseId:   { type: mongoose.Schema.Types.ObjectId, ref: 'Course', default: null },
+  chapterIds: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Chapter' }], // NEW
+
+  // LEGACY (filtres anciens)
+  filiere:        { type: String, enum: ['ISIL', 'Management', 'Finance'] },
+  promotion:      { type: String, enum: ['L1', 'L2', 'L3'] },
   caseEntreprise: { type: String, default: '' },
 
-  // Calendrier
-  dateAller:             { type: Date, required: true },
-  dateRetour:            { type: Date, required: true },
-  dureeRechercheJours:   { type: Number, default: 7, min: 1, max: 30 },
+  // ─── Calendrier ──────────────────────────────────────────────────
+  // NEW
+  phaseCadrageDate: { type: Date, default: null },
+  phaseBilanDate:   { type: Date, default: null },
+  // LEGACY
+  dateAller:           { type: Date, default: null },
+  dateRetour:          { type: Date, default: null },
+  dureeRechercheJours: { type: Number, default: 7, min: 1, max: 30 },
 
-  // Création
+  // ─── Création ────────────────────────────────────────────────────
   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
 
-  // Workflow
-  status: {
+  // ─── Statut (NEW enum) ───────────────────────────────────────────
+  statut: {
     type: String,
-    enum: ['brouillon', 'aller', 'recherche', 'retour', 'evalue', 'archive'],
-    default: 'brouillon',
+    enum: STATUTS,
+    default: 'planifie',
     index: true,
   },
+  // LEGACY status (ancien enum) — gardé pour les Prosits non encore migrés
+  status: {
+    type: String,
+    enum: STATUS_LEGACY,
+    default: 'brouillon',
+  },
 
-  // Configuration des groupes (paramétrée par le prof à la création)
+  // ─── Ressources documentaires (NEW) ──────────────────────────────
+  resources: { type: [resourceSchema], default: [] },
+  // LEGACY
+  ressources: { type: [ressourceSchema], default: [] },
+
+  // ─── Groupe unique (NEW : 1 cas pratique = 1 groupe) ─────────────
+  groupMembers: { type: [groupMemberSchema], default: [] },
+
+  // ─── Documents collectifs (NEW) ──────────────────────────────────
+  cadrageDocument: { type: cadrageDocumentSchema, default: () => ({}) },
+  bilanDocument:   { type: bilanDocumentSchema,   default: () => ({}) },
+
+  // ─── Livrables individuels (NEW) ─────────────────────────────────
+  livrables: { type: [livrableSchema], default: [] },
+
+  // ─── Évaluation (NEW : prof-only, simplifié) ─────────────────────
+  notes: { type: [noteSchema], default: [] },
+
+  // ─── LEGACY : groupes multiples + groupesConfig ──────────────────
   groupesConfig: {
-    minMembres:     { type: Number, default: 4, min: 2, max: 12 },
-    maxMembres:     { type: Number, default: 8, min: 2, max: 12 },
+    minMembres:    { type: Number, default: 4, min: 2, max: 12 },
+    maxMembres:    { type: Number, default: 8, min: 2, max: 12 },
     formationMode: {
       type: String,
       enum: ['random', 'manual', 'student_choice'],
-      default: 'random',
+      default: 'manual',
     },
   },
+  groupes: { type: [groupeSchema], default: [] },
 
-  groupes:    [groupeSchema],
-
-  // Ressources jointes par le prof
-  ressources: [ressourceSchema],
-
-  // Grille d'évaluation
-  grilleEvaluation: [grilleCritereSchema],
-
-  // Évaluation par les pairs (méta-config au niveau Prosit)
-  peerAssessmentEnabled:  { type: Boolean, default: true },
-  peerAssessmentDeadline: { type: Date, default: null },          // par défaut dateRetour + 3j
-  peerAssessmentCriteria: { type: [grilleCritereSchema], default: () =>
-    DEFAULT_PEER_CRITERIA.map((c) => ({
-      critere: c.name, poids: 20, description: c.description,
-    }))
-  },
+  // ─── LEGACY : grille + peer-assessment Falchikov/Topping ─────────
+  grilleEvaluation:       { type: [grilleCritereSchema], default: [] },
+  peerAssessmentEnabled:  { type: Boolean, default: false },
+  peerAssessmentDeadline: { type: Date, default: null },
+  peerAssessmentCriteria: { type: [grilleCritereSchema], default: [] },
 }, { timestamps: true });
 
 /**
- * Pré-save : si la deadline d'évaluation par les pairs n'a pas été fixée,
- * on la calcule à dateRetour + 3 jours (compromis entre laisser le temps
- * de réfléchir et finaliser le Prosit avant la transition).
+ * Pré-save : si statut est défini (nouveau flow), garder status (legacy) en
+ * cohérence pour les anciens controllers qui pourraient encore lire status.
  */
 prositSchema.pre('save', function (next) {
-  if (this.peerAssessmentEnabled && !this.peerAssessmentDeadline && this.dateRetour) {
-    const d = new Date(this.dateRetour);
-    d.setDate(d.getDate() + 3);
-    this.peerAssessmentDeadline = d;
+  if (this.isModified('statut') && this.statut) {
+    const map = {
+      planifie:            'brouillon',
+      cadrage_en_cours:    'aller',
+      travail_individuel:  'recherche',
+      bilan_en_cours:      'retour',
+      evalue:              'evalue',
+    };
+    if (map[this.statut]) this.status = map[this.statut];
   }
   next();
 });
 
-prositSchema.index({ courseId: 1, status: 1 });
-prositSchema.index({ filiere: 1, promotion: 1, status: 1 });
+prositSchema.index({ courseId: 1, statut: 1 });
+prositSchema.index({ filiere: 1, promotion: 1, statut: 1 });
+prositSchema.index({ 'groupMembers.studentId': 1 });
 prositSchema.index({ 'groupes.membres.userId': 1 });
-prositSchema.index({ createdBy: 1, status: 1 });
+prositSchema.index({ createdBy: 1, statut: 1 });
 
-prositSchema.statics.PROSIT_ROLES = PROSIT_ROLES;
+prositSchema.statics.PROSIT_ROLES = PROSIT_ROLES_LEGACY;
+prositSchema.statics.CAS_PRATIQUE_ROLES = CAS_PRATIQUE_ROLES;
+prositSchema.statics.STATUTS = STATUTS;
 prositSchema.statics.DEFAULT_PEER_CRITERIA = DEFAULT_PEER_CRITERIA;
+
+// Alias rétrocompat : l'ancien nom `PROSIT_ROLES` est encore importé par
+// prositController.js et services/prositXP.js — on le ré-exporte tel quel.
+const PROSIT_ROLES = PROSIT_ROLES_LEGACY;
 
 const Prosit = mongoose.model('Prosit', prositSchema);
 export default Prosit;
-export { PROSIT_ROLES, DEFAULT_PEER_CRITERIA };
+export { PROSIT_ROLES, PROSIT_ROLES_LEGACY, CAS_PRATIQUE_ROLES, STATUTS, DEFAULT_PEER_CRITERIA };

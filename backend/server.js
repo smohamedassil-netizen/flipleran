@@ -42,6 +42,7 @@ import rewardRoutes        from './routes/rewardRoutes.js';
 import feedbackRoutes      from './routes/feedbackRoutes.js';
 import battleRoutes        from './routes/battleRoutes.js';
 import prositRoutes        from './routes/prositRoutes.js';
+import casPratiqueRoutes   from './routes/casPratiqueRoutes.js';
 import userRoutes          from './routes/userRoutes.js';
 import videoQuestionRoutes from './routes/videoQuestionRoutes.js';
 import learningPathRoutes  from './routes/learningPathRoutes.js';
@@ -300,7 +301,8 @@ app.use('/api/tracking',   trackingRoutes);
 app.use('/api/rewards',    rewardRoutes);
 app.use('/api/feedback',   feedbackRoutes);
 app.use('/api/battle',     battleRoutes);
-app.use('/api/prosits',    prositRoutes);
+app.use('/api/prosits',    prositRoutes);          // legacy (rétrocompat)
+app.use('/api/cas-pratiques', casPratiqueRoutes); // nouveau flow refonte 2026-05
 app.use('/api/users',      userRoutes);
 app.use('/api/video-questions', videoQuestionRoutes);
 app.use('/api/learning-paths', learningPathRoutes);

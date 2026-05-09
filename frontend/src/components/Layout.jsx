@@ -56,7 +56,7 @@ const NAV = {
     {
       section: 'Activités',
       items: [
-        { label: 'Prosits',         icon: Lightbulb,       to: '/prosits' },
+        { label: 'Cas pratiques',   icon: Lightbulb,       to: '/cas-pratiques' },
         { label: 'Projets',         icon: Briefcase,       to: '/projects' },
         { label: 'Mes flashcards',  icon: Layers,          to: '/decks' },
       ],
@@ -64,8 +64,8 @@ const NAV = {
     {
       section: 'Outils IA',
       items: [
-        { label: 'Tuteur IA',       icon: Sparkles,        to: '/my-tutor', badge: 'IA' },
-        { label: 'Méthode Prosit',  icon: Notebook,        to: '/method-guide' },
+        { label: 'Tuteur IA',           icon: Sparkles,        to: '/my-tutor', badge: 'IA' },
+        { label: 'Méthode Cas pratique', icon: Notebook,       to: '/method-guide' },
       ],
     },
     {
@@ -97,7 +97,7 @@ const NAV = {
     {
       section: 'Activités',
       items: [
-        { label: 'Prosits',             icon: Lightbulb,       to: '/prosits' },
+        { label: 'Cas pratiques',       icon: Lightbulb,       to: '/cas-pratiques' },
         { label: 'Projets',             icon: Briefcase,       to: '/projects' },
       ],
     },

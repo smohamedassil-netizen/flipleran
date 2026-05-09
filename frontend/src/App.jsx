@@ -52,6 +52,9 @@ const PrositList           = lazy(() => import('./pages/PrositList.jsx'));
 const PrositCreate         = lazy(() => import('./pages/PrositCreate.jsx'));
 const PrositDetail         = lazy(() => import('./pages/PrositDetail.jsx'));
 const PrositPeerAssessment = lazy(() => import('./pages/PrositPeerAssessment.jsx'));
+const CasPratiqueList      = lazy(() => import('./pages/CasPratiqueList.jsx'));
+const CasPratiqueCreate    = lazy(() => import('./pages/CasPratiqueCreate.jsx'));
+const CasPratiqueDetail    = lazy(() => import('./pages/CasPratiqueDetail.jsx'));
 const NotificationsPage    = lazy(() => import('./pages/NotificationsPage.jsx'));
 const ProfessorTracking    = lazy(() => import('./pages/ProfessorTracking.jsx'));
 const ModuleAssistant      = lazy(() => import('./pages/ModuleAssistant.jsx'));
@@ -160,9 +163,11 @@ export default function App() {
             <Route path="/support"                     element={<Support />} />
             <Route path="/projects"                    element={<ProjectList />} />
             <Route path="/projects/:projectId"         element={<ProjectDetail />} />
-            <Route path="/prosits"                     element={<PrositList />} />
+            <Route path="/prosits"                     element={<Navigate to="/cas-pratiques" replace />} />
             <Route path="/prosits/:id"                 element={<PrositDetail />} />
             <Route path="/prosits/:id/peer-assessment" element={<PrositPeerAssessment />} />
+            <Route path="/cas-pratiques"               element={<CasPratiqueList />} />
+            <Route path="/cas-pratiques/:id"           element={<CasPratiqueDetail />} />
             <Route path="/notifications"               element={<NotificationsPage />} />
             <Route path="/my-tickets"                  element={<Navigate to="/support" replace />} />
             <Route path="/courses/:courseId/assistant" element={<ModuleAssistant />} />
@@ -203,7 +208,8 @@ export default function App() {
             <Route path="/professor/badges"                    element={<BadgeManagement />} />
             <Route path="/professor/projects/create"            element={<ProjectCreate />} />
             <Route path="/professor/templates"                  element={<ProjectTemplateLibrary />} />
-            <Route path="/prosits/new"                          element={<PrositCreate />} />
+            <Route path="/prosits/new"                          element={<Navigate to="/cas-pratiques/new" replace />} />
+            <Route path="/cas-pratiques/new"                    element={<CasPratiqueCreate />} />
             <Route path="/professor/tracking"                   element={<ProfessorTracking />} />
             <Route path="/professor/tracking/:courseId"         element={<ProfessorTracking />} />
             {/* QCM de chapitre / module (création prof — scope='chapter' ou 'module') */}
