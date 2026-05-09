@@ -186,8 +186,11 @@ function OverviewSection({ onNavigate }) {
   const [stats, setStats] = useState(null);
   const [activity, setActivity] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  useEffect(() => {
+  const loadOverview = useCallback(() => {
+    setLoading(true);
+    setError(null);
     Promise.all([
       api.get('/admin/stats'),
       api.get('/admin/activity'),
@@ -195,12 +198,48 @@ function OverviewSection({ onNavigate }) {
       setStats(s.data);
       setActivity(a.data);
     }).catch((err) => {
-      if (import.meta.env?.DEV) logError('[admin/stats]', err);
+      logError('[admin/overview]', err);
+      // Affiche l'info utile : status HTTP + message renvoyé par l'API,
+      // ou message d'erreur réseau si pas de réponse (offline, CORS, DNS).
+      const status = err?.response?.status;
+      const apiMsg = err?.response?.data?.message;
+      const netMsg = err?.message;
+      setError({
+        status,
+        message: apiMsg || netMsg || 'Erreur inconnue',
+        url: err?.config?.url || '',
+      });
     }).finally(() => setLoading(false));
   }, []);
 
+  useEffect(() => { loadOverview(); }, [loadOverview]);
+
   if (loading) return <Spinner />;
-  if (!stats) return <div style={{ textAlign: 'center', color: '#64748B', padding: 40 }}>Erreur de chargement.</div>;
+  if (!stats) return (
+    <div style={{ textAlign: 'center', padding: 40, maxWidth: 520, margin: '0 auto' }}>
+      <AlertCircle size={36} color="#EF4444" style={{ margin: '0 auto 12px' }} />
+      <h3 style={{ margin: '0 0 8px', fontSize: 16, fontWeight: 700, color: '#1E293B' }}>
+        Impossible de charger le tableau de bord
+      </h3>
+      {error && (
+        <p style={{ color: '#64748B', fontSize: 13, marginBottom: 16 }}>
+          {error.status ? `HTTP ${error.status} — ` : ''}{error.message}
+          {error.url ? <><br /><span style={{ fontSize: 11, color: '#94A3B8' }}>Endpoint : {error.url}</span></> : null}
+        </p>
+      )}
+      <button
+        onClick={loadOverview}
+        style={{
+          display: 'inline-flex', alignItems: 'center', gap: 6,
+          padding: '10px 20px', borderRadius: 8,
+          background: PRIMARY, color: 'white', border: 'none',
+          fontSize: 14, fontWeight: 600, cursor: 'pointer',
+        }}
+      >
+        <RefreshCw size={14} /> Réessayer
+      </button>
+    </div>
+  );
 
   // Cartes statistiques — pas de tendance hardcodée. Si l'API renvoie un delta réel
   // (ex: stats.deltaUsers7d), on l'affiche, sinon on n'affiche rien.
