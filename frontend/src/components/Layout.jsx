@@ -40,7 +40,6 @@ import {
   Compass,
   Briefcase,
   Notebook,
-  CalendarCheck,
   LineChart,
 } from 'lucide-react';
 
@@ -91,9 +90,8 @@ const NAV = {
       section: 'Mon enseignement',
       items: [
         { label: 'Tableau de bord',     icon: LayoutDashboard, to: '/professor/dashboard' },
-        { label: 'Briefings',           icon: CalendarCheck,   to: '/professor/class-readiness', badge: 'CAI' },
         { label: 'Suivi étudiants',     icon: LineChart,       to: '/professor/tracking' },
-        { label: 'Mes modules',           icon: BookOpen,        to: '/courses' },
+        { label: 'Mes modules',         icon: BookOpen,        to: '/courses' },
       ],
     },
     {

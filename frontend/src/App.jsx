@@ -64,10 +64,6 @@ const CesiMethodGuide      = lazy(() => import('./pages/CesiMethodGuide.jsx'));
 const AutoPrepReview       = lazy(() => import('./pages/AutoPrepReview.jsx'));
 const MyTutor              = lazy(() => import('./pages/MyTutor.jsx'));
 const MyJourney            = lazy(() => import('./pages/MyJourney.jsx'));
-// Le module ClassReadiness exporte 2 composants. Pour le lazy loading on importe
-// l'un comme defaut et l'autre via une seconde lazy avec un alias.
-const ClassReadiness       = lazy(() => import('./pages/ClassReadiness.jsx'));
-const ClassReadinessHub    = lazy(() => import('./pages/ClassReadiness.jsx').then(m => ({ default: m.ClassReadinessHub })));
 const ScopedQCMCreate      = lazy(() => import('./pages/ScopedQCMCreate.jsx'));
 const ScopedQCMPage        = lazy(() => import('./pages/ScopedQCMPage.jsx'));
 
@@ -210,8 +206,6 @@ export default function App() {
             <Route path="/prosits/new"                          element={<PrositCreate />} />
             <Route path="/professor/tracking"                   element={<ProfessorTracking />} />
             <Route path="/professor/tracking/:courseId"         element={<ProfessorTracking />} />
-            <Route path="/professor/class-readiness"            element={<ClassReadinessHub />} />
-            <Route path="/professor/class-readiness/:courseId"  element={<ClassReadiness />} />
             {/* QCM de chapitre / module (création prof — scope='chapter' ou 'module') */}
             <Route path="/professor/chapter/:chapterId/qcm"     element={<ScopedQCMCreate />} />
             <Route path="/professor/module/:courseId/qcm-final" element={<ScopedQCMCreate />} />

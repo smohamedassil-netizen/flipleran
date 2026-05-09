@@ -51,11 +51,9 @@ const courseSchema = new mongoose.Schema(
     qcmCountsInGrade: { type: Boolean, default: false },
 
     /**
-     * Date du prochain rendez-vous présentiel (étape 2 du Cycle CAI).
-     * Renseignée par le prof, utilisée par MyJourney étudiant pour
-     * afficher "Sois prêt pour mardi 10h" et par ClassReadiness pour
-     * cibler le briefing du prochain cours.
-     * Optionnel : si non renseignée, l'étape 2 reste 'unknown'.
+     * (Champ inutilisé — conservé pour rétrocompat DB.)
+     * Le calendrier des séances présentielles relève de l'emploi du
+     * temps universitaire, pas de FlipLearn.
      */
     nextClassDate: { type: Date, default: null },
 

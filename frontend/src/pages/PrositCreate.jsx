@@ -61,14 +61,11 @@ export default function PrositCreate() {
   }, []);
 
   // Pré-remplissage depuis la suggestion IA (?prefill=<json>&courseId=<id>)
-  // Lien généré par AutoPrepReview après acceptation de la suggestion Prosit,
-  // OU depuis ClassReadiness (bouton "Activer un Prosit") qui passe juste
-  // ?courseId=<id> sans prefill — on lit alors uniquement courseIdParam.
+  // Lien généré par AutoPrepReview après acceptation de la suggestion Prosit.
+  // Si seul courseId est passé (sans prefill), on pré-remplit juste le module.
   useEffect(() => {
     const prefillParam = searchParams.get('prefill');
     const courseIdParam = searchParams.get('courseId');
-    // Cas 1 : pas de prefill → on lit quand même courseId si présent
-    // (bouton "Activer Prosit" depuis ClassReadiness, étape 2 → étape 3 du CAI).
     if (!prefillParam) {
       if (courseIdParam) setCourseId(courseIdParam);
       return;
