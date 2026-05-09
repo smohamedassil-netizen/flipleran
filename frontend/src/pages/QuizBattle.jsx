@@ -624,17 +624,24 @@ export default function QuizBattle() {
                     </div>
                     <button
                       onClick={() => joinRoom(r.roomId)}
-                      disabled={joiningRoomId !== null}
+                      disabled={eligible === false || joiningRoomId !== null}
+                      title={eligible === false ? 'Termine d\'abord une vidéo à 80% pour rejoindre une battle' : ''}
                       style={{
                         padding: '9px 20px', borderRadius: 8,
-                        background: joiningRoomId === r.roomId ? '#94A3B8' : '#2874A6',
+                        background: eligible === false
+                          ? '#94A3B8'
+                          : joiningRoomId === r.roomId ? '#94A3B8' : '#2874A6',
                         color: 'white', border: 'none', fontSize: 14, fontWeight: 600,
-                        cursor: joiningRoomId !== null ? 'not-allowed' : 'pointer',
-                        opacity: (joiningRoomId !== null && joiningRoomId !== r.roomId) ? 0.5 : 1,
+                        cursor: (eligible === false || joiningRoomId !== null) ? 'not-allowed' : 'pointer',
+                        opacity: eligible === false
+                          ? 0.6
+                          : (joiningRoomId !== null && joiningRoomId !== r.roomId) ? 0.5 : 1,
                         display: 'inline-flex', alignItems: 'center', gap: 6,
                       }}
                     >
-                      {joiningRoomId === r.roomId ? (
+                      {eligible === false ? (
+                        '🔒 Verrouillé'
+                      ) : joiningRoomId === r.roomId ? (
                         <>
                           <RefreshCw size={14} style={{ animation: 'spin 1s linear infinite' }} /> Connexion…
                         </>
