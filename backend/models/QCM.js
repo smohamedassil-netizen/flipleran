@@ -1,3 +1,20 @@
+/**
+ * QCM — un quiz lié à une vidéo, avec ses questions imbriquées.
+ *
+ * ⚠️ Note d'architecture : il existe DEUX types de questions dans FlipLearn :
+ *  1. QCM.questions[] (sub-document, ce fichier) — un quiz "post-vidéo" complet
+ *     que l'étudiant passe d'un seul tenant après avoir vu la vidéo.
+ *  2. VideoQuestion (collection séparée) — questions intégrées DANS la vidéo,
+ *     déclenchées à un timestamp précis pendant la lecture.
+ *
+ * Les deux servent à différents moments pédagogiques :
+ *  - VideoQuestion = vérification continue, accroche l'attention
+ *  - QCM           = synthèse finale, conditionne l'unlock du chapitre suivant
+ *
+ * Les Réponses ne sont PAS une collection séparée : elles sont imbriquées
+ * comme sub-document dans chaque question pour minimiser les jointures
+ * (denormalization pattern MongoDB).
+ */
 import mongoose from 'mongoose';
 
 /* ─── Question ────────────────────────────────────────────────────────────── */

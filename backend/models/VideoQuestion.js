@@ -15,6 +15,11 @@
  * déclenche au timestamp défini par le professeur. L'overlay frontend
  * met en pause la lecture (si pauseVideo=true) tant que la question
  * n'est pas répondue.
+ *
+ * ⚠️ Note d'architecture : à distinguer de QCM (cf. backend/models/QCM.js).
+ * VideoQuestion = question intégrée PENDANT la lecture (formative
+ * assessment, Black & Wiliam 1998) ; QCM.questions[] = quiz post-vidéo
+ * complet (sub-document du modèle QCM, conditionne l'unlock du chapitre).
  */
 
 import mongoose from 'mongoose';
