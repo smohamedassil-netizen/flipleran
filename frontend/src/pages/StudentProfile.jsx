@@ -318,12 +318,12 @@ export default function StudentProfile() {
         </section>
       )}
 
-      {/* ── Professor: Mes modules section ───────────────────────────────── */}
+      {/* ── Professor: Mes cours section ───────────────────────────────── */}
       {isProf && (
         <section style={{ marginBottom: '32px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
             <BookOpen size={18} color="var(--color-primary, #1B4F72)" />
-            <h2 style={{ margin: 0, fontSize: '16px', fontWeight: 700 }}>Mes modules</h2>
+            <h2 style={{ margin: 0, fontSize: '16px', fontWeight: 700 }}>Mes cours</h2>
             <span className="badge badge-primary">{profStats.courses} cours</span>
           </div>
           <div className="card" style={{ padding: 20, color: 'var(--text-muted)', fontSize: 14 }}>

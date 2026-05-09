@@ -524,7 +524,7 @@ export default function QuizBattle() {
                       cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 5,
                     }}
                   >
-                    <BookOpen size={13} /> Aller à mes modules
+                    <BookOpen size={13} /> Aller à mes cours
                   </button>
                 </div>
               </div>

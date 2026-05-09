@@ -61,7 +61,7 @@ const ALGERIA_FEATURES = [
 ];
 
 const TESTIMONIALS = [
-  { name: 'Yasmine B.', role: 'L3 ISIL · EM Alger',   avatar: '🎓', color: '#1B4F72', text: 'L\'assistant IA m\'a sauvé pendant les exams. Il connaît mes modules mieux que moi.' },
+  { name: 'Yasmine B.', role: 'L3 ISIL · EM Alger',   avatar: '🎓', color: '#1B4F72', text: 'L\'assistant IA m\'a sauvé pendant les exams. Il connaît mes cours mieux que moi.' },
   { name: 'Mehdi S.',   role: 'L2 Management',         avatar: '📈', color: '#D97706', text: 'Les capsules courtes c\'est génial. Je révise 10 min dans le bus puis je fais le QCM.' },
   { name: 'Amira H.',   role: 'L3 Finance',            avatar: '💼', color: '#059669', text: 'J\'ai gagné ma 1ère certif gratuite grâce aux points. Ça motive vraiment.' },
 ];

@@ -153,7 +153,7 @@ export default function XPBreakdownCard() {
       <p style={{ margin: '14px 0 0', fontSize: 10, color: '#94A3B8', fontStyle: 'italic', lineHeight: 1.5 }}>
         Note : les XP sont une mesure d'<strong>engagement</strong> (gamification).
         Les <strong>notes officielles</strong> de contrôle continu sont calculées séparément
-        dans chaque module — clique sur "Mes modules" pour les voir.
+        dans chaque module — clique sur "Mes cours" pour les voir.
       </p>
     </div>
   );

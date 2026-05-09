@@ -100,7 +100,7 @@ export default function WatchVideo() {
       {/* Breadcrumb */}
       <Breadcrumb items={[
         { label: 'Accueil', to: '/', icon: Home },
-        { label: 'Mes modules', to: '/courses' },
+        { label: 'Mes cours', to: '/courses' },
         { label: video.courseId?.titre ?? 'Cours', to: `/courses/${courseId}` },
         { label: video.titre },
       ]} />

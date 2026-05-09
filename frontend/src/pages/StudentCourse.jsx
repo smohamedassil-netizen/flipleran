@@ -350,7 +350,7 @@ export default function StudentCourse() {
       {/* ── Breadcrumb ──────────────────────────────────────────────────── */}
       <Breadcrumb items={[
         { label: 'Accueil', to: '/', icon: Home },
-        { label: 'Mes modules', to: '/courses' },
+        { label: 'Mes cours', to: '/courses' },
         { label: course?.titre ?? 'Cours' },
       ]} />
 

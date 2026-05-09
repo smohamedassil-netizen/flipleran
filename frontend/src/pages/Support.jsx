@@ -10,7 +10,7 @@ import {
 
 /* ─── FAQ ────────────────────────────────────────────────────────────── */
 const FAQ_ITEMS = [
-  { q: "Comment accéder à mes modules ?", a: "Connectez-vous avec votre compte étudiant, puis cliquez sur 'Mes modules' dans le menu latéral. Vous verrez tous les cours auxquels vous êtes inscrit." },
+  { q: "Comment accéder à mes cours ?", a: "Connectez-vous avec votre compte étudiant, puis cliquez sur 'Mes cours' dans le menu latéral. Vous verrez tous les cours auxquels vous êtes inscrit." },
   { q: "Comment passer un QCM ?", a: "Allez sur un cours, sélectionnez une capsule, regardez-la jusqu'à au moins 80%, puis cliquez sur 'Passer le QCM' qui apparaîtra." },
   { q: "Comment contacter mon professeur ?", a: "Utilisez la messagerie intégrée. Allez dans 'Messages' dans le menu, puis sélectionnez votre professeur pour démarrer une conversation privée." },
   { q: "Comment gagner des badges ?", a: "Les badges sont attribués automatiquement selon vos performances : complétion de capsules, scores aux QCM, régularité, etc. Consultez votre profil pour voir vos badges." },

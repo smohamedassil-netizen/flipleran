@@ -426,11 +426,11 @@ export default function Dashboard() {
         ))}
       </div>
 
-      {/* ── Mes modules (pleine largeur, focus principal) ─────────────── */}
+      {/* ── Mes cours (pleine largeur, focus principal) ─────────────── */}
       <div className="card" style={{ marginBottom: 24 }}>
         <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span className="card-title">Mes modules</span>
-          <button className="btn btn-ghost btn-sm" onClick={() => navigate('/courses')} aria-label="Voir tous mes modules">
+          <span className="card-title">Mes cours</span>
+          <button className="btn btn-ghost btn-sm" onClick={() => navigate('/courses')} aria-label="Voir tous mes cours">
             Voir tout <ChevronRight size={14} />
           </button>
         </div>

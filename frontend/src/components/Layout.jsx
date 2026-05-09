@@ -50,7 +50,7 @@ const NAV = {
       section: 'Mon parcours',
       items: [
         { label: 'Mon Parcours',    icon: Compass,         to: '/my-journey', badge: 'CAI' },
-        { label: 'Mes modules',       icon: BookOpen,        to: '/courses' },
+        { label: 'Mes cours',       icon: BookOpen,        to: '/courses' },
       ],
     },
     {
@@ -91,7 +91,7 @@ const NAV = {
       items: [
         { label: 'Tableau de bord',     icon: LayoutDashboard, to: '/professor/dashboard' },
         { label: 'Suivi étudiants',     icon: LineChart,       to: '/professor/tracking' },
-        { label: 'Mes modules',         icon: BookOpen,        to: '/courses' },
+        { label: 'Mes cours',         icon: BookOpen,        to: '/courses' },
       ],
     },
     {

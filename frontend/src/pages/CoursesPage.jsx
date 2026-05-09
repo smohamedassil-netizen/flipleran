@@ -167,13 +167,13 @@ export default function CoursesPage() {
   };
 
   return (
-    <Layout title="Mes modules">
+    <Layout title="Mes cours">
       <div style={{ maxWidth: 900, margin: '0 auto' }}>
         {/* Pas de bouton Retour : /courses est une page de destination (sidebar), pas une sous-page */}
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
           <div>
-            <h1 className="page-title">Mes modules</h1>
+            <h1 className="page-title">Mes cours</h1>
             <p className="page-subtitle">
               {role === 'professeur'
                 ? 'Gérez vos modules, ajoutez des capsules et des QCM.'

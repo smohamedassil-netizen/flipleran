@@ -181,7 +181,7 @@ export default function ResourcesHub() {
                   cursor: 'pointer', textDecoration: 'underline',
                 }}
               >
-                voir mes modules →
+                voir mes cours →
               </button>
             </p>
           </div>

@@ -313,7 +313,7 @@ export default function ResourceLibrary() {
     <Layout title="Bibliothèque">
       <Breadcrumb items={[
         { label: 'Accueil', to: '/' },
-        { label: 'Mes modules', to: '/courses' },
+        { label: 'Mes cours', to: '/courses' },
         { label: course?.titre || 'Cours', to: `/courses/${courseId}` },
         { label: 'Bibliothèque' },
       ]} />

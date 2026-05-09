@@ -180,7 +180,7 @@ export default function LearningPathBuilder() {
     <Layout title="Parcours pédagogique">
       <Breadcrumb items={[
         { label: 'Accueil', to: '/', icon: Home },
-        { label: 'Mes modules', to: '/courses' },
+        { label: 'Mes cours', to: '/courses' },
         { label: course?.titre, to: `/courses/${courseId}` },
         { label: 'Parcours pédagogique' },
       ]} />
