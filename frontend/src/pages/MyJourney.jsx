@@ -125,7 +125,13 @@ function CourseJourney({ course, onError }) {
           title="2. RENDEZ-VOUS"
           subtitle="En classe : activité ciblée"
           status={steps.rendezvous.status}
-          detail={steps.rendezvous.nextClassDate ? new Date(steps.rendezvous.nextClassDate).toLocaleDateString('fr-FR') : 'À venir'}
+          detail={
+            steps.rendezvous.nextClassDate
+              ? `Prochain cours : ${new Date(steps.rendezvous.nextClassDate).toLocaleString('fr-FR', {
+                  weekday: 'short', day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit',
+                })}`
+              : 'Date non communiquée par le prof'
+          }
         />
 
         <JourneyStepCard

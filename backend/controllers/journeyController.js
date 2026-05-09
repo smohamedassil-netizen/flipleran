@@ -30,7 +30,7 @@ export const getMyJourney = async (req, res) => {
     const studentId = req.user.id;
     const { courseId } = req.params;
 
-    const course = await Course.findById(courseId).select('_id titre filiere promotion').lean();
+    const course = await Course.findById(courseId).select('_id titre filiere promotion nextClassDate').lean();
     if (!course) return res.status(404).json({ message: 'Cours introuvable' });
 
     /* ─── 1. PRÉPARATION ─────────────────────────────────────────────── */
@@ -63,10 +63,22 @@ export const getMyJourney = async (req, res) => {
     }
 
     /* ─── 2. RENDEZ-VOUS ─────────────────────────────────────────────── */
-    // Pas de champ nextClassDate dans Course (cf. P0 audit).
-    // À renseigner dans une future itération si on ajoute un calendrier de séances.
-    const rendezvousStatus = 'unknown';
-    const nextClassDate = null;
+    // Étape 2 du Cycle CAI : statut dérivé de Course.nextClassDate.
+    // Étudiant 'prêt' (upcoming) si la prépa est complète et la date est
+    // future ; 'in-progress' si la date est future mais la prépa pas finie ;
+    // 'completed' si la date est passée ; 'unknown' si aucune date renseignée.
+    const nextClassDate = course.nextClassDate || null;
+    let rendezvousStatus = 'unknown';
+    if (nextClassDate) {
+      const isFuture = new Date(nextClassDate).getTime() > Date.now();
+      if (preparationStatus === 'completed' && isFuture) {
+        rendezvousStatus = 'upcoming';
+      } else if (isFuture) {
+        rendezvousStatus = 'in-progress';
+      } else {
+        rendezvousStatus = 'completed';
+      }
+    }
 
     /* ─── 3. APPLICATION (Prosits) ───────────────────────────────────── */
     const prosits = await Prosit.find({
@@ -138,7 +150,7 @@ export const getMyJourney = async (req, res) => {
     /* ─── CYCLE PROGRESS (multiple de 20, naïf) ──────────────────────── */
     const completedFlags = [
       preparationStatus === 'completed',
-      false, // rendez-vous : pas de mesure tant que nextClassDate n'existe pas
+      rendezvousStatus === 'completed', // étape 2 : cours présentiel passé
       applicationStatus === 'completed',
       productionStatus === 'completed',
       consolidationStatus === 'active' && cardsDue === 0 && cardsReviewed7d > 0,

@@ -50,6 +50,15 @@ const courseSchema = new mongoose.Schema(
        que la moyenne des QCM compte dans la note CC du module. */
     qcmCountsInGrade: { type: Boolean, default: false },
 
+    /**
+     * Date du prochain rendez-vous présentiel (étape 2 du Cycle CAI).
+     * Renseignée par le prof, utilisée par MyJourney étudiant pour
+     * afficher "Sois prêt pour mardi 10h" et par ClassReadiness pour
+     * cibler le briefing du prochain cours.
+     * Optionnel : si non renseignée, l'étape 2 reste 'unknown'.
+     */
+    nextClassDate: { type: Date, default: null },
+
     /* Pondération de la note CC du module (somme = 100). */
     gradeWeights: {
       qcm:        { type: Number, default: 30, min: 0, max: 100 },
