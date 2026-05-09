@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { Lock, CheckCircle2, CircleDashed, ArrowRight } from 'lucide-react';
+import { Lock, CheckCircle2, CircleDashed, ArrowRight, Info } from 'lucide-react';
 
 /**
  * JourneyStepCard — affiche 1 des 5 étapes du Cycle d'Apprentissage Inversé.
@@ -60,10 +60,15 @@ export default function JourneyStepCard({
       onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; }}
       title={isLocked ? lockedReason : subtitle}
     >
-      {/* Header : icône + statut */}
+      {/* Header : icône + statut + info */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <span style={{ fontSize: 24 }} aria-hidden="true">{icon}</span>
-        <StatusIcon size={16} color={palette.accent} />
+        <div style={{ display: 'inline-flex', gap: 4, alignItems: 'center' }}>
+          <span title={subtitle} style={{ display: 'inline-flex', cursor: 'help' }}>
+            <Info size={13} color={palette.accent} style={{ opacity: 0.7 }} />
+          </span>
+          <StatusIcon size={16} color={palette.accent} />
+        </div>
       </div>
 
       {/* Titre */}
