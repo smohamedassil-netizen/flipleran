@@ -14,7 +14,7 @@ import { Lock, CheckCircle2, CircleDashed, ArrowRight } from 'lucide-react';
  *   - title     : intitulé court (PRÉPARATION, RENDEZ-VOUS, …)
  *   - subtitle  : phrase d'aide pédagogique courte (tooltip-friendly)
  *   - status    : 'completed' | 'in-progress' | 'not-started' | 'active' | 'locked' | 'upcoming' | 'unknown'
- *   - detail    : string courte (ex: "Vidéos : 2/4 · QCM : 1/3")
+ *   - detail    : string courte (ex: "Capsules : 2/4 · QCM : 1/3")
  *   - actionLabel : libellé du bouton (ex: "Continuer")
  *   - actionTo    : route React Router
  *   - lockedReason : tooltip si locked

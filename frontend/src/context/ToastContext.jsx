@@ -40,7 +40,7 @@ const FOCUS_ROUTE_PATTERNS = [
   /^\/qcm\//,           // pendant un QCM en cours
   /^\/quiz-battle/,     // pendant un Quiz Battle
   /^\/study\//,         // pendant une session de révision SM-2
-  /^\/watch\//,         // pendant le visionnage d'une vidéo (option : commenter cette ligne si trop strict)
+  /^\/watch\//,         // pendant le visionnage d'une capsule (option : commenter cette ligne si trop strict)
 ];
 
 // Préférence son utilisateur (off par défaut pour ne pas surprendre)

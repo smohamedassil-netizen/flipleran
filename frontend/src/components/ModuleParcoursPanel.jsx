@@ -14,7 +14,7 @@ import {
  *
  * Source : GET /api/journey/me/:courseId (existant) + GET /api/courses/:id/my-completion
  *
- * Conçu pour cohabiter avec la liste de vidéos existante de StudentCourse.jsx.
+ * Conçu pour cohabiter avec la liste de capsules existante de StudentCourse.jsx.
  * Compact, dense en information, mais non bloquant : si l'API échoue, le panel
  * s'efface silencieusement et la page reste utilisable.
  */
@@ -53,7 +53,7 @@ export default function ModuleParcoursPanel({ courseId }) {
       title: 'Préparation',
       Icon: BookOpen,
       status: steps.preparation.status,
-      detail: `Vidéos ${steps.preparation.details.videosWatched}/${steps.preparation.details.videosTotal} · QCM ${steps.preparation.details.quizzesPassed}/${steps.preparation.details.quizzesTotal}`,
+      detail: `Capsules ${steps.preparation.details.videosWatched}/${steps.preparation.details.videosTotal} · QCM ${steps.preparation.details.quizzesPassed}/${steps.preparation.details.quizzesTotal}`,
       action: null, // déjà sur la page du cours, pas besoin de naviguer
     },
     {
@@ -95,7 +95,7 @@ export default function ModuleParcoursPanel({ courseId }) {
       status: steps.consolidation.status,
       detail: `${steps.consolidation.details.cardsDue} carte${steps.consolidation.details.cardsDue !== 1 ? 's' : ''} à réviser`,
       action: { label: 'Réviser', to: '/decks' },
-      lockedReason: 'Commence une vidéo pour débloquer',
+      lockedReason: 'Commence une capsule pour débloquer',
     },
   ];
 

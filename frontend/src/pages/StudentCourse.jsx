@@ -109,7 +109,7 @@ function VideoRow({ video, index, onSelect, isActive, isProfOrAdmin, navigate, o
           {/* Badge questions interactives in-video */}
           {questionCount > 0 && (
             <span
-              title={`${questionCount} question(s) interactive(s) déclenchée(s) pendant la vidéo`}
+              title={`${questionCount} question(s) interactive(s) déclenchée(s) pendant la capsule`}
               style={{
                 display: 'inline-flex', alignItems: 'center', gap: 4,
                 padding: '1px 7px', borderRadius: 999,
@@ -128,7 +128,7 @@ function VideoRow({ video, index, onSelect, isActive, isProfOrAdmin, navigate, o
         <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
           <button
             className="btn btn-sm"
-            title="Préparer ce cours avec l'IA (questions, QCM, outcomes, Prosit, flashcards)"
+            title="Préparer ce module avec l'IA (questions, QCM, outcomes, Prosit, flashcards)"
             onClick={(e) => { e.stopPropagation(); navigate(`/professor/courses/${video.courseId}/videos/${video._id}/auto-prep`); }}
             style={{
               background: 'linear-gradient(135deg, #9333EA, #C084FC)',
@@ -154,7 +154,7 @@ function VideoRow({ video, index, onSelect, isActive, isProfOrAdmin, navigate, o
           </button>
           <button
             className="btn btn-ghost btn-sm"
-            title="Découper la vidéo en parties pédagogiques (microlearning)"
+            title="Découper la capsule en sections pédagogiques (microlearning)"
             onClick={(e) => { e.stopPropagation(); navigate(`/professor/videos/${video._id}/parts`); }}
             style={{ color: '#9333EA' }}
           >
@@ -162,7 +162,7 @@ function VideoRow({ video, index, onSelect, isActive, isProfOrAdmin, navigate, o
           </button>
           <button
             className="btn btn-ghost btn-sm"
-            title="Modifier la vidéo"
+            title="Modifier la capsule"
             onClick={(e) => { e.stopPropagation(); onEdit?.(video); }}
             style={{ color: 'var(--color-accent)' }}
           >
@@ -170,7 +170,7 @@ function VideoRow({ video, index, onSelect, isActive, isProfOrAdmin, navigate, o
           </button>
           <button
             className="btn btn-ghost btn-sm"
-            title="Supprimer la vidéo"
+            title="Supprimer la capsule"
             onClick={(e) => { e.stopPropagation(); onDelete?.(video); }}
             style={{ color: '#e74c3c' }}
           >
@@ -263,14 +263,14 @@ export default function StudentCourse() {
     }
   };
 
-  // Chargement du parcours pédagogique (peut être absent → fallback liste de vidéos)
+  // Chargement du parcours pédagogique (peut être absent → fallback liste de capsules)
   const fetchLearningPath = async (useFreeMode = freeMode) => {
     try {
       const url = `/learning-paths/course/${courseId}${useFreeMode ? '?free=true' : ''}`;
       const { data } = await api.get(url);
       setLearningPath(data);
     } catch (err) {
-      // 404 = pas de parcours configuré → on garde le fallback liste de vidéos
+      // 404 = pas de parcours configuré → on garde le fallback liste de capsules
       setLearningPath(false);
     }
   };
@@ -285,7 +285,7 @@ export default function StudentCourse() {
         setCourse(courseRes.data);
         setVideos(videosRes.data);
 
-        // Compte les questions in-video par vidéo (en parallèle, fail silencieux)
+        // Compte les questions in-video par capsule (en parallèle, fail silencieux)
         const counts = {};
         await Promise.all((videosRes.data || []).map(async (v) => {
           try {
@@ -350,7 +350,7 @@ export default function StudentCourse() {
       {/* ── Breadcrumb ──────────────────────────────────────────────────── */}
       <Breadcrumb items={[
         { label: 'Accueil', to: '/', icon: Home },
-        { label: 'Mes cours', to: '/courses' },
+        { label: 'Mes modules', to: '/courses' },
         { label: course?.titre ?? 'Cours' },
       ]} />
 
@@ -377,7 +377,7 @@ export default function StudentCourse() {
                 <Route size={14} /> Parcours pédagogique
               </button>
               <button className="btn btn-secondary btn-sm" onClick={() => navigate(`/professor/courses/${courseId}/upload`)}>
-                <Upload size={14} /> Ajouter vidéo
+                <Upload size={14} /> Ajouter capsule
               </button>
               <button className="btn btn-ghost btn-sm" onClick={() => navigate(`/courses/${courseId}/resources`)}>
                 <FileText size={14} /> Ressources
@@ -410,7 +410,7 @@ export default function StudentCourse() {
 
       <div className="responsive-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: 24, alignItems: 'start' }}>
 
-        {/* ── Path scénarisé OU fallback liste de vidéos ───────────────── */}
+        {/* ── Path scénarisé OU fallback liste de capsules ───────────────── */}
         <div>
           {learningPath ? (
             <LearningPathTimeline
@@ -429,7 +429,7 @@ export default function StudentCourse() {
                   borderLeft: '3px solid #D4952A', fontSize: 13, color: '#1E293B',
                 }}>
                   <strong style={{ color: '#D4952A' }}>📚 Parcours pédagogique non configuré</strong> —
-                  vous pouvez organiser les vidéos, QCM et Prosits en une séquence guidée pour vos étudiants.
+                  vous pouvez organiser les capsules, QCM et Prosits en une séquence guidée pour vos étudiants.
                   <button
                     type="button"
                     className="btn btn-ghost btn-sm"
@@ -448,7 +448,7 @@ export default function StudentCourse() {
                   fontSize: 13, color: 'var(--color-text-secondary)',
                   fontStyle: 'italic',
                 }}>
-                  Le prof n'a pas encore configuré de parcours pour ce cours. Voici la liste des vidéos disponibles.
+                  Le prof n'a pas encore configuré de parcours pour ce cours. Voici la liste des capsules disponibles.
                 </div>
               )}
 
@@ -491,7 +491,7 @@ export default function StudentCourse() {
                   {totalPct === 100 ? 'Cours terminé !' : 'En cours'}
                 </p>
                 <p className="text-small">
-                  {completed}/{videos.length} vidéos complétées
+                  {completed}/{videos.length} capsules complétées
                 </p>
               </div>
             </div>
@@ -545,14 +545,14 @@ export default function StudentCourse() {
               {completed === videos.length ? 'Revoir le cours' : 'Continuer le cours'}
             </button>
           )}
-          {/* Chat du cours */}
+          {/* Chat du module */}
           <button
             className="btn btn-ghost"
             style={{ width: '100%', justifyContent: 'center', marginTop: '6px' }}
             onClick={() => navigate(`/chat/course/${courseId}`)}
           >
             <MessageSquare size={15} />
-            Chat du cours
+            Chat du module
           </button>
           {/* Assistant IA du module */}
           <button
@@ -575,7 +575,7 @@ export default function StudentCourse() {
           <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 500 }}>
             <h3 style={{ marginBottom: 16, fontSize: 'var(--font-size-lg)', fontWeight: 700 }}>
               <Edit3 size={18} style={{ marginRight: 8 }} />
-              Modifier la vidéo
+              Modifier la capsule
             </h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               <div>
@@ -621,7 +621,7 @@ export default function StudentCourse() {
                 </div>
                 {editForm.chapters.length === 0 && (
                   <p style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-secondary)', fontStyle: 'italic' }}>
-                    Aucun chapitre. Ajoutez des chapitres pour diviser la vidéo en parties.
+                    Aucun chapitre. Ajoutez des chapitres pour diviser la capsule en sections.
                   </p>
                 )}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 200, overflowY: 'auto' }}>
@@ -667,11 +667,11 @@ export default function StudentCourse() {
           <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 420 }}>
             <h3 style={{ marginBottom: 12, color: '#e74c3c', fontWeight: 700 }}>
               <Trash2 size={18} style={{ marginRight: 8 }} />
-              Supprimer cette vidéo ?
+              Supprimer cette capsule ?
             </h3>
             <p style={{ fontSize: 'var(--font-size-sm)', color: 'var(--color-text-secondary)', marginBottom: 8 }}>
               Vous allez supprimer <strong>"{deleteConfirm.titre}"</strong>. Cette action est irréversible.
-              La vidéo sera supprimée de Cloudinary et toutes les progressions des étudiants seront perdues.
+              La capsule sera supprimée de Cloudinary et toutes les progressions des étudiants seront perdues.
             </p>
             <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 20 }}>
               <button className="btn btn-ghost" onClick={() => setDeleteConfirm(null)}>Annuler</button>

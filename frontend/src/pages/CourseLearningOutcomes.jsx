@@ -17,7 +17,7 @@ import {
 const CONTRACT_TEMPLATES = [
   {
     id: 'classique',
-    label: 'Cours classique',
+    label: 'Module classique',
     description: 'Engagement standard prof / étudiants',
     body: `# Bienvenue dans ce module
 
@@ -30,8 +30,8 @@ Voir la liste des objectifs ci-dessous (taxonomie de Bloom).
 - Disponibilité en présentiel pour les questions
 
 ## Votre engagement (étudiants)
-- Regarder les vidéos **avant** le cours en présentiel
-- Faire le QCM associé à chaque vidéo
+- Regarder les capsules **avant** le module en présentiel
+- Faire le QCM associé à chaque capsule
 - Participer activement aux Prosits en groupe
 
 ## Évaluation
@@ -41,12 +41,12 @@ Voir la liste des objectifs ci-dessous (taxonomie de Bloom).
   },
   {
     id: 'collaboratif',
-    label: 'Cours collaboratif',
+    label: 'Module collaboratif',
     description: 'Centré sur le travail en groupe et les Prosits',
     body: `# Bienvenue — module collaboratif
 
 ## L'esprit du module
-Ce cours s'appuie sur l'**Apprentissage Par Problème (APP/CESI)** : vous travaillez en groupe sur des cas concrets contextualisés.
+Ce module s'appuie sur l'**Apprentissage Par Problème (APP/CESI)** : vous travaillez en groupe sur des cas concrets contextualisés.
 
 ## Mon engagement
 - Encadrement des groupes lors des phases Aller et Retour
@@ -65,7 +65,7 @@ Ce cours s'appuie sur l'**Apprentissage Par Problème (APP/CESI)** : vous travai
   },
   {
     id: 'intensif',
-    label: 'Cours intensif',
+    label: 'Module intensif',
     description: 'Module dense — charge de travail élevée',
     body: `# Bienvenue dans ce module intensif
 
@@ -78,7 +78,7 @@ Ce cours s'appuie sur l'**Apprentissage Par Problème (APP/CESI)** : vous travai
 - Permanence hebdomadaire pour vos questions
 
 ## Votre engagement
-- Visionner les vidéos avant chaque séance
+- Visionner les capsules avant chaque séance
 - Réussir les QCM avec un **score minimum de 60 %**
 - Rendre les livrables Prosit **dans les délais** (pas de retard accepté)
 
@@ -96,7 +96,7 @@ Ce cours s'appuie sur l'**Apprentissage Par Problème (APP/CESI)** : vous travai
  * @description Implémente l'**alignement constructif** (Biggs, 1996) : le prof
  * rend explicite ce que l'étudiant saura faire, les niveaux cognitifs visés
  * (Anderson & Krathwohl, 2001) et les engagements réciproques du dispositif.
- * C'est le socle déclaratif du module, ancre des vidéos et des QCM.
+ * C'est le socle déclaratif du module, ancre des capsules et des QCM.
  *
  * @see Bloom (1956). *Taxonomy of Educational Objectives*. David McKay.
  * @see Anderson & Krathwohl (2001). *A Taxonomy for Learning, Teaching, and
@@ -353,7 +353,7 @@ function WhyThisPage() {
             <strong style={{ fontSize: 12, color: '#1B4F72' }}>Vu par vos étudiants</strong>
           </div>
           <p style={{ fontSize: 11, color: '#475569', margin: 0, lineHeight: 1.4 }}>
-            Affichés en haut de la page cours pour que chaque étudiant sache pourquoi il regarde ces vidéos.
+            Affichés en haut de la page cours pour que chaque étudiant sache pourquoi il regarde ces capsules.
           </p>
         </div>
 
@@ -480,7 +480,7 @@ export default function CourseLearningOutcomes() {
     <Layout title="Objectifs d'apprentissage">
       <Breadcrumb items={[
         { label: 'Accueil', to: '/', icon: Home },
-        { label: 'Mes cours', to: '/courses' },
+        { label: 'Mes modules', to: '/courses' },
         { label: course?.titre, to: `/courses/${courseId}` },
         { label: 'Objectifs Bloom' },
       ]} />

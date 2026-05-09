@@ -7,7 +7,7 @@ import { useToast } from '../context/useToast.js';
 import { ArrowLeft, BarChart3, Calendar, Lightbulb, Send, X } from 'lucide-react';
 
 const DEFAULT_REMINDER_TEMPLATE = (courseTitre) =>
-  `Bonjour, le prochain cours de "${courseTitre}" approche. Pense à regarder la vidéo et faire le QCM avant — ça te permettra de profiter pleinement du présentiel. Bonne préparation !`;
+  `Bonjour, le prochain cours de "${courseTitre}" approche. Pense à regarder la capsule et faire le QCM avant — ça te permettra de profiter pleinement du présentiel. Bonne préparation !`;
 
 function RemindModal({ resource, courseTitre, onClose, onSend, sending }) {
   const [message, setMessage] = useState(DEFAULT_REMINDER_TEMPLATE(courseTitre));
@@ -97,7 +97,7 @@ export function ClassReadinessHub() {
     setLoading(true);
     api.get('/professor/courses')
       .then(({ data }) => setCourses(Array.isArray(data) ? data : []))
-      .catch((err) => setError(err.response?.data?.message || 'Impossible de charger vos cours.'))
+      .catch((err) => setError(err.response?.data?.message || 'Impossible de charger vos modules.'))
       .finally(() => setLoading(false));
   }, []);
 
@@ -109,7 +109,7 @@ export function ClassReadinessHub() {
           Préparation classe
         </h1>
         <p style={{ margin: '4px 0 0', fontSize: 13, color: '#64748B' }}>
-          Choisis un cours pour voir qui est prêt avant ta prochaine séance.
+          Choisis un module pour voir qui est prêt avant ta prochaine séance.
         </p>
       </div>
 
@@ -117,7 +117,7 @@ export function ClassReadinessHub() {
       {!loading && error && <div className="alert alert-error">{error}</div>}
       {!loading && !error && courses.length === 0 && (
         <div className="empty-state" style={{ padding: 32 }}>
-          <p className="empty-state-title">Aucun cours</p>
+          <p className="empty-state-title">Aucun module</p>
           <p className="empty-state-desc">Vous n'avez pas encore de cours.</p>
         </div>
       )}
@@ -272,7 +272,7 @@ export default function ClassReadiness() {
         <button
           className="btn btn-accent btn-sm"
           onClick={() => navigate(`/prosits/new?courseId=${courseId}`)}
-          title="Créer un nouveau Prosit pour ce cours (étape 3 du Cycle CAI)"
+          title="Créer un nouveau Prosit pour ce module (étape 3 du Cycle CAI)"
         >
           <Lightbulb size={14} style={{ marginRight: 6 }} />
           Activer un Prosit
@@ -285,7 +285,7 @@ export default function ClassReadiness() {
           Préparation classe {data?.course?.titre ? `— ${data.course.titre}` : ''}
         </h1>
         <p style={{ margin: '4px 0 0', fontSize: 13, color: '#64748B' }}>
-          {data ? `${data.totalStudents} étudiant${data.totalStudents > 1 ? 's' : ''} inscrit${data.totalStudents > 1 ? 's' : ''} dans ce cours.` : 'Chargement…'}
+          {data ? `${data.totalStudents} étudiant${data.totalStudents > 1 ? 's' : ''} inscrit${data.totalStudents > 1 ? 's' : ''} dans ce module.` : 'Chargement…'}
         </p>
       </div>
 
@@ -336,7 +336,7 @@ export default function ClassReadiness() {
           {!loading && !error && data && data.resources.length === 0 && (
             <div className="empty-state" style={{ padding: 32 }}>
               <p className="empty-state-title">Aucune ressource</p>
-              <p className="empty-state-desc">Ce cours n'a pas encore de vidéos ou de QCM.</p>
+              <p className="empty-state-desc">Ce module n'a pas encore de capsules ou de QCM.</p>
             </div>
           )}
 

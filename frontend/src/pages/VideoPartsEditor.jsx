@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 
 /**
- * VideoPartsEditor — page prof pour découper une vidéo en parties pédagogiques.
+ * VideoPartsEditor — page prof pour découper une capsule en parties pédagogiques.
  *
  * Microlearning (Hug 2005) : chaque partie est une mini-unité avec son
  * propre mini-QCM (lien vers QCM existant) et son feedback.
@@ -74,7 +74,7 @@ export default function VideoPartsEditor() {
     const duration = video?.duration || 0;
     const next = {
       ordre: parts.length,
-      titre: `Partie ${parts.length + 1}`,
+      titre: `Section ${parts.length + 1}`,
       startTime: lastEnd,
       endTime: Math.min(duration || lastEnd + 60, lastEnd + 60),
       qcmId: null,
@@ -103,9 +103,9 @@ export default function VideoPartsEditor() {
   const validateParts = () => {
     for (let i = 0; i < parts.length; i++) {
       const p = parts[i];
-      if (!p.titre?.trim()) return `La partie ${i + 1} n'a pas de titre.`;
-      if (typeof p.startTime !== 'number' || typeof p.endTime !== 'number') return `Partie ${i + 1} : timestamps invalides.`;
-      if (p.endTime <= p.startTime) return `Partie ${i + 1} : la fin doit être après le début.`;
+      if (!p.titre?.trim()) return `La section ${i + 1} n'a pas de titre.`;
+      if (typeof p.startTime !== 'number' || typeof p.endTime !== 'number') return `Section ${i + 1} : timestamps invalides.`;
+      if (p.endTime <= p.startTime) return `Section ${i + 1} : la fin doit être après le début.`;
     }
     return null;
   };
@@ -136,10 +136,10 @@ export default function VideoPartsEditor() {
   };
 
   if (loading) {
-    return <Layout title="Découpage de la vidéo"><div style={{ padding: 40, textAlign: 'center', color: '#94A3B8' }}>Chargement…</div></Layout>;
+    return <Layout title="Découpage de la capsule"><div style={{ padding: 40, textAlign: 'center', color: '#94A3B8' }}>Chargement…</div></Layout>;
   }
   if (!video) {
-    return <Layout title="Découpage"><div className="alert alert-error" style={{ margin: 24 }}>{error || 'Vidéo introuvable'}</div></Layout>;
+    return <Layout title="Découpage"><div className="alert alert-error" style={{ margin: 24 }}>{error || 'Capsule introuvable'}</div></Layout>;
   }
 
   return (
@@ -169,8 +169,8 @@ export default function VideoPartsEditor() {
             {video.titre}
           </h1>
           <p style={{ margin: '4px 0 0', fontSize: 13, color: '#64748B', lineHeight: 1.6 }}>
-            Découpe ta vidéo en plusieurs parties (durée : {fmtTime(video.duration)}).
-            À chaque partie tu peux associer un mini-QCM et un feedback. Les étudiants
+            Découpe ta capsule en plusieurs sections (durée : {fmtTime(video.duration)}).
+            À chaque section tu peux associer un mini-QCM et un feedback. Les étudiants
             auront ainsi une rétroaction continue (microlearning, Hug 2005).
           </p>
         </div>
@@ -182,13 +182,13 @@ export default function VideoPartsEditor() {
             borderRadius: 12, padding: 32, textAlign: 'center',
           }}>
             <p style={{ margin: '0 0 8px', fontSize: 14, color: '#64748B' }}>
-              Aucune partie pour le moment.
+              Aucune section pour le moment.
             </p>
             <p style={{ margin: '0 0 16px', fontSize: 12, color: '#94A3B8' }}>
-              Découpe ta vidéo en sections pédagogiques cohérentes (3-5 parties idéal).
+              Découpe ta capsule en sections pédagogiques cohérentes (3-5 sections idéal).
             </p>
             <button type="button" onClick={addPart} style={btnPrimary}>
-              <Plus size={14} /> Ajouter une première partie
+              <Plus size={14} /> Ajouter une première section
             </button>
           </div>
         )}
@@ -215,7 +215,7 @@ export default function VideoPartsEditor() {
               <input
                 value={p.titre}
                 onChange={(e) => updatePart(idx, 'titre', e.target.value)}
-                placeholder="Titre de la partie"
+                placeholder="Titre de la section"
                 style={{
                   flex: 1, minWidth: 200,
                   padding: '8px 10px', border: '1px solid #CBD5E1',
@@ -272,7 +272,7 @@ export default function VideoPartsEditor() {
               </select>
               {quizzes.length === 0 && (
                 <p style={{ margin: '4px 0 0', fontSize: 11, color: '#94A3B8' }}>
-                  Aucun QCM lié à cette vidéo. Crée-en un d'abord depuis "Gérer les QCM".
+                  Aucun QCM lié à cette capsule. Crée-en un d'abord depuis "Gérer les QCM".
                 </p>
               )}
             </div>
@@ -280,7 +280,7 @@ export default function VideoPartsEditor() {
             {/* Feedback */}
             <div>
               <label style={lblStyle}>
-                <MessageSquare size={11} /> Feedback (affiché en fin de partie)
+                <MessageSquare size={11} /> Feedback (affiché en fin de section)
               </label>
               <textarea
                 value={p.feedback || ''}
@@ -301,7 +301,7 @@ export default function VideoPartsEditor() {
         {parts.length > 0 && (
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8, marginTop: 16 }}>
             <button type="button" onClick={addPart} style={btnSecondary}>
-              <Plus size={14} /> Ajouter une partie
+              <Plus size={14} /> Ajouter une section
             </button>
             <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
               {savedAt && (
@@ -311,7 +311,7 @@ export default function VideoPartsEditor() {
                 </span>
               )}
               <button type="button" onClick={save} disabled={saving} style={btnPrimary}>
-                {saving ? '…' : <><Save size={14} /> Enregistrer ({parts.length} partie{parts.length > 1 ? 's' : ''})</>}
+                {saving ? '…' : <><Save size={14} /> Enregistrer ({parts.length} section{parts.length > 1 ? 's' : ''})</>}
               </button>
             </div>
           </div>
@@ -325,7 +325,7 @@ export default function VideoPartsEditor() {
 
         <p style={{ marginTop: 16, fontSize: 11, color: '#94A3B8', fontStyle: 'italic', textAlign: 'center', lineHeight: 1.5 }}>
           Microlearning (Hug 2005) : découper en petites unités augmente la rétention de 22%.
-          Le mini-QCM par partie active la récupération continue (Roediger &amp; Karpicke 2006).
+          Le mini-QCM par section active la récupération continue (Roediger &amp; Karpicke 2006).
         </p>
       </div>
     </Layout>

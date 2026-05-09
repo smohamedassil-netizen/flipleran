@@ -5,7 +5,7 @@ import {
 } from 'lucide-react';
 
 const TYPE_OPTIONS = [
-  { value: 'video',   label: 'Vidéo',   Icon: Play,      model: 'Video' },
+  { value: 'video',   label: 'Capsule',   Icon: Play,      model: 'Video' },
   { value: 'qcm',     label: 'QCM',     Icon: FileText,  model: 'QCM' },
   { value: 'prosit',  label: 'Prosit',  Icon: Lightbulb, model: 'Prosit' },
   { value: 'reading', label: 'Lecture', Icon: BookOpen,  model: 'Resource' },
@@ -16,7 +16,7 @@ const TYPE_INFO = TYPE_OPTIONS.reduce((acc, t) => { acc[t.value] = t; return acc
 /**
  * PathBuilderAddStep — Modal de sélection d'une nouvelle étape (type +
  * ressource) pour le LearningPathBuilder. Charge dynamiquement les
- * vidéos / QCM / Prosits / Resources rattachés au cours courant.
+ * capsules / QCM / Prosits / Resources rattachés au cours courant.
  */
 export default function PathBuilderAddStep({ courseId, onClose, onAdd }) {
   const [type, setType] = useState('video');
@@ -126,7 +126,7 @@ export default function PathBuilderAddStep({ courseId, onClose, onAdd }) {
             <p className="text-small" style={{ color: '#9B2335' }}>{error}</p>
           ) : resources.length === 0 ? (
             <p style={{ fontSize: 'var(--font-size-sm)', fontStyle: 'italic', color: 'var(--color-text-secondary)' }}>
-              Aucune ressource de ce type disponible. Créez-en d'abord depuis le cours.
+              Aucune ressource de ce type disponible. Créez-en d'abord depuis le module.
             </p>
           ) : (
             <select
@@ -139,7 +139,7 @@ export default function PathBuilderAddStep({ courseId, onClose, onAdd }) {
               {resources.map((r) => (
                 <option key={r._id} value={r._id}>
                   {r.titre || r.title || `${TYPE_INFO[type].label} sans titre`}
-                  {r.videoTitre ? ` (vidéo : ${r.videoTitre})` : ''}
+                  {r.videoTitre ? ` (capsule : ${r.videoTitre})` : ''}
                 </option>
               ))}
             </select>

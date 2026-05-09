@@ -15,7 +15,7 @@ import {
  * la perception d'équité et l'engagement intrinsèque.
  */
 const SOURCE_META = {
-  video:      { label: 'Vidéos vues',     Icon: Video,           color: '#3B82F6' },
+  video:      { label: 'Capsules vues',     Icon: Video,           color: '#3B82F6' },
   qcm:        { label: 'QCM',             Icon: ClipboardCheck,  color: '#8B5CF6' },
   prosit:     { label: 'Prosits',         Icon: Lightbulb,       color: '#F59E0B' },
   project:    { label: 'Projets',         Icon: FolderKanban,    color: '#0EA5E9' },
@@ -108,7 +108,7 @@ export default function XPBreakdownCard() {
 
       {sources.length === 0 ? (
         <p style={{ margin: 0, fontSize: 13, color: '#94A3B8', fontStyle: 'italic' }}>
-          Pas encore de points. Commence par regarder une vidéo !
+          Pas encore de points. Commence par regarder une capsule !
         </p>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -153,7 +153,7 @@ export default function XPBreakdownCard() {
       <p style={{ margin: '14px 0 0', fontSize: 10, color: '#94A3B8', fontStyle: 'italic', lineHeight: 1.5 }}>
         Note : les XP sont une mesure d'<strong>engagement</strong> (gamification).
         Les <strong>notes officielles</strong> de contrôle continu sont calculées séparément
-        dans chaque module — clique sur "Mes cours" pour les voir.
+        dans chaque module — clique sur "Mes modules" pour les voir.
       </p>
     </div>
   );

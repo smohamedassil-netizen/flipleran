@@ -10,12 +10,12 @@ import {
 
 /* ─── FAQ ────────────────────────────────────────────────────────────── */
 const FAQ_ITEMS = [
-  { q: "Comment accéder à mes cours ?", a: "Connectez-vous avec votre compte étudiant, puis cliquez sur 'Mes cours' dans le menu latéral. Vous verrez tous les cours auxquels vous êtes inscrit." },
-  { q: "Comment passer un QCM ?", a: "Allez sur un cours, sélectionnez une vidéo, regardez-la jusqu'à au moins 80%, puis cliquez sur 'Passer le QCM' qui apparaîtra." },
+  { q: "Comment accéder à mes modules ?", a: "Connectez-vous avec votre compte étudiant, puis cliquez sur 'Mes modules' dans le menu latéral. Vous verrez tous les cours auxquels vous êtes inscrit." },
+  { q: "Comment passer un QCM ?", a: "Allez sur un cours, sélectionnez une capsule, regardez-la jusqu'à au moins 80%, puis cliquez sur 'Passer le QCM' qui apparaîtra." },
   { q: "Comment contacter mon professeur ?", a: "Utilisez la messagerie intégrée. Allez dans 'Messages' dans le menu, puis sélectionnez votre professeur pour démarrer une conversation privée." },
-  { q: "Comment gagner des badges ?", a: "Les badges sont attribués automatiquement selon vos performances : complétion de vidéos, scores aux QCM, régularité, etc. Consultez votre profil pour voir vos badges." },
-  { q: "Le professeur peut-il voir ma progression ?", a: "Oui, le professeur a accès à un tableau de bord avec les statistiques de progression de chaque étudiant : vidéos regardées, scores QCM, temps passé." },
-  { q: "Comment utiliser le chatbot IA ?", a: "Chaque cours a son propre assistant IA spécialisé. Ouvrez un cours et cliquez sur '🤖 Assistant IA du module' — il connaît le contenu de ce cours." },
+  { q: "Comment gagner des badges ?", a: "Les badges sont attribués automatiquement selon vos performances : complétion de capsules, scores aux QCM, régularité, etc. Consultez votre profil pour voir vos badges." },
+  { q: "Le professeur peut-il voir ma progression ?", a: "Oui, le professeur a accès à un tableau de bord avec les statistiques de progression de chaque étudiant : capsules regardées, scores QCM, temps passé." },
+  { q: "Comment utiliser le chatbot IA ?", a: "Chaque cours a son propre assistant IA spécialisé. Ouvrez un cours et cliquez sur '🤖 Assistant IA du module' — il connaît le contenu de ce module." },
 ];
 
 /* ─── Meta ───────────────────────────────────────────────────────────── */

@@ -8,7 +8,7 @@ import { ChevronRight, Home } from 'lucide-react';
  * Usage:
  *   <Breadcrumb items={[
  *     { label: 'Accueil', to: '/', icon: Home },
- *     { label: 'Mes cours', to: '/courses' },
+ *     { label: 'Mes modules', to: '/courses' },
  *     { label: 'Algorithmique' },
  *   ]} />
  */

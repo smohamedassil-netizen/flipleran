@@ -22,7 +22,7 @@ const FILIERES = [
 ];
 
 const CAI_STEPS = [
-  { num: 1, icon: '📚', title: 'Préparation',   color: '#7C3AED', desc: 'Vidéos courtes + QCM auto-correction. L\'étudiant arrive en classe préparé.' },
+  { num: 1, icon: '📚', title: 'Préparation',   color: '#7C3AED', desc: 'Capsules courtes + QCM auto-correction. L\'étudiant arrive en classe préparé.' },
   { num: 2, icon: '👥', title: 'Rendez-vous',   color: '#0EA5E9', desc: 'Le présentiel devient interactif : le prof voit qui est prêt et adapte son cours.' },
   { num: 3, icon: '🧩', title: 'Application',   color: '#D97706', desc: 'Prosit en groupe (méthode CESI), 5 rôles tournants, cas concrets algériens.' },
   { num: 4, icon: '🚀', title: 'Production',    color: '#DC2626', desc: 'Projet original mono ou multi-modules. L\'étudiant crée, ne consomme plus.' },
@@ -37,32 +37,32 @@ const QUOTES = [
 
 const STUDENT_FEATURES = [
   { Icon: Target,        title: 'Mon Parcours',          desc: 'Vue unifiée des 5 étapes du CAI pour chaque cours, avec progression en temps réel.', color: '#7C3AED' },
-  { Icon: Bot,           title: 'Tuteur IA personnel',   desc: 'Ton assistant 24/7 connaît tes cours, tes QCM ratés, tes Prosits. Méthode socratique.', color: '#1B4F72' },
-  { Icon: Video,         title: 'Vidéos + analyse IA',   desc: 'Whisper transcrit + GPT-4o résume + concepts clés. Tu vas droit à l\'essentiel.', color: '#EC4899' },
-  { Icon: Layers,        title: 'Flashcards SM-2',       desc: 'Révision espacée (Wozniak 1990) auto-générée depuis tes vidéos vues.', color: '#059669' },
+  { Icon: Bot,           title: 'Tuteur IA personnel',   desc: 'Ton assistant 24/7 connaît tes modules, tes QCM ratés, tes Prosits. Méthode socratique.', color: '#1B4F72' },
+  { Icon: Video,         title: 'Capsules + analyse IA',   desc: 'Whisper transcrit + GPT-4o résume + concepts clés. Tu vas droit à l\'essentiel.', color: '#EC4899' },
+  { Icon: Layers,        title: 'Flashcards SM-2',       desc: 'Révision espacée (Wozniak 1990) auto-générée depuis tes capsules vues.', color: '#059669' },
   { Icon: Trophy,        title: 'Quiz Battle',           desc: 'Duels temps réel avec power-ups. Gamification sérieuse.', color: '#F59E0B' },
   { Icon: Gift,          title: 'Récompenses concrètes', desc: 'Points XP échangeables contre des mois Premium FlipLearn.', color: '#DC2626' },
 ];
 
 const PROF_FEATURES = [
   { Icon: BarChart3,     title: 'Préparation classe',    desc: 'Avant chaque séance : qui est prêt, qui ne l\'est pas, quels concepts ont posé problème.', color: '#1B4F72' },
-  { Icon: Sparkles,      title: 'Auto-prépa cours en 1 clic', desc: 'L\'IA analyse ta vidéo et propose résumé, QCM, questions in-vidéo, idées de Prosit.', color: '#7C3AED' },
+  { Icon: Sparkles,      title: 'Auto-prépa cours en 1 clic', desc: 'L\'IA analyse ta capsule et propose résumé, QCM, questions in-vidéo, idées de Prosit.', color: '#7C3AED' },
   { Icon: Lightbulb,     title: 'Insights IA pédagogiques', desc: 'Recommandations actionnables basées sur les métriques réelles de ta classe.', color: '#F59E0B' },
   { Icon: Users,         title: 'Méthode CESI/APP',      desc: 'Prosits en 3 phases (Aller / Recherche / Retour), 5 rôles tournants, évaluation par les pairs.', color: '#D97706' },
-  { Icon: FileText,      title: 'Génération QCM IA',     desc: 'Questions générées depuis le transcript de ta vidéo. Tu valides en 30 secondes.', color: '#0EA5E9' },
-  { Icon: Award,         title: 'Tracking individualisé', desc: 'Rappel groupé ou ciblé. Vue complète par étudiant : vidéos, QCM, Prosits, projets.', color: '#059669' },
+  { Icon: FileText,      title: 'Génération QCM IA',     desc: 'Questions générées depuis le transcript de ta capsule. Tu valides en 30 secondes.', color: '#0EA5E9' },
+  { Icon: Award,         title: 'Tracking individualisé', desc: 'Rappel groupé ou ciblé. Vue complète par étudiant : capsules, QCM, Prosits, projets.', color: '#059669' },
 ];
 
 const ALGERIA_FEATURES = [
-  { Icon: Wifi,    title: 'Marche en 3G/4G',           desc: 'Vidéos hébergées Cloudinary, optimisées. Aucun matériel nécessaire en classe.' },
+  { Icon: Wifi,    title: 'Marche en 3G/4G',           desc: 'Capsules hébergées Cloudinary, optimisées. Aucun matériel nécessaire en classe.' },
   { Icon: Users,   title: 'Adapté aux classes 50+',    desc: 'Dashboards agrégés. Le prof voit l\'ensemble en 5 minutes.' },
   { Icon: MapPin,  title: 'Cas algériens contextualisés', desc: 'Prosits sur OWASP e-commerce algérien, FinTech locale, RGPD.' },
   { Icon: Clock,   title: 'Régularité valorisée',      desc: 'Streaks, niveaux, quêtes hebdo. Système de mérite culturellement aligné.' },
 ];
 
 const TESTIMONIALS = [
-  { name: 'Yasmine B.', role: 'L3 ISIL · EM Alger',   avatar: '🎓', color: '#1B4F72', text: 'L\'assistant IA m\'a sauvé pendant les exams. Il connaît mes cours mieux que moi.' },
-  { name: 'Mehdi S.',   role: 'L2 Management',         avatar: '📈', color: '#D97706', text: 'Les vidéos courtes c\'est génial. Je révise 10 min dans le bus puis je fais le QCM.' },
+  { name: 'Yasmine B.', role: 'L3 ISIL · EM Alger',   avatar: '🎓', color: '#1B4F72', text: 'L\'assistant IA m\'a sauvé pendant les exams. Il connaît mes modules mieux que moi.' },
+  { name: 'Mehdi S.',   role: 'L2 Management',         avatar: '📈', color: '#D97706', text: 'Les capsules courtes c\'est génial. Je révise 10 min dans le bus puis je fais le QCM.' },
   { name: 'Amira H.',   role: 'L3 Finance',            avatar: '💼', color: '#059669', text: 'J\'ai gagné ma 1ère certif gratuite grâce aux points. Ça motive vraiment.' },
 ];
 
@@ -382,7 +382,7 @@ export default function LandingPage() {
               Pour les professeurs
             </p>
             <h2 style={{ fontSize: 'clamp(1.6rem, 3.5vw, 2.2rem)', fontWeight: 800, margin: '8px 0 0', color: '#0F172A' }}>
-              Préparez vos cours en 30 minutes au lieu de 3 heures
+              Préparez vos modules en 30 minutes au lieu de 3 heures
             </h2>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 18 }}>

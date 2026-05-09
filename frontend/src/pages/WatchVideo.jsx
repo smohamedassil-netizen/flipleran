@@ -40,7 +40,7 @@ export default function WatchVideo() {
   const [videos,  setVideos]  = useState([]);   // liste du cours pour navigation
   const [loading, setLoading] = useState(true);
   const [error,   setError]   = useState('');
-  const [askOpen, setAskOpen] = useState(false);    // Panneau "Demande à la vidéo"
+  const [askOpen, setAskOpen] = useState(false);    // Panneau "Demande à la capsule"
 
   const formatTime = (s) => {
     const m = Math.floor(s / 60);
@@ -100,7 +100,7 @@ export default function WatchVideo() {
       {/* Breadcrumb */}
       <Breadcrumb items={[
         { label: 'Accueil', to: '/', icon: Home },
-        { label: 'Mes cours', to: '/courses' },
+        { label: 'Mes modules', to: '/courses' },
         { label: video.courseId?.titre ?? 'Cours', to: `/courses/${courseId}` },
         { label: video.titre },
       ]} />
@@ -123,13 +123,13 @@ export default function WatchVideo() {
             onFlashcardsTriggered={handleFlashcardsTriggered}
           />
 
-          {/* "Demande à la vidéo" — bouton sous le player, étudiant uniquement */}
+          {/* "Demande à la capsule" — bouton sous le player, étudiant uniquement */}
           {user?.role === 'etudiant' && (
             <div style={{ marginTop: 12, display: 'flex', justifyContent: 'flex-end' }}>
               <button
                 type="button"
                 onClick={() => setAskOpen(true)}
-                title="Pose une question sur cette vidéo, l'IA répond avec citation des moments clés"
+                title="Pose une question sur cette capsule, l'IA répond avec citation des moments clés"
                 style={{
                   display: 'inline-flex', alignItems: 'center', gap: 8,
                   padding: '10px 16px', borderRadius: 10,
@@ -139,7 +139,7 @@ export default function WatchVideo() {
                   boxShadow: '0 2px 8px rgba(147,51,234,0.25)',
                 }}
               >
-                <MessageCircle size={15} /> 💬 Demande à la vidéo
+                <MessageCircle size={15} /> 💬 Demande à la capsule
               </button>
             </div>
           )}
@@ -226,7 +226,7 @@ export default function WatchVideo() {
               color: 'var(--color-text)',
             }}
           >
-            Vidéos du cours
+            Capsules du cours
           </div>
           <div style={{ maxHeight: 400, overflowY: 'auto' }}>
             {videos.map((v, i) => {
@@ -286,7 +286,7 @@ export default function WatchVideo() {
         </div>
       </div>
 
-      {/* Panneau "Demande à la vidéo" (RAG sur transcript Whisper) */}
+      {/* Panneau "Demande à la capsule" (RAG sur transcript Whisper) */}
       {askOpen && user?.role === 'etudiant' && (
         <AskVideoPanel
           videoId={video._id}

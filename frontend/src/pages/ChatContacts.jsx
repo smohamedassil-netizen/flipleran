@@ -101,7 +101,7 @@ function FeedbackCard({ fb, onMarkRead }) {
 
   const contextItems = [];
   if (fb.courseId?.titre) contextItems.push({ icon: BookOpen,      label: fb.courseId.titre });
-  if (fb.videoId?.titre)  contextItems.push({ icon: Video,         label: `Vidéo : ${fb.videoId.titre}` });
+  if (fb.videoId?.titre)  contextItems.push({ icon: Video,         label: `Capsule : ${fb.videoId.titre}` });
   if (fb.qcmId?.titre)    contextItems.push({ icon: ClipboardList, label: `QCM : ${fb.qcmId.titre}` });
 
   return (
@@ -229,7 +229,7 @@ export default function ChatContacts() {
         </button>
         <div className="page-header">
           <h1 className="page-title">Messages</h1>
-          <p className="page-subtitle">Discutez avec vos camarades et professeurs. Pour une aide IA spécifique à un cours, ouvrez le cours et utilisez son Assistant Module.</p>
+          <p className="page-subtitle">Discutez avec vos camarades et professeurs. Pour une aide IA spécifique à un module, ouvrez le module et utilisez son Assistant Module.</p>
         </div>
 
         {/* ── Onglets : Contacts / Feedback profs (étudiant uniquement) ── */}
@@ -271,7 +271,7 @@ export default function ChatContacts() {
         {isStudent && tab === 'feedback' && (
           <>
             <p style={{ fontSize: 13, color: 'var(--color-text-secondary)', marginBottom: 14 }}>
-              Commentaires personnalisés laissés par vos professeurs sur votre travail (cours, vidéos, QCM).
+              Commentaires personnalisés laissés par vos professeurs sur votre travail (modules, capsules, QCM).
             </p>
             {feedbackLoading ? (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>

@@ -98,10 +98,10 @@ export default function ProfessorQCMHub() {
             <Sparkles size={14} /> Générer avec IA
           </button>
         </div>
-        <p style={{ color: '#64748b', marginBottom: 24 }}>Créez et modifiez les questionnaires associés à vos vidéos</p>
+        <p style={{ color: '#64748b', marginBottom: 24 }}>Créez et modifiez les questionnaires associés à vos capsules</p>
 
         {/* Bandeau guide quand aucun QCM n'existe encore — l'arborescence
-            cours/vidéos reste accessible juste en dessous pour permettre la création. */}
+            cours/capsules reste accessible juste en dessous pour permettre la création. */}
         {!loading && courses.length > 0 && Object.keys(qcmData).length === 0 && (
           <div style={{
             display: 'flex', alignItems: 'flex-start', gap: 12,
@@ -115,7 +115,7 @@ export default function ProfessorQCMHub() {
                 Aucun QCM créé.
               </p>
               <p style={{ margin: '2px 0 0', fontSize: 12, color: '#78350F', lineHeight: 1.5 }}>
-                Commencez par ajouter une vidéo à un cours, puis générez son QCM.
+                Commencez par ajouter une capsule à un cours, puis générez son QCM.
               </p>
             </div>
           </div>
@@ -126,7 +126,7 @@ export default function ProfessorQCMHub() {
         ) : courses.length === 0 ? (
           <div style={{ textAlign: 'center', padding: 60, background: 'white', borderRadius: 12, border: '1px solid #e5e7eb' }}>
             <ClipboardList size={48} color="#d1d5db" />
-            <p style={{ color: '#64748b', marginTop: 12 }}>Aucun cours trouvé. Créez d'abord un cours.</p>
+            <p style={{ color: '#64748b', marginTop: 12 }}>Aucun module trouvé. Créez d'abord un cours.</p>
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -144,7 +144,7 @@ export default function ProfessorQCMHub() {
                     }}>
                     <div>
                       <div style={{ fontWeight: 600, color: '#1e293b', fontSize: 15 }}>{course.titre}</div>
-                      <div style={{ color: '#94a3b8', fontSize: 13, marginTop: 2 }}>{courseVideos.length} vidéo(s)</div>
+                      <div style={{ color: '#94a3b8', fontSize: 13, marginTop: 2 }}>{courseVideos.length} capsule(s)</div>
                     </div>
                     <ChevronRight size={18} color="#94a3b8" style={{ transform: isExpanded ? 'rotate(90deg)' : 'none', transition: 'transform 0.2s' }} />
                   </button>
@@ -153,7 +153,7 @@ export default function ProfessorQCMHub() {
                     <div style={{ borderTop: '1px solid #f3f4f6', padding: '8px 0' }}>
                       {courseVideos.length === 0 ? (
                         <div style={{ padding: '16px 20px', color: '#94a3b8', fontSize: 13 }}>
-                          Aucune vidéo. Uploadez d'abord une vidéo pour créer un QCM.
+                          Aucune capsule. Uploadez d'abord une capsule pour créer un QCM.
                         </div>
                       ) : (
                         courseVideos.map((video) => {

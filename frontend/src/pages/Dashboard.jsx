@@ -132,7 +132,7 @@ function UpcomingDeadlines({ items, loading }) {
 
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontWeight: 600, fontSize: 'var(--font-size-sm)', color: 'var(--color-text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {item.titre || (item.type === 'video' ? 'Vidéo' : 'QCM')}
+                    {item.titre || (item.type === 'video' ? 'Capsule' : 'QCM')}
                   </div>
                   <div style={{
                     fontSize: 11, color: 'var(--color-text-secondary)',
@@ -292,7 +292,7 @@ export default function Dashboard() {
   const stats = [
     { label: 'Points XP',         value: user?.points ?? 0, icon: Zap,       color: 'var(--color-accent)' },
     { label: 'Cours inscrits',    value: courses.length,    icon: BookOpen,  color: 'var(--color-primary)' },
-    { label: 'Vidéos terminées',  value: videosLabel,       icon: Video,     color: '#3B82F6', sub: '(à 80%+)' },
+    { label: 'Capsules terminées',  value: videosLabel,       icon: Video,     color: '#3B82F6', sub: '(à 80%+)' },
     { label: 'QCM complétés',     value: allQcm.length,     icon: BarChart2, color: '#10B981' },
   ];
 
@@ -426,11 +426,11 @@ export default function Dashboard() {
         ))}
       </div>
 
-      {/* ── Mes cours (pleine largeur, focus principal) ─────────────── */}
+      {/* ── Mes modules (pleine largeur, focus principal) ─────────────── */}
       <div className="card" style={{ marginBottom: 24 }}>
         <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span className="card-title">Mes cours</span>
-          <button className="btn btn-ghost btn-sm" onClick={() => navigate('/courses')} aria-label="Voir tous mes cours">
+          <span className="card-title">Mes modules</span>
+          <button className="btn btn-ghost btn-sm" onClick={() => navigate('/courses')} aria-label="Voir tous mes modules">
             Voir tout <ChevronRight size={14} />
           </button>
         </div>
@@ -441,7 +441,7 @@ export default function Dashboard() {
         ) : courses.length === 0 ? (
           <div className="empty-state" style={{ padding: 32 }}>
             <BookOpen size={28} className="empty-state-icon" />
-            <p className="empty-state-title">Aucun cours</p>
+            <p className="empty-state-title">Aucun module</p>
             <p className="empty-state-desc">Les cours apparaîtront ici une fois disponibles.</p>
           </div>
         ) : (
@@ -452,7 +452,7 @@ export default function Dashboard() {
                 onClick={() => navigate(`/courses/${c._id}`)}
                 className="video-row"
                 style={{ border: 'none', background: 'none', padding: '10px 16px' }}
-                aria-label={`Ouvrir le cours ${c.titre}`}
+                aria-label={`Ouvrir le module ${c.titre}`}
               >
                 <div style={{
                   width: 36, height: 36, borderRadius: 'var(--radius-md)',

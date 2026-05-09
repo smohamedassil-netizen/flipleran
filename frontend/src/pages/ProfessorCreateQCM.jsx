@@ -268,7 +268,7 @@ export default function ProfessorCreateQCM() {
   const [quotaExceeded, setQuotaExceeded] = useState(null);
   const [videoMeta,   setVideoMeta]   = useState(null);
 
-  /* Charger les méta de la vidéo pré-sélectionnée (titre + cours associé) */
+  /* Charger les méta de la capsule pré-sélectionnée (titre + cours associé) */
   useEffect(() => {
     if (!videoId) return;
     api.get(`/videos/${videoId}`)
@@ -341,7 +341,7 @@ export default function ProfessorCreateQCM() {
 
   /* ── AI Generation ─────────────────────────────────────────────────── */
   const handleGenerateAI = async () => {
-    if (!videoId) return setError('Aucune vidéo associée.');
+    if (!videoId) return setError('Aucune capsule associée.');
     setGenerating(true);
     setError('');
     setQuotaExceeded(null);
@@ -390,7 +390,7 @@ export default function ProfessorCreateQCM() {
   /* ── Validation ────────────────────────────────────────────────────── */
   const validate = () => {
     if (!titre.trim())         return 'Le titre est obligatoire.';
-    if (!videoId)              return 'Aucune vidéo associée.';
+    if (!videoId)              return 'Aucune capsule associée.';
     if (questions.length === 0) return 'Ajoutez au moins une question.';
     for (let i = 0; i < questions.length; i++) {
       const q = questions[i];
@@ -451,7 +451,7 @@ export default function ProfessorCreateQCM() {
           display: 'flex', alignItems: 'center', gap: 10, fontSize: 13,
         }}>
           <span style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: '#1B4F72', letterSpacing: 0.4 }}>
-            Vidéo associée
+            Capsule associée
           </span>
           <span style={{ color: '#1E293B', fontWeight: 600 }}>{videoMeta.titre}</span>
         </div>
@@ -542,7 +542,7 @@ export default function ProfessorCreateQCM() {
                 Génération par IA
               </p>
               <p style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-secondary)' }}>
-                L'IA génère des questions basées sur le sujet de la vidéo. Vous pourrez les modifier avant de sauvegarder.
+                L'IA génère des questions basées sur le sujet de la capsule. Vous pourrez les modifier avant de sauvegarder.
               </p>
               <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                 <label className="form-label" style={{ margin: 0, fontSize: 12 }}>Nb questions :</label>

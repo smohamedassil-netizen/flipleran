@@ -124,7 +124,7 @@ export default function CourseValidate() {
 
             {/* Snapshot des conditions */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 10, marginBottom: 20 }}>
-              <Stat label="Vidéos vues"   value={`${completion.snapshot.videosWatched}/${completion.snapshot.videosTotal}`} />
+              <Stat label="Capsules vues"   value={`${completion.snapshot.videosWatched}/${completion.snapshot.videosTotal}`} />
               <Stat label="QCM réussis"   value={`${completion.snapshot.quizzesPassed}/${completion.snapshot.quizzesTotal}`} />
               <Stat label="Prosits faits" value={completion.snapshot.prositsCompleted} />
               <Stat label="Points gagnés" value={`+${completion.pointsAwarded}`} highlight />
@@ -182,7 +182,7 @@ export default function CourseValidate() {
             </p>
             <ul style={{ textAlign: 'left', display: 'inline-block', margin: 0, paddingLeft: 20, fontSize: 14, color: '#78350F' }}>
               <li style={{ marginBottom: 4 }}>
-                Regarder au moins 80% des vidéos
+                Regarder au moins 80% des capsules
                 {' '}<strong>(actuellement {s.videosWatched}/{s.videosTotal})</strong>
               </li>
               <li style={{ marginBottom: 4 }}>
@@ -256,7 +256,7 @@ export default function CourseValidate() {
             ✓ TES PRÉ-REQUIS SONT REMPLIS
           </p>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 10 }}>
-            <Stat label="Vidéos vues"   value={`${s.videosWatched}/${s.videosTotal}`} />
+            <Stat label="Capsules vues"   value={`${s.videosWatched}/${s.videosTotal}`} />
             <Stat label="QCM réussis"   value={`${s.quizzesPassed}/${s.quizzesTotal}`} />
             <Stat label="Prosits faits" value={s.prositsCompleted} />
           </div>

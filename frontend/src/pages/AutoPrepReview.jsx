@@ -73,7 +73,7 @@ export default function AutoPrepReview() {
       } catch (err) {
         if (cancelled) return;
         if (err.response?.status === 412) {
-          setError('Transcription non disponible. Lance d\'abord l\'analyse IA de la vidéo et reviens dans 1-2 minutes.');
+          setError('Transcription non disponible. Lance d\'abord l\'analyse IA de la capsule et reviens dans 1-2 minutes.');
         } else if (err.response?.status === 429) {
           setError(err.response?.data?.message || 'Limite quotidienne atteinte (5/jour).');
         } else {

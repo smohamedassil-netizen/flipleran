@@ -14,7 +14,7 @@ function FeedbackCard({ fb, onMarkRead }) {
   // Contexte (cours / vidéo / QCM)
   const contextItems = [];
   if (fb.courseId?.titre) contextItems.push({ icon: BookOpen,        label: fb.courseId.titre });
-  if (fb.videoId?.titre)  contextItems.push({ icon: Video,           label: `Vidéo : ${fb.videoId.titre}` });
+  if (fb.videoId?.titre)  contextItems.push({ icon: Video,           label: `Capsule : ${fb.videoId.titre}` });
   if (fb.qcmId?.titre)    contextItems.push({ icon: ClipboardList,   label: `QCM : ${fb.qcmId.titre}` });
 
   return (

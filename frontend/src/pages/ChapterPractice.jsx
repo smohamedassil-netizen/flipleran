@@ -12,7 +12,7 @@ import {
  *
  * Pédagogie : test-enhanced learning (Roediger & Karpicke 2006).
  * L'étudiant s'auto-teste sur le chapitre via un tirage aléatoire de
- * questions issues des QCM des vidéos du chapitre. Pas noté, pas chronométré
+ * questions issues des QCM des capsules du chapitre. Pas noté, pas chronométré
  * — pure préparation cognitive (retrieval practice).
  *
  * Le mode est désactivable par le prof via Chapter.practiceMode.enabled.
@@ -92,7 +92,7 @@ export default function ChapterPractice() {
         ? { bg: '#EFF6FF', border: '#BFDBFE', accent: '#1B4F72', label: 'Bon score' }
         : pct >= 40
           ? { bg: '#FEF3C7', border: '#FDE68A', accent: '#B45309', label: 'À retravailler' }
-          : { bg: '#FEF2F2', border: '#FCA5A5', accent: '#B91C1C', label: 'Reprends les vidéos' };
+          : { bg: '#FEF2F2', border: '#FCA5A5', accent: '#B91C1C', label: 'Reprends les capsules' };
 
     return (
       <Layout title="Entraînement terminé">
@@ -117,7 +117,7 @@ export default function ChapterPractice() {
                 : pct >= 60
                   ? 'Tu as les bases. Quelques notions à consolider.'
                   : pct >= 40
-                    ? 'Reprends les vidéos clés et refais l\'exercice.'
+                    ? 'Reprends les capsules clés et refais l\'exercice.'
                     : 'Il vaut mieux revoir le chapitre depuis le début.'}
             </p>
             <p style={{ margin: '0 0 16px', fontSize: 11, color: '#94A3B8', fontStyle: 'italic' }}>

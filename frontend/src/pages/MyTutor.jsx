@@ -48,7 +48,7 @@ export default function MyTutor() {
         const prenom = ctxRes?.data?.structured?.user?.prenom || '';
         setMessages([{
           role: 'assistant',
-          content: `Bonjour${prenom ? ` ${prenom}` : ''} 👋 Je suis ton tuteur IA. Je connais tes cours, tes derniers QCM et ce qui te bloque encore. Pose-moi une question, ou clique une des suggestions du jour à gauche.`,
+          content: `Bonjour${prenom ? ` ${prenom}` : ''} 👋 Je suis ton tuteur IA. Je connais tes modules, tes derniers QCM et ce qui te bloque encore. Pose-moi une question, ou clique une des suggestions du jour à gauche.`,
         }]);
       } catch (err) {
         setError('Erreur de chargement du contexte.');
@@ -153,7 +153,7 @@ export default function MyTutor() {
     const prompts = [];
     const weak = context?.structured?.weakConcepts?.[0];
     if (weak) prompts.push({ label: '💡 Explique-moi ce concept raté', text: `Peux-tu m'aider à comprendre : ${weak}` });
-    prompts.push({ label: '📚 Quel cours faire maintenant ?', text: 'Quel cours / quelle vidéo me recommandes-tu de faire maintenant ?' });
+    prompts.push({ label: '📚 Quel cours faire maintenant ?', text: 'Quel cours / quelle capsule me recommandes-tu de faire maintenant ?' });
     if (context?.structured?.activeProsits?.length) {
       prompts.push({ label: '🛠 Aide sur mon Prosit', text: `J'ai besoin d'aide sur mon Prosit "${context.structured.activeProsits[0].titre}" (phase ${context.structured.activeProsits[0].status}). Par où commencer ?` });
     }

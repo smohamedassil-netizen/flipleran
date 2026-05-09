@@ -1135,7 +1135,7 @@ export default function ProjectDetail() {
               onChange={(e) => setUploadForm({ ...uploadForm, type: e.target.value })}
             >
               <option value="document">Document</option>
-              <option value="video">Vidéo</option>
+              <option value="video">Capsule</option>
               <option value="lien">Lien</option>
             </select>
 

@@ -5,7 +5,7 @@ import {
 } from 'lucide-react';
 
 /**
- * InlineQuestionsList — affiche les questions inline d'une vidéo dans un
+ * InlineQuestionsList — affiche les questions inline d'une capsule dans un
  * panneau dépliable. L'étudiant peut cliquer sur une question pour y
  * répondre directement (feedback immédiat).
  *
@@ -86,7 +86,7 @@ export default function InlineQuestionsList({ videoId }) {
       </div>
 
       <p style={{ margin: '0 0 12px', fontSize: 12, color: '#64748B', lineHeight: 1.5 }}>
-        Réponds aux questions ci-dessous pendant ou après la vidéo. Clique sur l'horloge
+        Réponds aux questions ci-dessous pendant ou après la capsule. Clique sur l'horloge
         pour aller au moment correspondant. Chaque bonne réponse consolide ta mémoire
         à long terme (Roediger &amp; Karpicke 2006).
       </p>
@@ -140,7 +140,7 @@ export default function InlineQuestionsList({ videoId }) {
                       cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 3,
                       flexShrink: 0,
                     }}
-                    title="Aller au moment de la vidéo"
+                    title="Aller au moment de la capsule"
                   >
                     <Clock size={10} /> {fmt(q.timestamp)}
                   </button>

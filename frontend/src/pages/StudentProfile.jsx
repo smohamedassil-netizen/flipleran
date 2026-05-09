@@ -115,7 +115,7 @@ export default function StudentProfile() {
   <h2>Mes statistiques</h2>
   <div class="stats">
     <div class="stat"><div class="stat-label">Points XP</div><div class="stat-value">${user?.points ?? 0}</div></div>
-    <div class="stat"><div class="stat-label">Vidéos terminées</div><div class="stat-value">${totalVideos}</div></div>
+    <div class="stat"><div class="stat-label">Capsules terminées</div><div class="stat-value">${totalVideos}</div></div>
     <div class="stat"><div class="stat-label">QCM passés</div><div class="stat-value">${allQcm.length}</div></div>
     <div class="stat"><div class="stat-label">Moy. QCM</div><div class="stat-value">${avgQcm}%</div></div>
   </div>
@@ -242,14 +242,14 @@ export default function StudentProfile() {
       {isProf ? (
         <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginBottom: '24px' }}>
           <StatCard icon={BookOpen}      label="Cours créés"        value={profStats.courses}  color="#3B82F6" />
-          <StatCard icon={Video}         label="Vidéos uploadées"   value={profStats.videos}   color="#8B5CF6" />
+          <StatCard icon={Video}         label="Capsules uploadées"   value={profStats.videos}   color="#8B5CF6" />
           <StatCard icon={ClipboardList} label="QCM créés"          value={profStats.qcms}     color="#10B981" />
           <StatCard icon={Users}         label="Étudiants suivis"   value={profStats.students} color="#F59E0B" />
         </div>
       ) : (
         <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginBottom: '24px' }}>
           <StatCard icon={Zap}         label="Points totaux"      value={user?.points ?? 0}                    color="#E8A838" />
-          <StatCard icon={BookOpen}    label="Vidéos complétées"  value={totalVideos}                          color="#3B82F6" />
+          <StatCard icon={BookOpen}    label="Capsules complétées"  value={totalVideos}                          color="#3B82F6" />
           <StatCard icon={CheckCircle} label="QCM complétés"      value={allQcm.length}                       color="#10B981" />
           <StatCard icon={BarChart2}   label="Score moyen QCM"    value={allQcm.length ? `${avgQcm}%` : '—'}  color="#8B5CF6" />
           <StatCard icon={Award}       label="Badges gagnés"      value={earnedBadges.length}                 color="#F59E0B" />
@@ -275,7 +275,7 @@ export default function StudentProfile() {
           {!loading && earnedBadges.length === 0 && (
             <div className="empty-state" style={{ padding: '32px' }}>
               <Award size={32} />
-              <p>{'Aucun badge pour l\'instant — regardez des vidéos et faites des QCM !'}</p>
+              <p>{'Aucun badge pour l\'instant — regardez des capsules et faites des QCM !'}</p>
             </div>
           )}
 
@@ -318,12 +318,12 @@ export default function StudentProfile() {
         </section>
       )}
 
-      {/* ── Professor: Mes cours section ───────────────────────────────── */}
+      {/* ── Professor: Mes modules section ───────────────────────────────── */}
       {isProf && (
         <section style={{ marginBottom: '32px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
             <BookOpen size={18} color="var(--color-primary, #1B4F72)" />
-            <h2 style={{ margin: 0, fontSize: '16px', fontWeight: 700 }}>Mes cours</h2>
+            <h2 style={{ margin: 0, fontSize: '16px', fontWeight: 700 }}>Mes modules</h2>
             <span className="badge badge-primary">{profStats.courses} cours</span>
           </div>
           <div className="card" style={{ padding: 20, color: 'var(--text-muted)', fontSize: 14 }}>

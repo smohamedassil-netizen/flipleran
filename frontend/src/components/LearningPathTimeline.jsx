@@ -21,7 +21,7 @@ const TYPE_ICON = {
 };
 
 const TYPE_LABEL = {
-  video:   'Vidéo',
+  video:   'Capsule',
   qcm:     'QCM',
   prosit:  'Prosit',
   reading: 'Lecture',
@@ -226,7 +226,7 @@ export default function LearningPathTimeline({ path, freeMode = false, onToggleF
     if (step.resourceModel === 'Video') {
       navigate(`/watch/${step.resourceId}`);
     } else if (step.resourceModel === 'QCM') {
-      // Le QCM est lié à une vidéo : on récupère videoId depuis la ressource hydratée
+      // Le QCM est lié à une capsule : on récupère videoId depuis la ressource hydratée
       const videoId = step.resource?.videoId;
       if (videoId) navigate(`/qcm/${videoId}`);
       else if (step.resource?._id) navigate(`/qcm/${step.resource._id}`);

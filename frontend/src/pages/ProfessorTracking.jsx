@@ -161,7 +161,7 @@ export default function ProfessorTracking() {
           borderLeft: '3px solid #D97706', fontSize: 13, color: '#1E293B',
         }}>
           <strong style={{ color: '#D97706' }}>👤 Suivi individuel</strong> — détail par étudiant :
-          progression vidéo, scores QCM, rappels ciblés.
+          progression capsule, scores QCM, rappels ciblés.
           <span style={{ marginLeft: 8, color: '#64748B' }}>
             Pour la vue d'ensemble par cours, ouvre la <strong>Synthèse de classe</strong> depuis le tableau de bord.
           </span>
@@ -194,7 +194,7 @@ export default function ProfessorTracking() {
         {courses.length === 0 && (
           <div style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: 12, padding: 48, textAlign: 'center' }}>
             <Users size={36} color="#cbd5e1" style={{ marginBottom: 12 }} />
-            <p style={{ color: '#64748b', margin: 0 }}>Aucun cours trouvé.</p>
+            <p style={{ color: '#64748b', margin: 0 }}>Aucun module trouvé.</p>
           </div>
         )}
 
@@ -211,7 +211,7 @@ export default function ProfessorTracking() {
             {/* Stats globales */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16, marginBottom: 24 }}>
               <StatCard icon={Users}      label="Étudiants"    value={data.stats.totalStudents} color="#1B4F72" />
-              <StatCard icon={VideoIcon}  label="Vidéos vues"  value={data.stats.avgVideoPercent} suffix="%" color="#7c3aed" />
+              <StatCard icon={VideoIcon}  label="Capsules vues"  value={data.stats.avgVideoPercent} suffix="%" color="#7c3aed" />
               <StatCard icon={FileText}   label="QCM complétés" value={data.stats.avgQcmPercent} suffix="%" color="#059669" />
               <StatCard icon={AlertTriangle} label="Inactifs > 7 j" value={data.stats.inactiveCount} color="#dc2626" />
             </div>
@@ -240,7 +240,7 @@ export default function ProfessorTracking() {
             <div style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: 12, overflow: 'hidden' }}>
               <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr 1fr 1fr 120px', gap: 12, padding: '12px 16px', background: '#f8fafc', borderBottom: '1px solid #e5e7eb', fontSize: 12, fontWeight: 600, color: '#475569', textTransform: 'uppercase' }}>
                 <div>Étudiant</div>
-                <div>Vidéos</div>
+                <div>Capsules</div>
                 <div>QCM</div>
                 <div>Dernière activité</div>
                 <div style={{ textAlign: 'right' }}>Actions</div>
@@ -423,7 +423,7 @@ export default function ProfessorTracking() {
               <textarea
                 value={fbMessage}
                 onChange={(e) => setFbMessage(e.target.value)}
-                placeholder="Ex : « Bon score sur le QCM 1, mais revois la vidéo 3 entre 4:20 et 7:00 — tu as confondu while et for. »"
+                placeholder="Ex : « Bon score sur le QCM 1, mais revois la capsule 3 entre 4:20 et 7:00 — tu as confondu while et for. »"
                 rows={5}
                 maxLength={2000}
                 style={{ width: '100%', padding: 12, border: '1px solid #e5e7eb', borderRadius: 8, fontSize: 14, fontFamily: 'inherit', resize: 'vertical', marginBottom: 6 }}

@@ -41,9 +41,9 @@ export default function TutorBubble() {
 
     let welcome = `Salut ${user?.prenom || ''} 👋 Une question ?`;
     if (location.pathname.startsWith('/watch/')) {
-      welcome = `Tu regardes une vidéo ? Pose-moi une question dessus, je vais essayer d'y répondre en me basant sur le transcript.`;
+      welcome = `Tu regardes une capsule ? Pose-moi une question dessus, je vais essayer d'y répondre en me basant sur le transcript.`;
     } else if (location.pathname.startsWith('/courses/')) {
-      welcome = `Tu es sur un cours. Une question sur le contenu ou ce qu'il faut faire maintenant ?`;
+      welcome = `Tu es sur un module. Une question sur le contenu ou ce qu'il faut faire maintenant ?`;
     } else if (location.pathname.startsWith('/prosits/')) {
       welcome = `Tu travailles sur un Prosit ? Je peux t'aider à structurer tes idées sans te donner la réponse directe.`;
     } else if (location.pathname.startsWith('/qcm/')) {

@@ -55,7 +55,7 @@ function QcmPromptModal({ qcmPath, onClose }) {
           QCM disponible !
         </h3>
         <p style={{ fontSize: 14, color: '#475569', textAlign: 'center', marginBottom: 20, lineHeight: 1.5 }}>
-          Tu as visionné suffisamment de la vidéo pour débloquer le QCM associé. Veux-tu le passer maintenant pour gagner des points ?
+          Tu as visionné suffisamment de la capsule pour débloquer le QCM associé. Veux-tu le passer maintenant pour gagner des points ?
         </p>
         <div style={{ display: 'flex', gap: 10, justifyContent: 'center' }}>
           <button onClick={onClose} style={{
@@ -82,7 +82,7 @@ function QcmPromptModal({ qcmPath, onClose }) {
  * @param {string}  titre
  * @param {number}  initialPercent progression déjà enregistrée (0-100)
  * @param {string}  nextVideoPath  route vers la vidéo suivante (null si dernière)
- * @param {string}  qcmPath        route vers le QCM de cette vidéo
+ * @param {string}  qcmPath        route vers le QCM de cette capsule
  * @param {string}  courseId       utilisé pour le bouton "Retour au cours"
  */
 /* ─── Charge le script YouTube IFrame API une seule fois ───────────────── */
@@ -226,7 +226,7 @@ function YouTubeEmbedPlayer({
               )}
               {nextVideoPath && (
                 <button onClick={() => navigate(nextVideoPath)} style={{ padding: '7px 14px', background: '#1B4F72', color: 'white', border: 'none', borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                  Vidéo suivante <ChevronRight size={12} />
+                  Capsule suivante <ChevronRight size={12} />
                 </button>
               )}
             </div>
@@ -631,7 +631,7 @@ export default function VideoPlayer({
               onClick={() => navigate(qcmPath)}
               className={completed ? 'btn btn-primary' : 'btn btn-secondary'}
               style={{ opacity: completed ? 1 : 0.45 }}
-              title={completed ? 'Passer le QCM de cette vidéo' : `Regardez au moins ${THRESHOLD}% pour débloquer le QCM`}
+              title={completed ? 'Passer le QCM de cette capsule' : `Regardez au moins ${THRESHOLD}% pour débloquer le QCM`}
             >
               {completed ? <CheckCircle size={15} /> : <ChevronRight size={15} />}
               {completed ? 'Faire le QCM' : `QCM (${watchedPercent}%)`}
@@ -641,7 +641,7 @@ export default function VideoPlayer({
             <button
               onClick={() => navigate(`/professor/videos/${videoId}/qcm`)}
               className="btn btn-secondary"
-              title="Modifier le QCM associé à cette vidéo"
+              title="Modifier le QCM associé à cette capsule"
             >
               ⚙ Gérer le QCM
             </button>
@@ -652,7 +652,7 @@ export default function VideoPlayer({
               className="btn btn-secondary"
             >
               <ChevronRight size={15} />
-              Vidéo suivante
+              Capsule suivante
             </button>
           )}
         </div>

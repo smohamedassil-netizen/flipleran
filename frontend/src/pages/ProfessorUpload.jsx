@@ -117,7 +117,7 @@ export default function ProfessorUpload() {
   };
 
   return (
-    <Layout title="Ajouter une vidéo">
+    <Layout title="Ajouter une capsule">
       {/* Header */}
       <div className="page-header" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
         <button
@@ -127,8 +127,8 @@ export default function ProfessorUpload() {
           <ArrowLeft size={15} />
         </button>
         <div>
-          <h1 className="page-title">Ajouter une vidéo</h1>
-          <p className="page-subtitle">La vidéo sera uploadée directement vers Cloudinary.</p>
+          <h1 className="page-title">Ajouter une capsule</h1>
+          <p className="page-subtitle">La capsule sera uploadée directement vers Cloudinary.</p>
         </div>
       </div>
 
@@ -183,8 +183,8 @@ export default function ProfessorUpload() {
                   <Youtube size={20} color="#DC2626" />
                 </div>
                 <div>
-                  <h3 style={{ margin: 0, fontSize: 15, fontWeight: 700 }}>Ajouter une vidéo YouTube</h3>
-                  <p style={{ margin: 0, fontSize: 12, color: '#64748B' }}>Colle l'URL de la vidéo — elle sera intégrée dans le cours.</p>
+                  <h3 style={{ margin: 0, fontSize: 15, fontWeight: 700 }}>Ajouter une capsule YouTube</h3>
+                  <p style={{ margin: 0, fontSize: 12, color: '#64748B' }}>Colle l'URL de la capsule — elle sera intégrée dans le cours.</p>
                 </div>
               </div>
 
@@ -203,7 +203,7 @@ export default function ProfessorUpload() {
                   </div>
                 </div>
                 <div>
-                  <label className="form-label">Titre de la vidéo</label>
+                  <label className="form-label">Titre de la capsule</label>
                   <input className="form-input" placeholder="Ex: Introduction aux algorithmes" value={form.titre} onChange={(e) => setForm({ ...form, titre: e.target.value })} />
                 </div>
                 <div>
@@ -224,7 +224,7 @@ export default function ProfessorUpload() {
             </div>
 
             <button type="submit" disabled={status === 'uploading'} className="btn btn-primary" style={{ width: '100%', justifyContent: 'center' }}>
-              {status === 'uploading' ? 'Ajout en cours…' : 'Ajouter la vidéo YouTube'}
+              {status === 'uploading' ? 'Ajout en cours…' : 'Ajouter la capsule YouTube'}
             </button>
           </form>
         )}
@@ -234,10 +234,10 @@ export default function ProfessorUpload() {
           <div className="card" style={{ textAlign: 'center', padding: '48px 32px' }}>
             <CheckCircle size={40} color="var(--color-primary)" style={{ margin: '0 auto 16px' }} />
             <p style={{ fontSize: 'var(--font-size-lg)', fontWeight: 700, marginBottom: 8 }}>
-              Vidéo uploadée avec succès
+              Capsule uploadée avec succès
             </p>
             <p className="text-small" style={{ marginBottom: 20 }}>
-              La vidéo est maintenant disponible dans le cours.
+              La capsule est maintenant disponible dans le cours.
             </p>
             <div style={{
               padding: 14, marginBottom: 24, borderRadius: 12,
@@ -259,15 +259,15 @@ export default function ProfessorUpload() {
                   color: '#fff', border: 'none', fontSize: 13, fontWeight: 700, cursor: 'pointer',
                 }}
               >
-                <Sparkles size={14} /> Voir mes vidéos pour préparer avec l'IA
+                <Sparkles size={14} /> Voir mes capsules pour préparer avec l'IA
               </button>
             </div>
             <div style={{ display: 'flex', gap: 10, justifyContent: 'center' }}>
               <button className="btn btn-primary" onClick={reset}>
-                <Upload size={15} /> Ajouter une autre vidéo
+                <Upload size={15} /> Ajouter une autre capsule
               </button>
               <button className="btn btn-secondary" onClick={() => navigate(-1)}>
-                Retour au cours
+                Retour au module
               </button>
             </div>
           </div>
@@ -305,7 +305,7 @@ export default function ProfessorUpload() {
                   style={{ margin: '0 auto 12px' }}
                 />
                 <p style={{ fontWeight: 600, fontSize: 'var(--font-size-md)', color: 'var(--color-text)', marginBottom: 4 }}>
-                  Glissez votre vidéo ici
+                  Glissez votre capsule ici
                 </p>
                 <p className="text-small" style={{ marginBottom: 16 }}>
                   ou cliquez pour parcourir — MP4, WebM, MOV (max {MAX_SIZE_MB} MB)
@@ -378,7 +378,7 @@ export default function ProfessorUpload() {
                   id="description"
                   className="form-input"
                   style={{ minHeight: 80, resize: 'vertical' }}
-                  placeholder="Contenu abordé dans cette vidéo..."
+                  placeholder="Contenu abordé dans cette capsule..."
                   value={form.description}
                   onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))}
                   disabled={status === 'uploading'}
@@ -397,7 +397,7 @@ export default function ProfessorUpload() {
                   onChange={(e) => setForm((p) => ({ ...p, order: e.target.value }))}
                   disabled={status === 'uploading'}
                 />
-                <p className="form-hint">Les vidéos sont triées par ordre croissant.</p>
+                <p className="form-hint">Les capsules sont triées par ordre croissant.</p>
               </div>
             </div>
 
@@ -437,7 +437,7 @@ export default function ProfessorUpload() {
               style={{ width: '100%', justifyContent: 'center' }}
             >
               <Upload size={16} />
-              {status === 'uploading' ? `Upload... ${progress}%` : 'Uploader la vidéo'}
+              {status === 'uploading' ? `Upload... ${progress}%` : 'Uploader la capsule'}
             </button>
           </form>
         ) : null}

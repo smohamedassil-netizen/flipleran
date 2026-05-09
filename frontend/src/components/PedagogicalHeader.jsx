@@ -10,12 +10,12 @@ import {
  * contrat pédagogique (Biggs 1996) + liste des objectifs d'apprentissage
  * (Anderson & Krathwohl 2001) avec leur statut d'acquisition.
  *
- * Le statut d'un outcome est dérivé des vidéos qui le couvrent
+ * Le statut d'un outcome est dérivé des capsules qui le couvrent
  * (Video.coversOutcomes) et de la progression de l'utilisateur :
- *   - mastered    : toutes les vidéos liées sont complétées (≥ 80%)
- *   - inprogress  : au moins une vidéo liée a été commencée
- *   - todo        : aucune vidéo liée n'a été commencée
- *   - unlinked    : aucune vidéo ne cible cet outcome
+ *   - mastered    : toutes les capsules liées sont complétées (≥ 80%)
+ *   - inprogress  : au moins une capsule liée a été commencée
+ *   - todo        : aucune capsule liée n'a été commencée
+ *   - unlinked    : aucune capsule ne cible cet outcome
  *
  * Cette dérivation reste cohérente même si une partie du parcours utilise
  * des QCM ou Prosits non encore reliés aux outcomes : l'agrégation se base
@@ -155,7 +155,7 @@ export default function PedagogicalHeader({ contract, outcomes, videos, isProfOr
                 })}
               </div>
               <p style={{ fontSize: 11, color: '#94A3B8', margin: '10px 0 0', fontStyle: 'italic' }}>
-                Statut dérivé des vidéos qui couvrent chaque objectif (visionnage ≥ 80% = acquis).
+                Statut dérivé des capsules qui couvrent chaque objectif (visionnage ≥ 80% = acquis).
                 Taxonomie : Anderson & Krathwohl (2001) ; alignement constructif : Biggs (1996).
               </p>
             </div>

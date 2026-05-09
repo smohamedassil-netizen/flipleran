@@ -52,12 +52,12 @@ export default function QCMPage() {
           </div>
           <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--color-text)', margin: 0 }}>
             {isNotCreated
-              ? "Pas encore de QCM pour cette vidéo"
+              ? "Pas encore de QCM pour cette capsule"
               : "Impossible de charger le QCM"}
           </h2>
           <p style={{ fontSize: 14, color: 'var(--color-text-secondary)', margin: '8px 0 20px', lineHeight: 1.5 }}>
             {isNotCreated
-              ? "Votre professeur n'a pas encore créé de QCM associé. Continuez avec la vidéo suivante ou revenez plus tard."
+              ? "Votre professeur n'a pas encore créé de QCM associé. Continuez avec la capsule suivante ou revenez plus tard."
               : error}
           </p>
           <button className="btn btn-secondary" onClick={() => navigate(-1)} aria-label="Retour à la page précédente">
@@ -103,9 +103,9 @@ export default function QCMPage() {
                 QCM verrouillé
               </p>
               <p style={{ margin: '6px 0 10px', fontSize: 13, color: '#7F1D1D', lineHeight: 1.5 }}>
-                Tu dois avoir regardé au moins <strong>50 %</strong> de la vidéo associée
+                Tu dois avoir regardé au moins <strong>50 %</strong> de la capsule associée
                 avant de pouvoir commencer ce QCM. C'est le principe de la classe inversée :
-                la vidéo prépare le QCM.
+                la capsule prépare le QCM.
               </p>
               <div style={{
                 padding: '8px 10px', marginBottom: 12,
@@ -132,7 +132,7 @@ export default function QCMPage() {
                 className="btn btn-primary"
                 onClick={() => navigate(`/watch/${videoId}`)}
               >
-                <Play size={14} /> Regarder la vidéo
+                <Play size={14} /> Regarder la capsule
               </button>
             </div>
           </div>

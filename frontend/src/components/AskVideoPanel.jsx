@@ -128,7 +128,7 @@ export default function AskVideoPanel({ videoId, videoTitre, onClose }) {
       if (data.quota) setQuota(data.quota);
     } catch (err) {
       if (err.response?.status === 429) {
-        setError(err.response.data.message || 'Limite par vidéo atteinte (5/jour).');
+        setError(err.response.data.message || 'Limite par capsule atteinte (5/jour).');
         if (err.response.data) {
           setQuota({ used: err.response.data.used, limit: err.response.data.limit, ok: false });
         }
@@ -141,7 +141,7 @@ export default function AskVideoPanel({ videoId, videoTitre, onClose }) {
   };
 
   const clearHistory = () => {
-    if (!confirm('Effacer l\'historique de cette vidéo ?')) return;
+    if (!confirm('Effacer l\'historique de cette capsule ?')) return;
     setMessages([]);
     saveHistory(videoId, []);
   };
@@ -174,7 +174,7 @@ export default function AskVideoPanel({ videoId, videoTitre, onClose }) {
           <MessageCircle size={16} />
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <p style={{ margin: 0, fontSize: 13, fontWeight: 700 }}>Demande à la vidéo</p>
+          <p style={{ margin: 0, fontSize: 13, fontWeight: 700 }}>Demande à la capsule</p>
           <p style={{ margin: 0, fontSize: 10, opacity: 0.9, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {videoTitre || 'RAG sur transcript'}
           </p>
@@ -208,7 +208,7 @@ export default function AskVideoPanel({ videoId, videoTitre, onClose }) {
           <div style={{ padding: 12, fontSize: 12, color: '#64748B', lineHeight: 1.5 }}>
             <p style={{ margin: '0 0 8px' }}>
               <Bot size={12} style={{ display: 'inline', marginRight: 4, verticalAlign: 'middle' }} />
-              Pose une question sur cette vidéo. Le tuteur connaît le transcript et te citera les
+              Pose une question sur cette capsule. Le tuteur connaît le transcript et te citera les
               moments pertinents (clic pour aller à ce timestamp).
             </p>
             <p style={{ margin: '0 0 6px', fontSize: 11, fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: 0.4 }}>
@@ -267,7 +267,7 @@ export default function AskVideoPanel({ videoId, videoTitre, onClose }) {
                   }}>
                     <AlertTriangle size={12} style={{ flexShrink: 0, marginTop: 2 }} />
                     <span>
-                      Hors sujet de la vidéo (confiance {m.confidence}%).{' '}
+                      Hors sujet de la capsule (confiance {m.confidence}%).{' '}
                       <button
                         onClick={() => { onClose?.(); navigate('/my-tutor'); }}
                         style={{ background: 'none', border: 'none', padding: 0, color: '#9333EA', textDecoration: 'underline', cursor: 'pointer', fontSize: 11, fontFamily: 'inherit' }}
@@ -285,7 +285,7 @@ export default function AskVideoPanel({ videoId, videoTitre, onClose }) {
                       <button
                         key={j}
                         onClick={() => seekVideo(t)}
-                        title={`Aller à ${fmtTime(t)} dans la vidéo`}
+                        title={`Aller à ${fmtTime(t)} dans la capsule`}
                         style={{
                           padding: '3px 10px', borderRadius: 999,
                           background: '#9333EA', color: 'white',
@@ -327,7 +327,7 @@ export default function AskVideoPanel({ videoId, videoTitre, onClose }) {
           type="text"
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          placeholder={reachedLimit ? 'Limite atteinte pour aujourd\'hui' : 'Pose une question sur la vidéo…'}
+          placeholder={reachedLimit ? 'Limite atteinte pour aujourd\'hui' : 'Pose une question sur la capsule…'}
           disabled={sending || reachedLimit}
           style={{
             flex: 1, padding: '8px 12px', borderRadius: 8,

@@ -113,9 +113,9 @@ function CourseJourney({ course, onError }) {
         <JourneyStepCard
           icon="📚"
           title="1. PRÉPARATION"
-          subtitle="Avant le cours : vidéos + QCM"
+          subtitle="Avant le module : capsules + QCM"
           status={steps.preparation.status}
-          detail={`Vidéos : ${steps.preparation.details.videosWatched}/${steps.preparation.details.videosTotal} · QCM : ${steps.preparation.details.quizzesPassed}/${steps.preparation.details.quizzesTotal}`}
+          detail={`Capsules : ${steps.preparation.details.videosWatched}/${steps.preparation.details.videosTotal} · QCM : ${steps.preparation.details.quizzesPassed}/${steps.preparation.details.quizzesTotal}`}
           actionLabel="Continuer"
           actionTo={`/courses/${course._id}`}
         />
@@ -172,7 +172,7 @@ function CourseJourney({ course, onError }) {
           detail={`${steps.consolidation.details.cardsDue} carte${steps.consolidation.details.cardsDue !== 1 ? 's' : ''} à réviser`}
           actionLabel="Réviser maintenant"
           actionTo="/decks"
-          lockedReason="Commence une vidéo pour débloquer"
+          lockedReason="Commence une capsule pour débloquer"
         />
       </div>
     </div>
@@ -189,7 +189,7 @@ export default function MyJourney() {
     setError('');
     api.get('/courses')
       .then(({ data }) => setCourses(Array.isArray(data) ? data : []))
-      .catch((err) => setError(err.response?.data?.message || 'Impossible de charger tes cours.'))
+      .catch((err) => setError(err.response?.data?.message || 'Impossible de charger tes modules.'))
       .finally(() => setLoading(false));
   };
 
@@ -226,7 +226,7 @@ export default function MyJourney() {
       {!loading && !error && courses.length === 0 && (
         <div className="empty-state" style={{ padding: 40 }}>
           <BookOpen size={32} className="empty-state-icon" />
-          <p className="empty-state-title">Aucun cours</p>
+          <p className="empty-state-title">Aucun module</p>
           <p className="empty-state-desc">Tu n'es inscrit à aucun cours pour l'instant.</p>
         </div>
       )}

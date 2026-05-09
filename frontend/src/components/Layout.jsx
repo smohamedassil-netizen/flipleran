@@ -51,7 +51,7 @@ const NAV = {
       section: 'Mon parcours',
       items: [
         { label: 'Mon Parcours',    icon: Compass,         to: '/my-journey', badge: 'CAI' },
-        { label: 'Mes cours',       icon: BookOpen,        to: '/courses' },
+        { label: 'Mes modules',       icon: BookOpen,        to: '/courses' },
       ],
     },
     {
@@ -93,7 +93,7 @@ const NAV = {
         { label: 'Tableau de bord',     icon: LayoutDashboard, to: '/professor/dashboard' },
         { label: 'Briefings',           icon: CalendarCheck,   to: '/professor/class-readiness', badge: 'CAI' },
         { label: 'Suivi étudiants',     icon: LineChart,       to: '/professor/tracking' },
-        { label: 'Mes cours',           icon: BookOpen,        to: '/courses' },
+        { label: 'Mes modules',           icon: BookOpen,        to: '/courses' },
       ],
     },
     {
@@ -125,7 +125,7 @@ const NAV = {
       items: [
         { label: 'Tableau de bord', icon: LayoutDashboard, to: '/admin' },
         { label: 'Utilisateurs',    icon: Users,           to: '/admin?section=users' },
-        { label: 'Cours',           icon: BookOpen,        to: '/admin?section=courses' },
+        { label: 'Modules',         icon: BookOpen,        to: '/admin?section=courses' },
         { label: 'Support',          icon: HelpCircle,      to: '/admin?section=support' },
       ],
     },

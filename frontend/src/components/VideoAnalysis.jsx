@@ -224,7 +224,7 @@ export default function VideoAnalysis({ videoId, userRole }) {
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <Brain size={20} color="var(--color-primary)" />
           <h4 style={{ fontSize: 'var(--font-size-base)', fontWeight: 700, margin: 0 }}>
-            Agent IA — Analyse de la vidéo
+            Agent IA — Analyse de la capsule
           </h4>
         </div>
 
@@ -273,7 +273,7 @@ export default function VideoAnalysis({ videoId, userRole }) {
           fontSize: 'var(--font-size-sm)',
         }}>
           <Brain size={32} style={{ margin: '0 auto 8px', opacity: 0.3 }} />
-          <p>Cette vidéo n'a pas encore été analysée par l'IA.</p>
+          <p>Cette capsule n'a pas encore été analysée par l'IA.</p>
           <p style={{ fontSize: 'var(--font-size-xs)' }}>Demandez à votre professeur de lancer l'analyse.</p>
         </div>
       )}
@@ -339,7 +339,7 @@ export default function VideoAnalysis({ videoId, userRole }) {
             {status === 'analyzing' && 'Analyse intelligente avec GPT-4o...'}
           </p>
           <p style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-secondary)' }}>
-            {status === 'transcribing' && 'Extraction et reconnaissance vocale de la vidéo'}
+            {status === 'transcribing' && 'Extraction et reconnaissance vocale de la capsule'}
             {status === 'analyzing' && 'Génération du résumé, carte mentale et concepts clés'}
             {status === 'pending' && 'L\'analyse va démarrer dans quelques secondes'}
           </p>

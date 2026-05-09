@@ -12,8 +12,8 @@ import { Lock, CheckCircle2 } from 'lucide-react';
  */
 
 const STEPS_META = [
-  { key: 'preparation',   icon: '📚', short: 'Préparation',  tooltip: 'Avant le cours : regarde la vidéo et teste-toi avec le QCM.' },
-  { key: 'rendezvous',    icon: '👥', short: 'Rendez-vous',  tooltip: 'Le cours en présentiel : viens préparé pour les activités ciblées.' },
+  { key: 'preparation',   icon: '📚', short: 'Préparation',  tooltip: 'Avant le module : regarde la capsule et teste-toi avec le QCM.' },
+  { key: 'rendezvous',    icon: '👥', short: 'Rendez-vous',  tooltip: 'Le module en présentiel : viens préparé pour les activités ciblées.' },
   { key: 'application',   icon: '🧩', short: 'Application',  tooltip: 'Apprendre en faisant : le Prosit en groupe (méthode CESI).' },
   { key: 'production',    icon: '🚀', short: 'Production',   tooltip: 'Crée quelque chose d\'original qui synthétise tout le module.' },
   { key: 'consolidation', icon: '🔁', short: 'Consolidation', tooltip: 'Révision espacée pour ancrer les acquis dans la mémoire long terme.' },

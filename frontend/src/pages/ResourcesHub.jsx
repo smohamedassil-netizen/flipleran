@@ -169,9 +169,9 @@ export default function ResourcesHub() {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24, flexWrap: 'wrap', gap: 12 }}>
           <div>
             <h1 style={{ fontSize: '1.5rem', fontWeight: 700, color: '#1B4F72', marginBottom: 4 }}>Bibliothèque de ressources</h1>
-            <p style={{ color: '#64748b' }}>Tous les fichiers et documents de vos cours</p>
+            <p style={{ color: '#64748b' }}>Tous les fichiers et documents de vos modules</p>
             <p style={{ color: '#94A3B8', fontSize: 12, margin: '6px 0 0' }}>
-              Pour les ressources d'un cours précis, ouvrez le cours puis « Bibliothèque » —{' '}
+              Pour les ressources d'un cours précis, ouvrez le module puis « Bibliothèque » —{' '}
               <button
                 type="button"
                 onClick={() => navigate('/courses')}
@@ -181,7 +181,7 @@ export default function ResourcesHub() {
                   cursor: 'pointer', textDecoration: 'underline',
                 }}
               >
-                voir mes cours →
+                voir mes modules →
               </button>
             </p>
           </div>
@@ -192,7 +192,7 @@ export default function ResourcesHub() {
                 borderRadius: 10, background: '#059669', color: 'white', border: 'none',
                 cursor: 'pointer', fontWeight: 600, fontSize: 13,
               }}>
-                <Video size={15} /> Ajouter une vidéo
+                <Video size={15} /> Ajouter une capsule
               </button>
               <button onClick={() => setShowUpload(true)} style={{
                 display: 'inline-flex', alignItems: 'center', gap: 8, padding: '10px 16px',
@@ -276,7 +276,7 @@ export default function ResourcesHub() {
                   </button>
                   <h2 style={{ fontSize: '1.2rem', fontWeight: 700, color: '#059669', marginBottom: 20 }}>
                     <Video size={20} style={{ verticalAlign: 'middle', marginRight: 8 }} />
-                    Ajouter une vidéo
+                    Ajouter une capsule
                   </h2>
                   <form onSubmit={handleVideoUpload} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
                     <div>
@@ -286,11 +286,11 @@ export default function ResourcesHub() {
                         {courses.map(c => <option key={c._id} value={c._id}>{c.titre}</option>)}
                       </select>
                       <p style={{ fontSize: 11, color: '#94a3b8', marginTop: 4 }}>
-                        Cours non listé ? <button type="button" onClick={() => { setShowVideoUpload(false); navigate('/courses'); }} style={{ background: 'none', border: 'none', color: '#1B4F72', cursor: 'pointer', fontWeight: 600, fontSize: 11, textDecoration: 'underline', padding: 0 }}>Créer un nouveau cours</button>
+                        Cours non listé ? <button type="button" onClick={() => { setShowVideoUpload(false); navigate('/courses'); }} style={{ background: 'none', border: 'none', color: '#1B4F72', cursor: 'pointer', fontWeight: 600, fontSize: 11, textDecoration: 'underline', padding: 0 }}>Créer un nouveau module</button>
                       </p>
                     </div>
                     <div>
-                      <label style={labelStyle}>Titre de la vidéo *</label>
+                      <label style={labelStyle}>Titre de la capsule *</label>
                       <input required value={videoForm.titre} onChange={e => setVideoForm({ ...videoForm, titre: e.target.value })} style={inputStyle} placeholder="ex: Introduction aux algorithmes" />
                     </div>
                     <div>
@@ -321,7 +321,7 @@ export default function ResourcesHub() {
                       border: 'none', fontWeight: 600, fontSize: 15, cursor: videoUploading || !videoFile ? 'not-allowed' : 'pointer',
                       opacity: videoUploading || !videoFile ? 0.7 : 1,
                     }}>
-                      {videoUploading ? 'Upload en cours...' : 'Uploader la vidéo'}
+                      {videoUploading ? 'Upload en cours...' : 'Uploader la capsule'}
                     </button>
                   </form>
                 </>
@@ -330,12 +330,12 @@ export default function ResourcesHub() {
                   <div style={{ width: 56, height: 56, borderRadius: '50%', background: '#f0fdf4', border: '2px solid #22c55e', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
                     <Video size={24} color="#22c55e" />
                   </div>
-                  <h3 style={{ margin: '0 0 6px', fontSize: 16, fontWeight: 700, color: '#1e293b' }}>Vidéo uploadée !</h3>
+                  <h3 style={{ margin: '0 0 6px', fontSize: 16, fontWeight: 700, color: '#1e293b' }}>Capsule uploadée !</h3>
                   <p style={{ fontSize: 13, color: '#64748b', marginBottom: 20 }}>"{videoUploaded.titre}" a été ajoutée au cours.</p>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 10, maxWidth: 300, margin: '0 auto' }}>
                     <button onClick={() => { setShowVideoUpload(false); setVideoUploaded(null); navigate(`/professor/videos/${videoUploaded.videoId}/qcm`); }}
                       style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '12px 0', borderRadius: 10, background: '#1B4F72', color: 'white', border: 'none', fontWeight: 600, fontSize: 14, cursor: 'pointer' }}>
-                      <ClipboardList size={15} /> Créer un QCM pour cette vidéo
+                      <ClipboardList size={15} /> Créer un QCM pour cette capsule
                     </button>
                     <button onClick={() => { setShowVideoUpload(false); setVideoUploaded(null); }}
                       style={{ padding: '10px 0', borderRadius: 10, background: 'transparent', color: '#64748b', border: '1px solid #e5e7eb', fontWeight: 500, fontSize: 14, cursor: 'pointer' }}>

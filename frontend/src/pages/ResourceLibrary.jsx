@@ -189,16 +189,16 @@ function VideoUploadModal({ courseId, courseName, onSuccess, onClose, navigate }
         {!uploaded ? (
           <>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
-              <h2 style={{ margin: 0, fontSize: '16px', fontWeight: 700 }}>Ajouter une vidéo</h2>
+              <h2 style={{ margin: 0, fontSize: '16px', fontWeight: 700 }}>Ajouter une capsule</h2>
               <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8' }}><X size={18} /></button>
             </div>
             <div style={{ background: '#f0f9ff', borderRadius: 8, padding: '10px 14px', marginBottom: 16, fontSize: 12, color: '#0369a1', display: 'flex', gap: 8, alignItems: 'center' }}>
               <BookOpen size={14} style={{ flexShrink: 0 }} />
-              <span>Cours : <strong>{courseName || 'Ce cours'}</strong></span>
+              <span>Cours : <strong>{courseName || 'Ce module'}</strong></span>
             </div>
             <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
               <div>
-                <label className="form-label">Titre de la vidéo *</label>
+                <label className="form-label">Titre de la capsule *</label>
                 <input className="form-input" value={titre} onChange={(e) => setTitre(e.target.value)} placeholder="ex: Introduction aux algorithmes" required />
               </div>
               <div>
@@ -229,7 +229,7 @@ function VideoUploadModal({ courseId, courseName, onSuccess, onClose, navigate }
               <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
                 <button type="button" className="btn btn-ghost" onClick={onClose} disabled={uploading}>Annuler</button>
                 <button type="submit" className="btn btn-primary" disabled={uploading}>
-                  <Upload size={14} /> {uploading ? `${progress}%…` : 'Uploader la vidéo'}
+                  <Upload size={14} /> {uploading ? `${progress}%…` : 'Uploader la capsule'}
                 </button>
               </div>
             </form>
@@ -240,7 +240,7 @@ function VideoUploadModal({ courseId, courseName, onSuccess, onClose, navigate }
             <div style={{ width: 56, height: 56, borderRadius: '50%', background: '#f0fdf4', border: '2px solid #22c55e', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
               <Video size={24} color="#22c55e" />
             </div>
-            <h3 style={{ margin: '0 0 6px', fontSize: 16, fontWeight: 700, color: '#1e293b' }}>Vidéo uploadée avec succès !</h3>
+            <h3 style={{ margin: '0 0 6px', fontSize: 16, fontWeight: 700, color: '#1e293b' }}>Capsule uploadée avec succès !</h3>
             <p style={{ fontSize: 13, color: '#64748b', marginBottom: 20 }}>"{uploaded.titre}" a été ajoutée au cours.</p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10, maxWidth: 300, margin: '0 auto' }}>
               <button
@@ -248,7 +248,7 @@ function VideoUploadModal({ courseId, courseName, onSuccess, onClose, navigate }
                 onClick={() => { onClose(); navigate(`/professor/videos/${uploaded.videoId}/qcm`); }}
                 style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
               >
-                <ClipboardList size={15} /> Créer un QCM pour cette vidéo
+                <ClipboardList size={15} /> Créer un QCM pour cette capsule
               </button>
               <button className="btn btn-ghost" onClick={onClose}>
                 Fermer
@@ -313,7 +313,7 @@ export default function ResourceLibrary() {
     <Layout title="Bibliothèque">
       <Breadcrumb items={[
         { label: 'Accueil', to: '/' },
-        { label: 'Mes cours', to: '/courses' },
+        { label: 'Mes modules', to: '/courses' },
         { label: course?.titre || 'Cours', to: `/courses/${courseId}` },
         { label: 'Bibliothèque' },
       ]} />
@@ -353,7 +353,7 @@ export default function ResourceLibrary() {
           )}
           {canUpload && activeTab === 'videos' && (
             <button className="btn btn-primary btn-sm" onClick={() => setShowVideoUpload(true)}>
-              <Plus size={14} /> Ajouter une vidéo
+              <Plus size={14} /> Ajouter une capsule
             </button>
           )}
         </div>
@@ -362,7 +362,7 @@ export default function ResourceLibrary() {
         <div style={{ display: 'flex', gap: 4, marginBottom: 20, borderBottom: '2px solid #e5e7eb' }}>
           {[
             { id: 'fichiers', label: `Fichiers (${resources.length})`, icon: FileText },
-            { id: 'videos',   label: `Vidéos${videos.length > 0 ? ` (${videos.length})` : ''}`, icon: Video },
+            { id: 'videos',   label: `Capsules${videos.length > 0 ? ` (${videos.length})` : ''}`, icon: Video },
           ].map(({ id, label, icon: Icon }) => (
             <button
               key={id}
@@ -408,14 +408,14 @@ export default function ResourceLibrary() {
         {/* VIDEOS TAB */}
         {activeTab === 'videos' && (
           <>
-            {loadingVideos && <div className="empty-state">Chargement des vidéos…</div>}
+            {loadingVideos && <div className="empty-state">Chargement des capsules…</div>}
             {!loadingVideos && videos.length === 0 && (
               <div className="empty-state">
                 <Video size={32} />
-                <p>Aucune vidéo dans ce cours.</p>
+                <p>Aucune capsule dans ce module.</p>
                 {canUpload && (
                   <button className="btn btn-primary" onClick={() => setShowVideoUpload(true)}>
-                    <Plus size={14} /> Ajouter une vidéo
+                    <Plus size={14} /> Ajouter une capsule
                   </button>
                 )}
               </div>

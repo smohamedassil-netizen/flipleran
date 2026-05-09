@@ -24,7 +24,7 @@ const RADIUS_SM = 8;
 const SECTIONS = [
   { id: 'overview',  label: "Vue d'ensemble", icon: BarChart2 },
   { id: 'users',     label: 'Utilisateurs',   icon: Users },
-  { id: 'courses',   label: 'Cours',          icon: BookOpen },
+  { id: 'courses',   label: 'Modules',        icon: BookOpen },
   { id: 'messages',  label: 'Messages',       icon: MessageSquare },
   { id: 'activity',  label: 'Activité',       icon: Activity },
   { id: 'pending',   label: 'Inscriptions',   icon: UserCheck },
@@ -245,8 +245,8 @@ function OverviewSection({ onNavigate }) {
   // (ex: stats.deltaUsers7d), on l'affiche, sinon on n'affiche rien.
   const cards = [
     { icon: Users,         label: 'Utilisateurs', value: stats.totalUsers,    color: PRIMARY,    delta: stats.deltaUsers7d },
-    { icon: BookOpen,      label: 'Cours',        value: stats.totalCourses,  color: '#6D28D9',  delta: stats.deltaCourses7d },
-    { icon: Video,         label: 'Vidéos',       value: stats.totalVideos,   color: '#2563EB',  delta: stats.deltaVideos7d },
+    { icon: BookOpen,      label: 'Modules',      value: stats.totalCourses,  color: '#6D28D9',  delta: stats.deltaCourses7d },
+    { icon: Video,         label: 'Capsules',       value: stats.totalVideos,   color: '#2563EB',  delta: stats.deltaVideos7d },
     { icon: MessageSquare, label: 'Messages',     value: stats.totalMessages, color: '#059669',  delta: stats.deltaMessages7d },
   ];
 
@@ -360,7 +360,7 @@ function OverviewSection({ onNavigate }) {
           <UserPlus size={15} /> Créer un utilisateur
         </button>
         <button style={{ ...btnPrimary, background: '#6D28D9' }} onClick={() => onNavigate('courses')}>
-          <PlusCircle size={15} /> Créer un cours
+          <PlusCircle size={15} /> Créer un module
         </button>
         <button style={btnGhost} onClick={() => onNavigate('messages')}>
           <MessageSquare size={15} /> Voir les messages
@@ -919,11 +919,11 @@ function CoursesSection() {
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
         <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#1E293B' }}>
-          Gestion des cours
+          Gestion des modules
           <span style={{ fontSize: '13px', fontWeight: 400, color: '#94A3B8', marginLeft: 8 }}>({courses.length})</span>
         </h2>
         <button style={btnPrimary} onClick={() => setCreateModal(true)}>
-          <PlusCircle size={15} /> Nouveau cours
+          <PlusCircle size={15} /> Nouveau module
         </button>
       </div>
 
@@ -935,7 +935,7 @@ function CoursesSection() {
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
               <thead>
                 <tr style={{ background: '#F8FAFC', borderBottom: '1px solid #E2E8F0' }}>
-                  {['Titre', 'Professeur', 'Filière', 'Promotion', 'Vidéos', 'Étudiants', 'Statut', 'Date', 'Actions'].map(h => (
+                  {['Titre', 'Professeur', 'Filière', 'Promotion', 'Capsules', 'Étudiants', 'Statut', 'Date', 'Actions'].map(h => (
                     <th key={h} style={{ padding: '12px 12px', textAlign: h === 'Actions' ? 'center' : 'left', fontSize: '11px', fontWeight: 700, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{h}</th>
                   ))}
                 </tr>
@@ -976,7 +976,7 @@ function CoursesSection() {
           {courses.length === 0 && (
             <div style={{ textAlign: 'center', padding: '40px', color: '#94A3B8' }}>
               <BookOpen size={32} style={{ marginBottom: 8 }} />
-              <p style={{ margin: 0, fontSize: '14px' }}>Aucun cours.</p>
+              <p style={{ margin: 0, fontSize: '14px' }}>Aucun module.</p>
             </div>
           )}
         </div>
@@ -993,7 +993,7 @@ function CoursesSection() {
             <div><span style={{ fontSize: '11px', color: '#94A3B8', fontWeight: 600, textTransform: 'uppercase' }}>Professeur</span><div style={{ fontSize: '13px', fontWeight: 600, color: '#1E293B', marginTop: 2 }}>{detailPanel.professorId ? `${detailPanel.professorId.prenom} ${detailPanel.professorId.nom}` : '—'}</div></div>
             <div><span style={{ fontSize: '11px', color: '#94A3B8', fontWeight: 600, textTransform: 'uppercase' }}>Filière</span><div style={{ fontSize: '13px', fontWeight: 600, color: '#1E293B', marginTop: 2 }}>{detailPanel.filiere}</div></div>
             <div><span style={{ fontSize: '11px', color: '#94A3B8', fontWeight: 600, textTransform: 'uppercase' }}>Promotion</span><div style={{ fontSize: '13px', fontWeight: 600, color: '#1E293B', marginTop: 2 }}>{detailPanel.promotion}</div></div>
-            <div><span style={{ fontSize: '11px', color: '#94A3B8', fontWeight: 600, textTransform: 'uppercase' }}>Vidéos</span><div style={{ fontSize: '13px', fontWeight: 600, color: '#1E293B', marginTop: 2 }}>{detailPanel.videoCount ?? 0}</div></div>
+            <div><span style={{ fontSize: '11px', color: '#94A3B8', fontWeight: 600, textTransform: 'uppercase' }}>Capsules</span><div style={{ fontSize: '13px', fontWeight: 600, color: '#1E293B', marginTop: 2 }}>{detailPanel.videoCount ?? 0}</div></div>
             <div><span style={{ fontSize: '11px', color: '#94A3B8', fontWeight: 600, textTransform: 'uppercase' }}>Étudiants</span><div style={{ fontSize: '13px', fontWeight: 600, color: '#1E293B', marginTop: 2 }}>{detailPanel.studentCount ?? 0}</div></div>
             <div><span style={{ fontSize: '11px', color: '#94A3B8', fontWeight: 600, textTransform: 'uppercase' }}>Créé le</span><div style={{ fontSize: '13px', fontWeight: 600, color: '#1E293B', marginTop: 2 }}>{formatDate(detailPanel.createdAt)}</div></div>
           </div>
@@ -1014,8 +1014,8 @@ function CoursesSection() {
       {/* Delete confirm */}
       {confirmDelete && (
         <ConfirmModal
-          title="Supprimer ce cours ?"
-          message="Cette action est irréversible. Toutes les vidéos associées resteront orphelines."
+          title="Supprimer ce module ?"
+          message="Cette action est irréversible. Toutes les capsules associées resteront orphelines."
           onConfirm={() => remove(confirmDelete)}
           onCancel={() => setConfirmDelete(null)}
         />
@@ -1043,7 +1043,7 @@ function CourseCreateModal({ profs, onCreate, onClose }) {
     <div style={modalOverlay} onClick={onClose}>
       <div style={modalCard} onClick={e => e.stopPropagation()}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-          <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 700, color: '#1E293B' }}>Créer un cours</h3>
+          <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 700, color: '#1E293B' }}>Créer un module</h3>
           <button onClick={onClose} style={{ ...btnGhost, border: 'none', padding: 4 }}><X size={18} /></button>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
@@ -1068,7 +1068,7 @@ function CourseCreateModal({ profs, onCreate, onClose }) {
           </div>
           <div>
             <label style={labelStyle}>Description</label>
-            <input style={inputStyle} value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))} placeholder="Description du cours..." />
+            <input style={inputStyle} value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))} placeholder="Description du module..." />
           </div>
         </div>
         <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '24px' }}>

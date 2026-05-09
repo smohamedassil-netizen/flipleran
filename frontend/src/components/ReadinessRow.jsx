@@ -38,7 +38,7 @@ export default function ReadinessRow({ resource, onRemind }) {
             {resource.order != null ? `${resource.order + 1}. ` : ''}{resource.titre}
           </p>
           <p style={{ margin: '2px 0 0', fontSize: 11, color: '#64748B' }}>
-            Vidéo {resource.hasQuiz ? '+ QCM associé' : '(pas de QCM)'} · {total} étudiants
+            Capsule {resource.hasQuiz ? '+ QCM associé' : '(pas de QCM)'} · {total} étudiants
           </p>
         </div>
       </div>

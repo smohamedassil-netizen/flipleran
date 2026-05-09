@@ -202,7 +202,7 @@ export default function QuizBattle() {
 
   const createRoom = () => {
     if (eligible === false) {
-      setError('Tu dois avoir complété au moins 1 vidéo à 80% pour participer.');
+      setError('Tu dois avoir complété au moins 1 capsule à 80% pour participer.');
       return;
     }
     // Ouvre la modale de configuration (choix de matiere) avant de creer la salle.
@@ -233,7 +233,7 @@ export default function QuizBattle() {
 
   const joinRoom = (rid) => {
     if (eligible === false) {
-      setError('Tu dois avoir complété au moins 1 vidéo à 80% pour rejoindre une battle.');
+      setError('Tu dois avoir complété au moins 1 capsule à 80% pour rejoindre une battle.');
       return;
     }
     if (!socketRef.current?.connected) {
@@ -510,11 +510,11 @@ export default function QuizBattle() {
                 </div>
                 <div style={{ flex: 1 }}>
                   <p style={{ fontWeight: 700, fontSize: 14, color: '#92400E', margin: 0 }}>
-                    Avant de défier tes camarades, regarde au moins une vidéo en entier
+                    Avant de défier tes camarades, regarde au moins une capsule en entier
                   </p>
                   <p style={{ fontSize: 12, color: '#78350F', margin: '4px 0 8px', lineHeight: 1.5 }}>
                     Le Quiz Battle est un complément à l'apprentissage, pas un raccourci. Tu dois avoir complété
-                    au moins <strong>1 vidéo à 80%</strong> dans tes cours pour participer.
+                    au moins <strong>1 capsule à 80%</strong> dans tes modules pour participer.
                   </p>
                   <button
                     onClick={() => navigate('/courses')}
@@ -524,7 +524,7 @@ export default function QuizBattle() {
                       cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 5,
                     }}
                   >
-                    <BookOpen size={13} /> Aller à mes cours
+                    <BookOpen size={13} /> Aller à mes modules
                   </button>
                 </div>
               </div>
@@ -625,7 +625,7 @@ export default function QuizBattle() {
                     <button
                       onClick={() => joinRoom(r.roomId)}
                       disabled={eligible === false || joiningRoomId !== null}
-                      title={eligible === false ? 'Termine d\'abord une vidéo à 80% pour rejoindre une battle' : ''}
+                      title={eligible === false ? 'Termine d\'abord une capsule à 80% pour rejoindre une battle' : ''}
                       style={{
                         padding: '9px 20px', borderRadius: 8,
                         background: eligible === false

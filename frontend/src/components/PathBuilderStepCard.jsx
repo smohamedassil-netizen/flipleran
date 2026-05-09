@@ -5,7 +5,7 @@ import {
 } from 'lucide-react';
 
 const TYPE_INFO = {
-  video:   { label: 'Vidéo',   Icon: Play },
+  video:   { label: 'Capsule',   Icon: Play },
   qcm:     { label: 'QCM',     Icon: FileText },
   prosit:  { label: 'Prosit',  Icon: Lightbulb },
   reading: { label: 'Lecture', Icon: BookOpen },

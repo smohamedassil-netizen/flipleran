@@ -69,7 +69,7 @@ function CourseCard({ course, role, onOpen }) {
         {course.videoCount !== undefined && (
           <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
             <Video size={12} />
-            {course.videoCount} vidéo{course.videoCount !== 1 ? 's' : ''}
+            {course.videoCount} capsule{course.videoCount !== 1 ? 's' : ''}
           </span>
         )}
       </div>
@@ -81,7 +81,7 @@ function CourseCard({ course, role, onOpen }) {
           <button
             className="btn btn-ghost btn-sm"
             onClick={(e) => { e.stopPropagation(); navigate(`/professor/courses/${course._id}/path-builder`); }}
-            title="Organiser les vidéos, QCM et Prosits en parcours guidé"
+            title="Organiser les capsules, QCM et Prosits en parcours guidé"
           >
             <Route size={13} /> Parcours
           </button>
@@ -89,7 +89,7 @@ function CourseCard({ course, role, onOpen }) {
             className="btn btn-ghost btn-sm"
             onClick={(e) => { e.stopPropagation(); navigate(`/professor/courses/${course._id}/upload`); }}
           >
-            <Upload size={13} /> Ajouter vidéo
+            <Upload size={13} /> Ajouter capsule
           </button>
           <button
             className="btn btn-ghost btn-sm"
@@ -160,24 +160,24 @@ export default function CoursesPage() {
       setShowCreate(false);
     } catch (err) {
       logError(err);
-      alert(err.response?.data?.message ?? 'Erreur lors de la création du cours');
+      alert(err.response?.data?.message ?? 'Erreur lors de la création du module');
     } finally {
       setCreating(false);
     }
   };
 
   return (
-    <Layout title="Mes cours">
+    <Layout title="Mes modules">
       <div style={{ maxWidth: 900, margin: '0 auto' }}>
         {/* Pas de bouton Retour : /courses est une page de destination (sidebar), pas une sous-page */}
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
           <div>
-            <h1 className="page-title">Mes cours</h1>
+            <h1 className="page-title">Mes modules</h1>
             <p className="page-subtitle">
               {role === 'professeur'
-                ? 'Gérez vos cours, ajoutez des vidéos et des QCM.'
-                : 'Retrouvez tous vos cours et continuez votre apprentissage.'}
+                ? 'Gérez vos modules, ajoutez des capsules et des QCM.'
+                : 'Retrouvez tous vos modules et continuez votre apprentissage.'}
             </p>
           </div>
           {role === 'professeur' && (
@@ -186,7 +186,7 @@ export default function CoursesPage() {
               onClick={() => setShowCreate(true)}
               style={{ flexShrink: 0 }}
             >
-              <Plus size={15} /> Cr&eacute;er un nouveau cours
+              <Plus size={15} /> Cr&eacute;er un nouveau module
             </button>
           )}
         </div>
@@ -200,7 +200,7 @@ export default function CoursesPage() {
           <input
             className="form-input"
             style={{ paddingLeft: 36 }}
-            placeholder="Rechercher un cours..."
+            placeholder="Rechercher un module..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
@@ -209,7 +209,7 @@ export default function CoursesPage() {
         {/* Loading */}
         {loading && (
           <div className="empty-state" style={{ padding: 40 }}>
-            <p className="text-small">Chargement des cours...</p>
+            <p className="text-small">Chargement des modules...</p>
           </div>
         )}
 
@@ -218,14 +218,14 @@ export default function CoursesPage() {
           <div className="empty-state" style={{ padding: 60 }}>
             <BookOpen size={40} className="empty-state-icon" />
             <p className="empty-state-title">
-              {search ? 'Aucun cours trouvé' : 'Aucun cours disponible'}
+              {search ? 'Aucun module trouvé' : 'Aucun module disponible'}
             </p>
             <p className="empty-state-desc">
               {search
                 ? 'Essayez un autre terme de recherche.'
                 : role === 'professeur'
-                  ? "Créez votre premier cours pour commencer."
-                  : "Aucun cours n'a encore été publié."}
+                  ? "Créez votre premier module pour commencer."
+                  : "Aucun module n'a encore été publié."}
             </p>
           </div>
         )}
@@ -261,7 +261,7 @@ export default function CoursesPage() {
               style={{ width: 460, padding: 28 }}
             >
               <h2 style={{ margin: '0 0 20px', fontSize: 'var(--font-size-xl)', fontWeight: 700, color: 'var(--color-text)' }}>
-                Cr&eacute;er un nouveau cours
+                Cr&eacute;er un nouveau module
               </h2>
 
               <label className="text-label" style={{ display: 'block', marginBottom: 4 }}>Titre *</label>
@@ -280,7 +280,7 @@ export default function CoursesPage() {
                 style={{ marginBottom: 14, width: '100%', minHeight: 70, resize: 'vertical' }}
                 value={newCourse.description}
                 onChange={(e) => setNewCourse({ ...newCourse, description: e.target.value })}
-                placeholder="Description du cours..."
+                placeholder="Description du module..."
               />
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 20 }}>

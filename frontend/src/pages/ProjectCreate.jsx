@@ -331,7 +331,7 @@ export default function ProjectCreate() {
                     maxHeight: 220, overflowY: 'auto', padding: 4,
                   }}>
                     {courses.length === 0 && (
-                      <p style={{ padding: 12, color: 'var(--color-text-secondary)', fontSize: 13, margin: 0 }}>Aucun cours disponible.</p>
+                      <p style={{ padding: 12, color: 'var(--color-text-secondary)', fontSize: 13, margin: 0 }}>Aucun module disponible.</p>
                     )}
                     {courses.map((c) => {
                       const checked = moduleIds.includes(c._id);

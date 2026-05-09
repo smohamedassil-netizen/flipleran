@@ -76,7 +76,7 @@ export default function StudentSuggestionModal({ courseId, userId, studentName, 
                 })()}
                 <span style={{ fontSize: 11, color: '#64748B' }}>
                   Engagement <strong>{data.student?.engagement ?? '—'}%</strong>
-                  {' · '}Vidéos <strong>{data.student?.avgVideoPercent ?? 0}%</strong>
+                  {' · '}Capsules <strong>{data.student?.avgVideoPercent ?? 0}%</strong>
                   {data.student?.avgQCMScore !== null && data.student?.avgQCMScore !== undefined && (
                     <>{' · '}QCM <strong>{data.student.avgQCMScore}%</strong></>
                   )}

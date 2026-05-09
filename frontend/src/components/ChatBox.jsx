@@ -5,7 +5,7 @@ import { useAuth } from '../context/AuthContext.jsx';
 
 /* ─── Suggestions de questions rapides pour le chatbot ──────────────────── */
 const QUICK_SUGGESTIONS = [
-  { label: 'Explique-moi ce cours',         icon: '📖' },
+  { label: 'Explique-moi ce module',         icon: '📖' },
   { label: 'Génère un exercice',            icon: '✏️' },
   { label: 'Je n\'ai pas compris la vidéo', icon: '🎬' },
   { label: 'Résume les points clés',        icon: '📝' },
@@ -330,7 +330,7 @@ function BotWelcome() {
           Assistant FlipLearn
         </h3>
         <p style={{ margin: 0, fontSize: '13px', color: 'var(--text-muted)', maxWidth: '320px', lineHeight: 1.5 }}>
-          Posez vos questions sur vos cours d'informatique. Je réponds en français, de façon concise et pédagogique.
+          Posez vos questions sur vos modules d'informatique. Je réponds en français, de façon concise et pédagogique.
         </p>
       </div>
     </div>

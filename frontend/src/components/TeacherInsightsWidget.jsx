@@ -57,7 +57,7 @@ export default function TeacherInsightsWidget({ courseId }) {
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <Sparkles size={18} color="#9333EA" style={{ animation: 'pulse 1.5s ease-in-out infinite' }} />
-          <p style={{ margin: 0, fontSize: 13, color: '#6B21A8' }}>L'IA analyse les données de ton cours…</p>
+          <p style={{ margin: 0, fontSize: 13, color: '#6B21A8' }}>L'IA analyse les données de ton module…</p>
         </div>
         <style>{`@keyframes pulse { 50% { transform: scale(1.15); } }`}</style>
       </div>

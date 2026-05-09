@@ -405,7 +405,7 @@ export default function ProfessorDashboard() {
           <Link
             to={`/professor/courses/${courseId}/path-builder`}
             className="btn btn-secondary btn-sm"
-            title="Organiser les vidéos, QCM et Prosits en parcours guidé"
+            title="Organiser les capsules, QCM et Prosits en parcours guidé"
           >
             <Route size={14} /> Parcours pédagogique
           </Link>
@@ -413,7 +413,7 @@ export default function ProfessorDashboard() {
             to={`/professor/courses/${courseId}/upload`}
             className="btn btn-primary btn-sm"
           >
-            <Upload size={14} /> Ajouter une vidéo
+            <Upload size={14} /> Ajouter une capsule
           </Link>
         </div>
       </div>
@@ -425,11 +425,11 @@ export default function ProfessorDashboard() {
         <StatCard
           label="Étudiants inscrits"
           value={globalStats.totalStudents}
-          sub="dans ce cours"
+          sub="dans ce module"
           icon={Users}
         />
         <StatCard
-          label="Complétion vidéos"
+          label="Complétion capsules"
           value={globalStats.avgVideoCompletion !== null ? `${globalStats.avgVideoCompletion}%` : '—'}
           sub="moyenne cours"
           icon={Video}
@@ -442,7 +442,7 @@ export default function ProfessorDashboard() {
           accent={globalStats.avgQCMScore !== null && globalStats.avgQCMScore >= 70}
         />
         <StatCard
-          label="Vidéos publiées"
+          label="Capsules publiées"
           value={globalStats.totalVideos}
           sub={`${globalStats.totalQCMs} QCM associé${globalStats.totalQCMs > 1 ? 's' : ''}`}
           icon={BarChart2}
@@ -455,9 +455,9 @@ export default function ProfessorDashboard() {
       <div className="card" style={{ marginBottom: 24 }}>
         <div className="card-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div>
-            <span className="card-title">Suivi de visionnage par vidéo</span>
+            <span className="card-title">Suivi de visionnage par capsule</span>
             <p style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-secondary)', marginTop: 2 }}>
-              Indicateur de préparation avant le cours en présentiel
+              Indicateur de préparation avant le module en présentiel
             </p>
           </div>
 
@@ -479,15 +479,15 @@ export default function ProfessorDashboard() {
         {videoStats.length === 0 ? (
           <div className="empty-state">
             <Video size={28} className="empty-state-icon" />
-            <p className="empty-state-title">Aucune vidéo publiée</p>
-            <p className="empty-state-desc">Ajoutez des vidéos pour voir le suivi des étudiants.</p>
+            <p className="empty-state-title">Aucune capsule publiée</p>
+            <p className="empty-state-desc">Ajoutez des capsules pour voir le suivi des étudiants.</p>
           </div>
         ) : (
           <>
             {/* Table header */}
             <div style={{ display: 'grid', gridTemplateColumns: '28px 1fr 160px 80px 64px', gap: 12, padding: '6px 0 10px', borderBottom: `1px solid ${C_BORDER}`, marginBottom: 2 }}>
               <span style={{ fontSize: 'var(--font-size-xs)', fontWeight: 700, color: 'var(--color-text-disabled)', textAlign: 'center' }}>#</span>
-              <span style={{ fontSize: 'var(--font-size-xs)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--color-text-secondary)' }}>Vidéo</span>
+              <span style={{ fontSize: 'var(--font-size-xs)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--color-text-secondary)' }}>Capsule</span>
               <span style={{ fontSize: 'var(--font-size-xs)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--color-text-secondary)' }}>Progression</span>
               <span style={{ fontSize: 'var(--font-size-xs)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--color-text-secondary)', textAlign: 'center' }}>Moy.</span>
               <span style={{ fontSize: 'var(--font-size-xs)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--color-text-secondary)', textAlign: 'center' }}>Taux</span>
@@ -505,7 +505,7 @@ export default function ProfessorDashboard() {
                 <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <div style={{ width: 10, height: 10, borderRadius: 2, backgroundColor: color, flexShrink: 0 }} />
                   <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-secondary)' }}>
-                    <strong style={{ color: 'var(--color-text)' }}>{count}</strong>/{total} vidéo{total > 1 ? 's' : ''} — {label}
+                    <strong style={{ color: 'var(--color-text)' }}>{count}</strong>/{total} capsule{total > 1 ? 's' : ''} — {label}
                   </span>
                 </div>
               ))}
@@ -529,7 +529,7 @@ export default function ProfessorDashboard() {
           <div className="empty-state">
             <BookOpen size={28} className="empty-state-icon" />
             <p className="empty-state-title">Aucun QCM créé</p>
-            <p className="empty-state-desc">Associez un QCM à vos vidéos pour voir l'analyse.</p>
+            <p className="empty-state-desc">Associez un QCM à vos capsules pour voir l'analyse.</p>
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 28 }}>
@@ -666,7 +666,7 @@ export default function ProfessorDashboard() {
             Suivi individuel des {globalStats.totalStudents} étudiant{globalStats.totalStudents > 1 ? 's' : ''}
           </p>
           <p style={{ fontSize: 'var(--font-size-xs)', color: '#78350F', margin: '4px 0 0' }}>
-            Voir le détail par étudiant (vidéos manquantes, QCM non passés, dernière activité) et envoyer des rappels ciblés.
+            Voir le détail par étudiant (capsules manquantes, QCM non passés, dernière activité) et envoyer des rappels ciblés.
           </p>
         </div>
         <Link

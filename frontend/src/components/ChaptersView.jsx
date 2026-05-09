@@ -7,14 +7,14 @@ import {
 } from 'lucide-react';
 
 /**
- * ChaptersView — affiche les vidéos d'un cours regroupées par chapitre.
- * Hiérarchie : Module (Course) → Chapitre (Chapter) → Vidéos.
+ * ChaptersView — affiche les capsules d'un cours regroupées par chapitre.
+ * Hiérarchie : Module (Course) → Chapitre (Chapter) → Capsules.
  *
  * Mastery learning (Bloom 1968) : un chapitre est verrouillé tant que le
  * précédent n'est pas complété à `completionThreshold` % (default 80%).
  * Le prof peut désactiver via `unlockedByDefault: true`.
  *
- * Côté prof : affiche les boutons CRUD chapitre + ré-assignation des vidéos.
+ * Côté prof : affiche les boutons CRUD chapitre + ré-assignation des capsules.
  * Côté étudiant : juste consultation + déblocage progressif.
  */
 export default function ChaptersView({ courseId, isProfOrAdmin, onVideoClick }) {
@@ -70,7 +70,7 @@ export default function ChaptersView({ courseId, isProfOrAdmin, onVideoClick }) 
   };
 
   const removeChapter = async (id) => {
-    if (!confirm('Supprimer ce chapitre ? Les vidéos seront détachées (non supprimées).')) return;
+    if (!confirm('Supprimer ce chapitre ? Les capsules seront détachées (non supprimées).')) return;
     try {
       await api.delete(`/chapters/${id}`);
       load();
@@ -155,7 +155,7 @@ export default function ChaptersView({ courseId, isProfOrAdmin, onVideoClick }) 
       {/* Liste des chapitres */}
       {chaptersWithLock.length === 0 && orphans.length === 0 && (
         <div style={{ padding: 20, textAlign: 'center', color: '#94A3B8', background: '#F8FAFC', borderRadius: 10, border: '1px dashed #CBD5E1' }}>
-          {isProfOrAdmin ? 'Aucun chapitre ni vidéo. Crée un chapitre puis ajoute des vidéos.' : 'Ce module n\'a pas encore de contenu.'}
+          {isProfOrAdmin ? 'Aucun chapitre ni capsule. Crée un chapitre puis ajoute des capsules.' : 'Ce module n\'a pas encore de contenu.'}
         </div>
       )}
 
@@ -212,7 +212,7 @@ export default function ChaptersView({ courseId, isProfOrAdmin, onVideoClick }) 
                   </p>
                 )}
                 <p style={{ margin: '2px 0 0', fontSize: 11, color: '#64748B' }}>
-                  {ch.videos.length} vidéo{ch.videos.length > 1 ? 's' : ''}
+                  {ch.videos.length} capsule{ch.videos.length > 1 ? 's' : ''}
                   {ch.locked
                     ? <span style={{ marginLeft: 8, fontStyle: 'italic' }}>🔒 Termine le chapitre précédent à {chaptersWithLock[idx - 1]?.completionThreshold ?? 80}%</span>
                     : ` · ${ch.completionPct}% complété`
@@ -239,13 +239,13 @@ export default function ChaptersView({ courseId, isProfOrAdmin, onVideoClick }) 
               )}
             </div>
 
-            {/* Liste des vidéos du chapitre */}
+            {/* Liste des capsules du chapitre */}
             {isExpanded && !ch.locked && (
               <div style={{ padding: '0 14px 12px', borderTop: '1px solid ' + palette.border }}>
                 {ch.videos.length === 0 ? (
                   <p style={{ margin: '12px 0 0', fontSize: 12, color: '#94A3B8', fontStyle: 'italic' }}>
-                    Pas encore de vidéo dans ce chapitre.
-                    {isProfOrAdmin && ' Ajoute une vidéo via "Ajouter vidéo" puis assigne-la au chapitre.'}
+                    Pas encore de capsule dans ce chapitre.
+                    {isProfOrAdmin && ' Ajoute une capsule via "Ajouter capsule" puis assigne-la au chapitre.'}
                   </p>
                 ) : (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 10 }}>
@@ -306,15 +306,15 @@ export default function ChaptersView({ courseId, isProfOrAdmin, onVideoClick }) 
         );
       })}
 
-      {/* Vidéos orphelines (rétrocompat — pas encore migrées dans un chapitre) */}
+      {/* Capsules orphelines (rétrocompat — pas encore migrées dans un chapitre) */}
       {orphans.length > 0 && (
         <div style={{ background: '#FEF3C7', border: '1px solid #FDE68A', borderRadius: 12, padding: 14, marginTop: 10 }}>
           <p style={{ margin: '0 0 8px', fontSize: 13, fontWeight: 700, color: '#92400E' }}>
-            Vidéos sans chapitre ({orphans.length})
+            Capsules sans chapitre ({orphans.length})
           </p>
           {isProfOrAdmin && (
             <p style={{ margin: '0 0 8px', fontSize: 11, color: '#78350F' }}>
-              Assigne ces vidéos à un chapitre via le menu déroulant.
+              Assigne ces capsules à un chapitre via le menu déroulant.
             </p>
           )}
           {orphans.map((v) => (

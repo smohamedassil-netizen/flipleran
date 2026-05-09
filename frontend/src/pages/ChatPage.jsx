@@ -35,7 +35,7 @@ export default function ChatPage({ roomType = 'course' }) {
       // Essayer de charger le nom du cours
       api.get(`/courses/${courseId}`)
         .then(({ data }) => setRoomLabel(`Chat — ${data.titre ?? 'Cours'}`))
-        .catch(() => setRoomLabel('Chat du cours'));
+        .catch(() => setRoomLabel('Chat du module'));
       return;
     }
 
@@ -62,7 +62,7 @@ export default function ChatPage({ roomType = 'course' }) {
              : MessageSquare;
 
   /* ── Titre de la page ─────────────────────────────────────────────── */
-  const pageTitle = roomType === 'course'  ? 'Chat du cours'
+  const pageTitle = roomType === 'course'  ? 'Chat du module'
                   : roomType === 'private' ? 'Message privé'
                   : 'Chat';
 
@@ -95,7 +95,7 @@ export default function ChatPage({ roomType = 'course' }) {
               textDecoration: 'none',
             }}
           >
-            ← Retour au cours
+            ← Retour au module
           </a>
         )}
       </div>

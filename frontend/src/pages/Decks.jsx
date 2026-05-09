@@ -32,7 +32,7 @@ function AIGenerateModal({ onSuccess, onClose }) {
   }, [selectedCourse]);
 
   const handleGenerate = async () => {
-    if (!selectedVideo) { setError('Sélectionnez une vidéo'); return; }
+    if (!selectedVideo) { setError('Sélectionnez une capsule'); return; }
     setLoading(true);
     setError('');
     try {
@@ -59,7 +59,7 @@ function AIGenerateModal({ onSuccess, onClose }) {
             </div>
             <div>
               <div style={{ fontWeight: 700, fontSize: 15, color: '#1e293b' }}>Générer avec l'IA</div>
-              <div style={{ fontSize: 12, color: '#64748b' }}>Flashcards automatiques depuis une vidéo</div>
+              <div style={{ fontSize: 12, color: '#64748b' }}>Flashcards automatiques depuis une capsule</div>
             </div>
           </div>
           <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8' }}><X size={18} /></button>
@@ -75,9 +75,9 @@ function AIGenerateModal({ onSuccess, onClose }) {
           </div>
 
           <div>
-            <label className="form-label">Vidéo *</label>
+            <label className="form-label">Capsule *</label>
             <select className="form-input" value={selectedVideo} onChange={e => setSelectedVideo(e.target.value)} disabled={!selectedCourse || loadingVideos}>
-              <option value="">{loadingVideos ? 'Chargement...' : '-- Sélectionner une vidéo --'}</option>
+              <option value="">{loadingVideos ? 'Chargement...' : '-- Sélectionner une capsule --'}</option>
               {videos.map(v => <option key={v._id} value={v._id}>{v.titre}</option>)}
             </select>
           </div>
@@ -91,7 +91,7 @@ function AIGenerateModal({ onSuccess, onClose }) {
 
           <div style={{ background: '#f8fafc', borderRadius: 10, padding: '10px 14px', fontSize: 12, color: '#64748b', display: 'flex', gap: 8, alignItems: 'flex-start' }}>
             <Sparkles size={14} style={{ marginTop: 1, flexShrink: 0, color: '#7c3aed' }} />
-            <span>L'IA va analyser le titre et le contenu de la vidéo pour générer automatiquement 10 flashcards de révision.</span>
+            <span>L'IA va analyser le titre et le contenu de la capsule pour générer automatiquement 10 flashcards de révision.</span>
           </div>
 
           <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 4 }}>
@@ -155,7 +155,7 @@ export default function Decks() {
     navigate(`/study/${deck._id}`);
   };
 
-  // F6 — Régénération à la demande des decks depuis les vidéos vues
+  // F6 — Régénération à la demande des decks depuis les capsules vues
   const handleRegenAuto = async () => {
     setRegenerating(true);
     setRegenMsg('');
@@ -165,11 +165,11 @@ export default function Decks() {
       const skipped = data.totalSkipped ?? 0;
       const processed = data.processedVideos ?? 0;
       if (processed === 0) {
-        setRegenMsg("Aucune vidéo complétée pour le moment. Regarde une vidéo à 80%+ et reviens !");
+        setRegenMsg("Aucune capsule complétée pour le moment. Regarde une capsule à 80%+ et reviens !");
       } else if (created === 0) {
-        setRegenMsg(`✓ Tes decks sont déjà à jour (${skipped} cartes existaient déjà sur ${processed} vidéo${processed > 1 ? 's' : ''}).`);
+        setRegenMsg(`✓ Tes decks sont déjà à jour (${skipped} cartes existaient déjà sur ${processed} capsule${processed > 1 ? 's' : ''}).`);
       } else {
-        setRegenMsg(`✨ ${created} nouvelle${created > 1 ? 's' : ''} carte${created > 1 ? 's' : ''} générée${created > 1 ? 's' : ''} sur ${processed} vidéo${processed > 1 ? 's' : ''}.`);
+        setRegenMsg(`✨ ${created} nouvelle${created > 1 ? 's' : ''} carte${created > 1 ? 's' : ''} générée${created > 1 ? 's' : ''} sur ${processed} capsule${processed > 1 ? 's' : ''}.`);
       }
       fetchAutoStatus();
       // Recharge la liste des decks pour voir les nouveaux/màj cardCount
@@ -213,7 +213,7 @@ export default function Decks() {
       {/* Info box explaining decks */}
       <div style={{ background: '#f0f9ff', border: '1px solid #bae6fd', borderRadius: 10, padding: '12px 16px', marginBottom: 20, display: 'flex', gap: 10, alignItems: 'flex-start', fontSize: 13, color: '#0369a1' }}>
         <BookOpen size={16} style={{ marginTop: 1, flexShrink: 0 }} />
-        <span><strong>Les decks</strong> sont des jeux de cartes mémoire (flashcards) : face avant = question, face arrière = réponse. Idéal pour réviser du vocabulaire, des définitions, des formules. Utilisez l'IA pour en générer automatiquement depuis vos vidéos de cours.</span>
+        <span><strong>Les decks</strong> sont des jeux de cartes mémoire (flashcards) : face avant = question, face arrière = réponse. Idéal pour réviser du vocabulaire, des définitions, des formules. Utilisez l'IA pour en générer automatiquement depuis vos capsules de cours.</span>
       </div>
 
       {/* ─── F6 — Section "Tes decks de révision auto-générés" ───────── */}
@@ -240,7 +240,7 @@ export default function Decks() {
                 ✨ Tes decks de révision auto-générés
               </h2>
               <p style={{ margin: '4px 0 0', fontSize: 12.5, color: '#475569' }}>
-                Chaque vidéo terminée à 80%+ produit automatiquement un deck SM-2.
+                Chaque capsule terminée à 80%+ produit automatiquement un deck SM-2.
                 {autoStatus?.lastRegenAt && (
                   <> Dernière mise à jour : <strong>{fmtAgo(autoStatus.lastRegenAt)}</strong>.</>
                 )}
@@ -313,7 +313,7 @@ export default function Decks() {
 
         {!autoDecks.length && !regenerating && (
           <div style={{ marginTop: 12, padding: '10px 12px', background: 'rgba(255,255,255,0.6)', borderRadius: 8, fontSize: 12.5, color: '#475569' }}>
-            Aucun deck auto pour l'instant. Termine une vidéo (≥80%) ou clique sur <strong>Mettre à jour</strong> pour en générer depuis tes cours suivis.
+            Aucun deck auto pour l'instant. Termine une capsule (≥80%) ou clique sur <strong>Mettre à jour</strong> pour en générer depuis tes modules suivis.
           </div>
         )}
       </div>
@@ -350,7 +350,7 @@ export default function Decks() {
         <div className="empty-state">
           <BookOpen size={32} className="empty-state-icon" />
           <p className="empty-state-title">Aucun deck</p>
-          <p className="empty-state-desc">Créez votre premier deck ou générez-en un automatiquement avec l'IA depuis une vidéo de cours.</p>
+          <p className="empty-state-desc">Créez votre premier deck ou générez-en un automatiquement avec l'IA depuis une capsule de cours.</p>
           <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
             <button onClick={() => setShowAI(true)} className="btn btn-sm" style={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', color: 'white', border: 'none' }}>
               <Sparkles size={14} /> Générer avec l'IA
@@ -375,7 +375,7 @@ export default function Decks() {
               >
                 {auto && (
                   <span
-                    title="Deck généré automatiquement par l'IA depuis le transcript d'une vidéo"
+                    title="Deck généré automatiquement par l'IA depuis le transcript d'une capsule"
                     style={{
                       position: 'absolute', top: 10, right: 10,
                       background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',

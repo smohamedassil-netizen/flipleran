@@ -13,7 +13,7 @@ import {
 /**
  * LearningPathBuilder — Éditeur de parcours pédagogique scénarisé pour le prof.
  *
- * Permet d'organiser les ressources d'un cours (vidéos, QCM, Prosits, lectures)
+ * Permet d'organiser les ressources d'un cours (capsules, QCM, Prosits, lectures)
  * en une séquence guidée que l'étudiant suit étape par étape. Conformément
  * à Lebrun (2007), ce builder matérialise la **scénarisation pédagogique** :
  * le prof choisit l'ordre, les transitions et les critères de progression
@@ -180,7 +180,7 @@ export default function LearningPathBuilder() {
     <Layout title="Parcours pédagogique">
       <Breadcrumb items={[
         { label: 'Accueil', to: '/', icon: Home },
-        { label: 'Mes cours', to: '/courses' },
+        { label: 'Mes modules', to: '/courses' },
         { label: course?.titre, to: `/courses/${courseId}` },
         { label: 'Parcours pédagogique' },
       ]} />
@@ -202,7 +202,7 @@ export default function LearningPathBuilder() {
               )}
             </h1>
             <p className="page-subtitle">
-              {course?.titre} · Organise les vidéos, QCM et Prosits en une séquence guidée.
+              {course?.titre} · Organise les capsules, QCM et Prosits en une séquence guidée.
             </p>
           </div>
 
@@ -275,7 +275,7 @@ export default function LearningPathBuilder() {
             <Route size={32} className="empty-state-icon" />
             <p className="empty-state-title">Aucune étape</p>
             <p className="empty-state-desc">
-              Ajoute des vidéos, QCM, Prosits ou lectures pour construire le parcours.
+              Ajoute des capsules, QCM, Prosits ou lectures pour construire le parcours.
             </p>
           </div>
         ) : (

@@ -109,7 +109,7 @@ export default function StreakFlame({ mode = 'compact', onClick }) {
         </div>
         {!active && days > 0 && (
           <div style={{ fontSize: 10.5, color: '#dc2626', marginTop: 3, fontWeight: 600 }}>
-            ⚠️ Pas d'activité aujourd'hui — fais une vidéo pour ne pas perdre ta série !
+            ⚠️ Pas d'activité aujourd'hui — fais une capsule pour ne pas perdre ta série !
           </div>
         )}
       </div>

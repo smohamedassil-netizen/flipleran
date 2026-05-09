@@ -200,7 +200,7 @@ export default function ProfessorVideoQuestions() {
           </button>
           <span style={{ color: '#CBD5E1' }}>·</span>
           <h1 style={{ fontSize: '1.4rem', fontWeight: 700, color: '#1B4F72', margin: 0 }}>
-            Questions interactives — {video?.titre ?? 'Vidéo'}
+            Questions interactives — {video?.titre ?? 'Capsule'}
           </h1>
         </div>
 
@@ -304,7 +304,7 @@ export default function ProfessorVideoQuestions() {
                 background: 'white', border: '1px dashed #CBD5E1', borderRadius: 10,
                 color: '#94A3B8', fontSize: 13,
               }}>
-                Aucune question pour cette vidéo. Cliquez sur la timeline pour en ajouter une.
+                Aucune question pour cette capsule. Cliquez sur la timeline pour en ajouter une.
               </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>

@@ -138,7 +138,7 @@ function PersonalBestView({ data }) {
           padding: 24, textAlign: 'center', color: '#64748b', fontSize: 13,
           background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 10,
         }}>
-          📈 Pas encore d'activité enregistrée. Regarde des vidéos pour cumuler des XP visibles ici !
+          📈 Pas encore d'activité enregistrée. Regarde des capsules pour cumuler des XP visibles ici !
         </div>
       )}
     </div>
@@ -201,7 +201,7 @@ export default function Leaderboard() {
                 onClick={() => setMode(m)}
                 className={mode === m ? 'btn btn-primary btn-sm' : 'btn btn-ghost btn-sm'}
               >
-                {m === 'course' ? 'Ce cours' : 'Global'}
+                {m === 'course' ? 'Ce module' : 'Global'}
               </button>
             ))}
           </div>
