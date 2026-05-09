@@ -4,7 +4,7 @@ import Layout from '../components/Layout.jsx';
 import api from '../utils/api.js';
 import ReadinessRow from '../components/ReadinessRow.jsx';
 import { useToast } from '../context/useToast.js';
-import { ArrowLeft, BarChart3, Calendar, Send, X } from 'lucide-react';
+import { ArrowLeft, BarChart3, Calendar, Lightbulb, Send, X } from 'lucide-react';
 
 const DEFAULT_REMINDER_TEMPLATE = (courseTitre) =>
   `Bonjour, le prochain cours de "${courseTitre}" approche. Pense à regarder la vidéo et faire le QCM avant — ça te permettra de profiter pleinement du présentiel. Bonne préparation !`;
@@ -264,6 +264,18 @@ export default function ClassReadiness() {
           disabled={savingDate || !nextClassDateInput}
         >
           {savingDate ? 'Enregistrement…' : 'Enregistrer'}
+        </button>
+      </div>
+
+      {/* C5 — Bouton "Activer un Prosit" (boucle étape 2 → étape 3 du Cycle CAI) */}
+      <div style={{ display: 'flex', gap: 8, marginBottom: 14, flexWrap: 'wrap' }}>
+        <button
+          className="btn btn-accent btn-sm"
+          onClick={() => navigate(`/prosits/new?courseId=${courseId}`)}
+          title="Créer un nouveau Prosit pour ce cours (étape 3 du Cycle CAI)"
+        >
+          <Lightbulb size={14} style={{ marginRight: 6 }} />
+          Activer un Prosit
         </button>
       </div>
 
