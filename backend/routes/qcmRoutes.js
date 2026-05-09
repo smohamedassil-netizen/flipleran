@@ -2,6 +2,8 @@ import express from 'express';
 import {
   createQCM,
   getQCMByVideo,
+  getQCMByChapter,
+  getQCMByModule,
   submitQCM,
   getQCMStats,
   updateQCM,
@@ -21,8 +23,10 @@ router.post('/create', requireRole('professeur', 'admin'), createQCM);
 // Génération par IA (professeur / admin) — soumise au quota mensuel (FREE = 5 / mois).
 router.post('/generate-ai', requireRole('professeur', 'admin'), checkAiQuota('qcmGeneration'), generateQCMWithAI);
 
-// QCM d'une vidéo (accessible à tous les rôles connectés)
-router.get('/video/:videoId', getQCMByVideo);
+// QCM par scope (accessible à tous les rôles connectés)
+router.get('/video/:videoId',     getQCMByVideo);
+router.get('/chapter/:chapterId', getQCMByChapter);
+router.get('/module/:courseId',   getQCMByModule);
 
 // Soumission (etudiant uniquement — un prof n'a pas a passer le QCM qu'il a cree)
 router.post('/submit', requireRole('etudiant'), submitQCM);

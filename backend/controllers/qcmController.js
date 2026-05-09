@@ -7,59 +7,95 @@ import { generateQuizQuestions } from '../services/chatbot.js';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    POST /api/qcm/create
-   Crée un QCM lié à une vidéo (professeur / admin).
+   Crée un QCM (professeur / admin).
+   Body :
+     - { scope: 'video',   videoId,   titre, questions, ... } [défaut historique]
+     - { scope: 'chapter', chapterId, titre, questions, ... }
+     - { scope: 'module',  courseId,  titre, questions, ... }
 ═══════════════════════════════════════════════════════════════════════════ */
 export const createQCM = async (req, res) => {
   try {
-    const { videoId, titre, questions, pointsPerQuestion, timerSeconds } = req.body;
+    const { videoId, chapterId, courseId, titre, questions, pointsPerQuestion, timerSeconds, passingScore } = req.body;
+    let { scope } = req.body;
 
-    if (!videoId || !titre || !questions?.length) {
-      return res.status(400).json({ message: 'videoId, titre et questions sont requis.' });
+    // Inférer scope si absent (rétro-compat avec anciens clients)
+    if (!scope) {
+      if (videoId)        scope = 'video';
+      else if (chapterId) scope = 'chapter';
+      else if (courseId)  scope = 'module';
+      else scope = 'video';
     }
 
-    // Un seul QCM par vidéo — mettre à jour s'il existe déjà
-    const existing = await QCM.findOne({ videoId });
+    if (!titre || !questions?.length) {
+      return res.status(400).json({ message: 'titre et questions sont requis.' });
+    }
+    if (scope === 'video'   && !videoId)   return res.status(400).json({ message: 'scope=video : videoId est requis.' });
+    if (scope === 'chapter' && !chapterId) return res.status(400).json({ message: 'scope=chapter : chapterId est requis.' });
+    if (scope === 'module'  && !courseId)  return res.status(400).json({ message: 'scope=module : courseId est requis.' });
+
+    // Un seul QCM par scope+ref — mettre à jour s'il existe déjà
+    const filter = scope === 'video'   ? { scope: 'video',   videoId }
+                 : scope === 'chapter' ? { scope: 'chapter', chapterId }
+                 : { scope: 'module', courseId };
+
+    const existing = await QCM.findOne(filter);
     if (existing) {
       existing.titre             = titre;
       existing.questions         = questions;
       existing.pointsPerQuestion = pointsPerQuestion ?? existing.pointsPerQuestion;
       existing.timerSeconds      = timerSeconds      ?? existing.timerSeconds;
+      existing.passingScore      = passingScore      ?? existing.passingScore;
       await existing.save();
       return res.json(existing);
     }
 
     const qcm = await QCM.create({
-      videoId,
+      scope,
+      videoId:   scope === 'video'   ? videoId   : null,
+      chapterId: scope === 'chapter' ? chapterId : null,
+      courseId:  scope === 'module'  ? courseId  : null,
       titre,
       questions,
       pointsPerQuestion: pointsPerQuestion ?? 10,
       timerSeconds:      timerSeconds      ?? 30,
+      passingScore:      passingScore      ?? 60,
     });
 
-    // Notify students by email about new QCM
+    // Notify students by email about new QCM (resolve course from scope)
     try {
       const { sendNotificationEmail } = await import('../services/emailService.js');
       const Course = (await import('../models/Course.js')).default;
-      const Video = (await import('../models/Video.js')).default;
+      const VideoModel = (await import('../models/Video.js')).default;
+      const Chapter = (await import('../models/Chapter.js')).default;
 
-      const video = await Video.findById(qcm.videoId);
-      if (video) {
-        const course = await Course.findById(video.courseId);
-        if (course) {
-          const students = await User.find({
-            role: 'etudiant',
-            filiere: course.filiere,
-            isActive: true
-          }).select('email prenom').limit(50);
+      let course = null;
+      if (qcm.scope === 'video' && qcm.videoId) {
+        const video = await VideoModel.findById(qcm.videoId);
+        if (video) course = await Course.findById(video.courseId);
+      } else if (qcm.scope === 'chapter' && qcm.chapterId) {
+        const chapter = await Chapter.findById(qcm.chapterId);
+        if (chapter) course = await Course.findById(chapter.courseId);
+      } else if (qcm.scope === 'module' && qcm.courseId) {
+        course = await Course.findById(qcm.courseId);
+      }
 
-          for (const student of students) {
-            if (student.email) {
-              sendNotificationEmail(
-                student.email,
-                'Nouveau QCM disponible',
-                `Un nouveau QCM <strong>"${qcm.titre}"</strong> est disponible pour le cours <strong>"${course.titre}"</strong>. Testez vos connaissances !`
-              );
-            }
+      if (course) {
+        const students = await User.find({
+          role: 'etudiant',
+          filiere: course.filiere,
+          isActive: true
+        }).select('email prenom').limit(50);
+
+        const scopeLabel = qcm.scope === 'video'   ? 'capsule'
+                         : qcm.scope === 'chapter' ? 'chapitre'
+                         : 'module';
+        for (const student of students) {
+          if (student.email) {
+            sendNotificationEmail(
+              student.email,
+              'Nouveau QCM disponible',
+              `Un nouveau QCM ${scopeLabel} <strong>"${qcm.titre}"</strong> est disponible pour le module <strong>"${course.titre}"</strong>. Testez vos connaissances !`
+            );
           }
         }
       }
@@ -121,6 +157,76 @@ export const getQCMByVideo = async (req, res) => {
       return res.json(sanitized);
     }
 
+    res.json(qcm);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   GET /api/qcm/chapter/:chapterId
+   Retourne le QCM de fin de chapitre (scope='chapter').
+═══════════════════════════════════════════════════════════════════════════ */
+export const getQCMByChapter = async (req, res) => {
+  try {
+    const qcm = await QCM.findOne({ scope: 'chapter', chapterId: req.params.chapterId })
+      .select('-resultats');
+    if (!qcm) return res.status(404).json({ message: 'Aucun QCM pour ce chapitre.' });
+
+    if (req.user.role === 'etudiant') {
+      // Pas de prérequis vidéo ici : c'est un QCM de chapitre, donc on
+      // suppose que l'étudiant a déjà passé les capsules (gate côté frontend).
+      const sanitized = {
+        _id:               qcm._id,
+        scope:             qcm.scope,
+        chapterId:         qcm.chapterId,
+        titre:             qcm.titre,
+        pointsPerQuestion: qcm.pointsPerQuestion,
+        timerSeconds:      qcm.timerSeconds,
+        passingScore:      qcm.passingScore,
+        questions: qcm.questions.map((q) => ({
+          _id:          q._id,
+          texte:        q.texte,
+          options:      q.options,
+          questionType: q.questionType ?? 'single',
+        })),
+      };
+      return res.json(sanitized);
+    }
+    res.json(qcm);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   GET /api/qcm/module/:courseId
+   Retourne le QCM final de module (scope='module').
+═══════════════════════════════════════════════════════════════════════════ */
+export const getQCMByModule = async (req, res) => {
+  try {
+    const qcm = await QCM.findOne({ scope: 'module', courseId: req.params.courseId })
+      .select('-resultats');
+    if (!qcm) return res.status(404).json({ message: 'Aucun QCM final pour ce module.' });
+
+    if (req.user.role === 'etudiant') {
+      const sanitized = {
+        _id:               qcm._id,
+        scope:             qcm.scope,
+        courseId:          qcm.courseId,
+        titre:             qcm.titre,
+        pointsPerQuestion: qcm.pointsPerQuestion,
+        timerSeconds:      qcm.timerSeconds,
+        passingScore:      qcm.passingScore,
+        questions: qcm.questions.map((q) => ({
+          _id:          q._id,
+          texte:        q.texte,
+          options:      q.options,
+          questionType: q.questionType ?? 'single',
+        })),
+      };
+      return res.json(sanitized);
+    }
     res.json(qcm);
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -193,35 +299,47 @@ export const submitQCM = async (req, res) => {
     });
     await qcm.save();
 
-    // Créditer les points via le service gamification
-    const Video = (await import('../models/Video.js')).default;
-    const video = await Video.findById(qcm.videoId).select('courseId');
+    // Résoudre le courseId selon le scope du QCM (pour Progress + badges)
+    let resolvedCourseId = null;
+    if (qcm.scope === 'video' && qcm.videoId) {
+      const VideoModel = (await import('../models/Video.js')).default;
+      const video = await VideoModel.findById(qcm.videoId).select('courseId');
+      if (video) resolvedCourseId = video.courseId;
+    } else if (qcm.scope === 'chapter' && qcm.chapterId) {
+      const Chapter = (await import('../models/Chapter.js')).default;
+      const chapter = await Chapter.findById(qcm.chapterId).select('courseId');
+      if (chapter) resolvedCourseId = chapter.courseId;
+    } else if (qcm.scope === 'module') {
+      resolvedCourseId = qcm.courseId;
+    }
 
     // Les points sont attribués UNIQUEMENT via addPoints() :
     //   - +10 pour avoir terminé le QCM
     //   - +pointsEarned (basé sur le score) → reflète le barème
     //   - +20 bonus si score > 80
-    // (avant ce fix, User.findByIdAndUpdate doublait pointsEarned)
+    // QCM de chapitre/module : bonus +50% (effort plus important).
     let pointsResult = null;
     try {
-      await addPoints(req.user.id, pointsEarned, 'qcm_score');
-      const baseResult = await addPoints(req.user.id, 10, 'qcm_completed');
+      const scopeMultiplier = qcm.scope === 'video' ? 1 : qcm.scope === 'chapter' ? 1.5 : 2;
+      const scoredPoints    = Math.round(pointsEarned * scopeMultiplier);
+      await addPoints(req.user.id, scoredPoints, `qcm_${qcm.scope}_score`);
+      const baseResult = await addPoints(req.user.id, 10, `qcm_${qcm.scope}_completed`);
       if (score > 80) {
-        pointsResult = await addPoints(req.user.id, 20, 'qcm_bonus');
-        pointsResult.earned = pointsEarned + 10 + 20;
+        pointsResult = await addPoints(req.user.id, 20, `qcm_${qcm.scope}_bonus`);
+        pointsResult.earned = scoredPoints + 10 + 20;
       } else {
         pointsResult = baseResult;
-        pointsResult.earned = pointsEarned + 10;
+        pointsResult.earned = scoredPoints + 10;
       }
-      if (video) {
-        await checkChampionBadge(video.courseId).catch(() => {});
+      if (resolvedCourseId) {
+        await checkChampionBadge(resolvedCourseId).catch(() => {});
       }
     } catch (_) { /* non-blocking */ }
 
     // Mettre à jour Progress
-    if (video) {
+    if (resolvedCourseId) {
       await Progress.findOneAndUpdate(
-        { userId: req.user.id, courseId: video.courseId },
+        { userId: req.user.id, courseId: resolvedCourseId },
         {
           $push:        { qcmScores: { qcmId: qcm._id, score } },
           lastActivity: new Date(),

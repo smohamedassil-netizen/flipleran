@@ -408,6 +408,49 @@ export default function StudentCourse() {
         <ModuleParcoursPanel courseId={courseId} />
       )}
 
+      {/* ── QCM final de module (Bloom Mastery Learning, 3e niveau d'évaluation) ── */}
+      {courseId && (
+        isProfOrAdmin ? (
+          <div style={{
+            padding: '12px 14px', marginBottom: 16, borderRadius: 10,
+            background: 'linear-gradient(135deg, #FEF3C7, #FFFEFA)',
+            borderLeft: '3px solid #E8A838', fontSize: 13, color: '#1E293B',
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap',
+          }}>
+            <span>
+              <strong style={{ color: '#92400E' }}>🏆 QCM final de module</strong> —
+              examen sommatif passé en fin de module pour valider l'ensemble des chapitres.
+            </span>
+            <button
+              type="button"
+              className="btn btn-accent btn-sm"
+              onClick={() => navigate(`/professor/module/${courseId}/qcm-final`)}
+            >
+              Créer / éditer le QCM final →
+            </button>
+          </div>
+        ) : (
+          <div style={{
+            padding: '12px 14px', marginBottom: 16, borderRadius: 10,
+            background: 'linear-gradient(135deg, #FEF3C7, #FFF7E1)',
+            borderLeft: '3px solid #E8A838', fontSize: 13, color: '#1E293B',
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap',
+          }}>
+            <span>
+              <strong style={{ color: '#92400E' }}>🏆 QCM final de module</strong> —
+              passe-le après avoir terminé tous les chapitres pour valider le module.
+            </span>
+            <button
+              type="button"
+              className="btn btn-accent btn-sm"
+              onClick={() => navigate(`/qcm/module/${courseId}`)}
+            >
+              Passer le QCM final →
+            </button>
+          </div>
+        )
+      )}
+
       <div className="responsive-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: 24, alignItems: 'start' }}>
 
         {/* ── Path scénarisé OU fallback liste de capsules ───────────────── */}

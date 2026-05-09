@@ -282,7 +282,7 @@ export default function ChaptersView({ courseId, isProfOrAdmin, onVideoClick }) 
                   </div>
                 )}
 
-                {/* Bouton entraînement chapitre */}
+                {/* Bouton entraînement chapitre (étudiant) */}
                 {!isProfOrAdmin && ch.practiceMode?.enabled && ch.videos.length > 0 && (
                   <button
                     type="button"
@@ -298,6 +298,47 @@ export default function ChaptersView({ courseId, isProfOrAdmin, onVideoClick }) 
                     }}
                   >
                     <Sparkles size={13} /> S'entraîner sur ce chapitre ({ch.practiceMode.questionCount} questions)
+                  </button>
+                )}
+
+                {/* QCM noté de fin de chapitre — étudiant : visible quand chapitre ≥ 80% */}
+                {!isProfOrAdmin && ch.videos.length > 0 && ch.completionPct >= 80 && (
+                  <button
+                    type="button"
+                    onClick={() => navigate(`/qcm/chapter/${ch._id}`)}
+                    style={{
+                      marginTop: 8, width: '100%',
+                      padding: '10px 12px',
+                      background: 'linear-gradient(135deg, #1B4F72, #2874A6)',
+                      color: 'white', border: 'none', borderRadius: 8,
+                      fontSize: 13, fontWeight: 700,
+                      cursor: 'pointer',
+                      display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                      boxShadow: '0 2px 8px rgba(27, 79, 114, 0.25)',
+                    }}
+                    title="Examen sommatif de fin de chapitre — score noté"
+                  >
+                    🎯 QCM de fin de chapitre
+                  </button>
+                )}
+
+                {/* Bouton "Créer / éditer QCM de chapitre" — prof uniquement */}
+                {isProfOrAdmin && (
+                  <button
+                    type="button"
+                    onClick={() => navigate(`/professor/chapter/${ch._id}/qcm`)}
+                    style={{
+                      marginTop: 12, width: '100%',
+                      padding: '8px 10px',
+                      background: '#F8FAFC',
+                      color: '#1B4F72',
+                      border: '1.5px dashed #1B4F72', borderRadius: 8,
+                      fontSize: 12, fontWeight: 600,
+                      cursor: 'pointer',
+                      display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                    }}
+                  >
+                    <GraduationCap size={13} /> Créer / éditer le QCM de fin de chapitre
                   </button>
                 )}
               </div>
