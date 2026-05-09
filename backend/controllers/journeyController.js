@@ -15,7 +15,7 @@ import Card from '../models/Card.js';
  *
  * Étapes :
  *   1. PRÉPARATION   — vidéos vues + QCM réussis
- *   2. RENDEZ-VOUS   — placeholder (pas de champ nextClassDate dans Course)
+ *   2. RENDEZ-VOUS   — info pédagogique (planning géré par l'université, hors FlipLearn)
  *   3. APPLICATION   — Prosits où l'étudiant est dans un groupe
  *   4. PRODUCTION    — Projects où l'étudiant est dans un groupe
  *   5. CONSOLIDATION — Cards à réviser (SM-2)
@@ -30,7 +30,7 @@ export const getMyJourney = async (req, res) => {
     const studentId = req.user.id;
     const { courseId } = req.params;
 
-    const course = await Course.findById(courseId).select('_id titre filiere promotion nextClassDate').lean();
+    const course = await Course.findById(courseId).select('_id titre filiere promotion').lean();
     if (!course) return res.status(404).json({ message: 'Cours introuvable' });
 
     /* ─── 1. PRÉPARATION ─────────────────────────────────────────────── */
@@ -63,22 +63,10 @@ export const getMyJourney = async (req, res) => {
     }
 
     /* ─── 2. RENDEZ-VOUS ─────────────────────────────────────────────── */
-    // Étape 2 du Cycle CAI : statut dérivé de Course.nextClassDate.
-    // Étudiant 'prêt' (upcoming) si la prépa est complète et la date est
-    // future ; 'in-progress' si la date est future mais la prépa pas finie ;
-    // 'completed' si la date est passée ; 'unknown' si aucune date renseignée.
-    const nextClassDate = course.nextClassDate || null;
-    let rendezvousStatus = 'unknown';
-    if (nextClassDate) {
-      const isFuture = new Date(nextClassDate).getTime() > Date.now();
-      if (preparationStatus === 'completed' && isFuture) {
-        rendezvousStatus = 'upcoming';
-      } else if (isFuture) {
-        rendezvousStatus = 'in-progress';
-      } else {
-        rendezvousStatus = 'completed';
-      }
-    }
+    // Étape 2 = info pédagogique. Le calendrier des séances en présentiel
+    // est défini par l'emploi du temps universitaire, pas par FlipLearn.
+    // Donc on ne calcule pas de "statut" ici : étape décorative dans le cycle.
+    const rendezvousStatus = 'info';
 
     /* ─── 3. APPLICATION (Prosits) ───────────────────────────────────── */
     const prosits = await Prosit.find({
@@ -147,15 +135,18 @@ export const getMyJourney = async (req, res) => {
 
     const consolidationStatus = preparationStatus === 'not-started' ? 'locked' : 'active';
 
-    /* ─── CYCLE PROGRESS (multiple de 20, naïf) ──────────────────────── */
+    /* ─── CYCLE PROGRESS ──────────────────────────────────────────────
+       L'étape 2 (RENDEZ-VOUS présentiel) est décorative : son statut
+       dépend de l'emploi du temps universitaire, pas de FlipLearn.
+       On calcule donc la progression sur les 4 étapes mesurables
+       (prép / appli / prod / consolidation) : 0, 25, 50, 75, 100 %. */
     const completedFlags = [
       preparationStatus === 'completed',
-      rendezvousStatus === 'completed', // étape 2 : cours présentiel passé
       applicationStatus === 'completed',
       productionStatus === 'completed',
       consolidationStatus === 'active' && cardsDue === 0 && cardsReviewed7d > 0,
     ];
-    const cycleProgress = completedFlags.filter(Boolean).length * 20;
+    const cycleProgress = completedFlags.filter(Boolean).length * 25;
 
     res.json({
       course: {
@@ -171,7 +162,6 @@ export const getMyJourney = async (req, res) => {
         },
         rendezvous: {
           status: rendezvousStatus,
-          nextClassDate,
         },
         application: {
           status: applicationStatus,

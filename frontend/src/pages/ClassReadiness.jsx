@@ -4,7 +4,7 @@ import Layout from '../components/Layout.jsx';
 import api from '../utils/api.js';
 import ReadinessRow from '../components/ReadinessRow.jsx';
 import { useToast } from '../context/useToast.js';
-import { ArrowLeft, BarChart3, Calendar, Lightbulb, Send, X } from 'lucide-react';
+import { ArrowLeft, BarChart3, Lightbulb, Send, X } from 'lucide-react';
 
 const DEFAULT_REMINDER_TEMPLATE = (courseTitre) =>
   `Bonjour, le prochain cours de "${courseTitre}" approche. Pense à regarder la capsule et faire le QCM avant — ça te permettra de profiter pleinement du présentiel. Bonne préparation !`;
@@ -169,34 +169,6 @@ export default function ClassReadiness() {
   const [modalResource, setModalResource] = useState(null);
   const [sending, setSending] = useState(false);
 
-  // C1.4 — Date du prochain cours présentiel (étape 2 du Cycle CAI)
-  const [nextClassDateInput, setNextClassDateInput] = useState('');
-  const [savingDate, setSavingDate] = useState(false);
-
-  // Initialiser le champ quand `data` arrive (data.course.nextClassDate)
-  useEffect(() => {
-    if (data?.course?.nextClassDate) {
-      const d = new Date(data.course.nextClassDate);
-      const pad = (n) => String(n).padStart(2, '0');
-      const local = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-      setNextClassDateInput(local);
-    }
-  }, [data?.course?.nextClassDate]);
-
-  const saveNextClassDate = async () => {
-    if (!nextClassDateInput) return;
-    setSavingDate(true);
-    try {
-      await api.put(`/courses/${courseId}`, { nextClassDate: nextClassDateInput });
-      success('Date du prochain cours enregistrée.');
-      load();
-    } catch (err) {
-      errorToast(err.response?.data?.message || 'Erreur enregistrement date.');
-    } finally {
-      setSavingDate(false);
-    }
-  };
-
   // C4 — Onglets : Préparation (existant) / Top blocages (nouveau)
   const [activeTab, setActiveTab] = useState('preparation');
   const [blocages, setBlocages] = useState(null);
@@ -246,26 +218,6 @@ export default function ClassReadiness() {
       <button onClick={() => navigate(-1)} style={{ background: 'none', border: 'none', color: '#1B4F72', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 0', fontSize: 14, fontWeight: 500 }}>
         <ArrowLeft size={16} /> Retour
       </button>
-
-      {/* C1.4 — Formulaire date du prochain cours (étape 2 du Cycle CAI) */}
-      <div className="card" style={{ padding: 12, marginBottom: 14, display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-        <Calendar size={18} color="#1B4F72" />
-        <span style={{ fontWeight: 600, fontSize: 14 }}>Prochain cours présentiel :</span>
-        <input
-          type="datetime-local"
-          value={nextClassDateInput}
-          onChange={(e) => setNextClassDateInput(e.target.value)}
-          className="form-input"
-          style={{ maxWidth: 220 }}
-        />
-        <button
-          className="btn btn-primary btn-sm"
-          onClick={saveNextClassDate}
-          disabled={savingDate || !nextClassDateInput}
-        >
-          {savingDate ? 'Enregistrement…' : 'Enregistrer'}
-        </button>
-      </div>
 
       {/* C5 — Bouton "Activer un Prosit" (boucle étape 2 → étape 3 du Cycle CAI) */}
       <div style={{ display: 'flex', gap: 8, marginBottom: 14, flexWrap: 'wrap' }}>
