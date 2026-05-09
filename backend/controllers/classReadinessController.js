@@ -177,3 +177,70 @@ export const remindStudents = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
+
+/**
+ * GET /api/class-readiness/:courseId/top-blocages
+ *
+ * Agrège les 3 questions QCM les plus ratées par les étudiants pour
+ * donner au prof un briefing rapide avant le cours présentiel.
+ * Proxy intelligent du Pulse Préparation (V2 : agrègera aussi les
+ * verbatim de la question ouverte).
+ *
+ * Sécurité : la route hérite de requireRole('professeur', 'admin')
+ * appliqué globalement dans classReadinessRoutes.js. On vérifie en
+ * plus que le prof est propriétaire du cours.
+ */
+export const getTopBlocages = async (req, res) => {
+  try {
+    const { courseId } = req.params;
+
+    const course = await Course.findById(courseId).select('_id professorId').lean();
+    if (!course) return res.status(404).json({ message: 'Cours introuvable' });
+
+    if (req.user.role !== 'admin' && course.professorId?.toString() !== req.user.id) {
+      return res.status(403).json({ message: 'Accès interdit.' });
+    }
+
+    const videos = await Video.find({ courseId }).select('_id titre').lean();
+    const videoIds = videos.map((v) => v._id);
+    const titreById = Object.fromEntries(videos.map((v) => [v._id.toString(), v.titre]));
+
+    const qcms = await QCM.find({ videoId: { $in: videoIds } })
+      .select('videoId questions resultats').lean();
+
+    const stats = [];
+    for (const qcm of qcms) {
+      const questionList = qcm.questions || [];
+      const results = qcm.resultats || [];
+      questionList.forEach((q, qIdx) => {
+        let attempts = 0;
+        let wrong = 0;
+        results.forEach((r) => {
+          const ans = (r.answers || [])[qIdx];
+          if (ans !== undefined && ans !== null) {
+            attempts++;
+            if (ans !== q.correctAnswer) wrong++;
+          }
+        });
+        if (attempts >= 2) {
+          stats.push({
+            videoTitre: titreById[qcm.videoId.toString()] || '—',
+            questionLabel: (q.label || q.texte || `Question ${qIdx + 1}`).slice(0, 100),
+            attempts,
+            wrong,
+            wrongRate: Math.round((wrong / attempts) * 100),
+          });
+        }
+      });
+    }
+
+    const top = stats
+      .filter((s) => s.wrongRate >= 30)
+      .sort((a, b) => b.wrongRate - a.wrongRate)
+      .slice(0, 3);
+
+    res.json({ top, totalQuestions: stats.length });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};

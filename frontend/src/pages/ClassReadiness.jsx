@@ -197,6 +197,20 @@ export default function ClassReadiness() {
     }
   };
 
+  // C4 — Onglets : Préparation (existant) / Top blocages (nouveau)
+  const [activeTab, setActiveTab] = useState('preparation');
+  const [blocages, setBlocages] = useState(null);
+  const [loadingBlocages, setLoadingBlocages] = useState(false);
+
+  useEffect(() => {
+    if (activeTab !== 'blocages') return;
+    setLoadingBlocages(true);
+    api.get(`/class-readiness/${courseId}/top-blocages`)
+      .then(({ data }) => setBlocages(data))
+      .catch(() => setBlocages({ top: [], totalQuestions: 0 }))
+      .finally(() => setLoadingBlocages(false));
+  }, [activeTab, courseId]);
+
   const load = () => {
     setLoading(true);
     setError('');
@@ -263,26 +277,95 @@ export default function ClassReadiness() {
         </p>
       </div>
 
-      {loading && (
-        <div className="card" style={{ padding: 20 }}>
-          <p>Chargement…</p>
+      {/* C4 — Barre d'onglets */}
+      <div style={{ display: 'flex', gap: 8, marginBottom: 16, borderBottom: '1px solid #E5E7EB' }}>
+        <button
+          onClick={() => setActiveTab('preparation')}
+          style={{
+            background: 'none', border: 'none',
+            padding: '8px 16px',
+            fontSize: 14, fontWeight: 600,
+            color: activeTab === 'preparation' ? '#1B4F72' : '#64748B',
+            borderBottom: activeTab === 'preparation' ? '2px solid #1B4F72' : '2px solid transparent',
+            cursor: 'pointer',
+            marginBottom: -1,
+          }}
+        >
+          Préparation
+        </button>
+        <button
+          onClick={() => setActiveTab('blocages')}
+          style={{
+            background: 'none', border: 'none',
+            padding: '8px 16px',
+            fontSize: 14, fontWeight: 600,
+            color: activeTab === 'blocages' ? '#1B4F72' : '#64748B',
+            borderBottom: activeTab === 'blocages' ? '2px solid #1B4F72' : '2px solid transparent',
+            cursor: 'pointer',
+            marginBottom: -1,
+          }}
+        >
+          Top blocages
+        </button>
+      </div>
+
+      {activeTab === 'preparation' && (
+        <>
+          {loading && (
+            <div className="card" style={{ padding: 20 }}>
+              <p>Chargement…</p>
+            </div>
+          )}
+
+          {!loading && error && (
+            <div className="alert alert-error" style={{ marginBottom: 14 }}>{error}</div>
+          )}
+
+          {!loading && !error && data && data.resources.length === 0 && (
+            <div className="empty-state" style={{ padding: 32 }}>
+              <p className="empty-state-title">Aucune ressource</p>
+              <p className="empty-state-desc">Ce cours n'a pas encore de vidéos ou de QCM.</p>
+            </div>
+          )}
+
+          {!loading && !error && data && data.resources.map((r) => (
+            <ReadinessRow key={r._id} resource={r} onRemind={(res) => setModalResource(res)} />
+          ))}
+        </>
+      )}
+
+      {activeTab === 'blocages' && (
+        <div>
+          <p style={{ fontSize: 13, color: '#64748B', marginBottom: 12 }}>
+            Agrégation des 3 questions QCM les plus ratées par tes étudiants
+            — utile pour cibler ton cours en présentiel.
+          </p>
+          {loadingBlocages ? (
+            <div className="card" style={{ padding: 20 }}><p>Chargement…</p></div>
+          ) : !blocages || blocages.top.length === 0 ? (
+            <div className="card" style={{ padding: 14 }}>
+              <p style={{ fontSize: 13, color: '#64748B', margin: 0 }}>
+                Aucun blocage majeur détecté (≥30% d'échec) sur les questions
+                tentées au moins 2 fois. Ta classe maîtrise le module.
+              </p>
+            </div>
+          ) : (
+            blocages.top.map((b, i) => (
+              <div key={i} className="card" style={{ padding: 14, marginBottom: 10, borderLeft: '4px solid #EF4444' }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: '#64748B', letterSpacing: 0.5 }}>
+                  #{i + 1} — {b.videoTitre}
+                </div>
+                <div style={{ fontSize: 14, fontWeight: 600, marginTop: 4 }}>
+                  {b.questionLabel}
+                </div>
+                <div style={{ fontSize: 12, color: '#B91C1C', marginTop: 6 }}>
+                  {b.wrong}/{b.attempts} étudiants ont raté ({b.wrongRate}% d'échec)
+                </div>
+              </div>
+            ))
+          )}
         </div>
       )}
-
-      {!loading && error && (
-        <div className="alert alert-error" style={{ marginBottom: 14 }}>{error}</div>
-      )}
-
-      {!loading && !error && data && data.resources.length === 0 && (
-        <div className="empty-state" style={{ padding: 32 }}>
-          <p className="empty-state-title">Aucune ressource</p>
-          <p className="empty-state-desc">Ce cours n'a pas encore de vidéos ou de QCM.</p>
-        </div>
-      )}
-
-      {!loading && !error && data && data.resources.map((r) => (
-        <ReadinessRow key={r._id} resource={r} onRemind={(res) => setModalResource(res)} />
-      ))}
 
       {modalResource && (
         <RemindModal
