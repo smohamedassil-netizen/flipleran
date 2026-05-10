@@ -1,10 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
 import api from '../utils/api.js';
 import {
   ArrowLeft, Plus, Trash2, Save, AlertCircle, X, BookOpen, Wand2,
+  ChevronDown, ChevronRight, Lock, Lightbulb,
 } from 'lucide-react';
 import { logError } from '../utils/logger.js';
 
@@ -52,6 +53,14 @@ export default function ProjectCreate() {
   const [linkedCasPratiqueId, setLinkedCasPratiqueId] = useState('');
   const [casPratiques, setCasPratiques] = useState([]);
 
+  // Phase 3 (2026-05) — déblocage progressif :
+  // chapitres + cas pratiques disponibles pour le module sélectionné, qui
+  // alimentent les multi-selects de chaque phase.unlockRules.
+  const [chaptersByCourse, setChaptersByCourse]         = useState([]);
+  const [casPratiquesByCourse, setCasPratiquesByCourse] = useState([]);
+  // index → boolean pour replier/déplier les sections "Conditions de déblocage"
+  const [expandedUnlock, setExpandedUnlock]             = useState({});
+
   const [saving, setSaving] = useState(false);
   const [error, setError]   = useState('');
 
@@ -94,6 +103,29 @@ export default function ProjectCreate() {
       setFromTemplateName(tpl.title || '');
     } catch (e) { logError('prefill error:', e); }
   }, []);
+
+  /* Phase 3 — Charger chapitres + cas pratiques du module sélectionné pour
+     alimenter les multi-selects de phase.unlockRules. Si pas de courseId
+     (projet groupe/pfe), on charge le 1er module sélectionné dans moduleIds.
+     Toléré silencieusement si endpoints indisponibles. */
+  useEffect(() => {
+    const cid = type === 'mono' ? courseId : moduleIds[0] || '';
+    if (!cid) {
+      setChaptersByCourse([]);
+      setCasPratiquesByCourse([]);
+      return;
+    }
+    api.get(`/courses/${cid}/chapters`)
+      .then(({ data }) => {
+        // listChapters renvoie { chapters, orphans } — on garde chapters
+        const list = Array.isArray(data?.chapters) ? data.chapters : (Array.isArray(data) ? data : []);
+        setChaptersByCourse(list);
+      })
+      .catch(() => setChaptersByCourse([]));
+    api.get('/cas-pratiques', { params: { courseId: cid } })
+      .then(({ data }) => setCasPratiquesByCourse(Array.isArray(data) ? data : []))
+      .catch(() => setCasPratiquesByCourse([]));
+  }, [type, courseId, moduleIds]);
 
   /* F8 — Charge le template phases + rubric à chaque changement de type,
      SAUF si l'utilisateur a déjà touché manuellement à la liste des phases. */
@@ -150,6 +182,75 @@ export default function ProjectCreate() {
     });
   };
 
+  /* Phase 3 — Helpers unlockRules + sourceCasPratiqueId par phase */
+  const ensureUnlockRules = (phase) => phase.unlockRules || {
+    chapterIds: [],
+    casPratiqueIds: [],
+    requiresAllChapters: true,
+    requiresAllCasPratiques: true,
+  };
+
+  const togglePhaseUnlockChapter = (phaseIndex, chapterId) => {
+    setPhasesTouched(true);
+    setPhases((prev) => {
+      const updated = [...prev];
+      const rules = ensureUnlockRules(updated[phaseIndex]);
+      const list = rules.chapterIds || [];
+      const next = list.includes(chapterId)
+        ? list.filter((id) => id !== chapterId)
+        : [...list, chapterId];
+      updated[phaseIndex] = { ...updated[phaseIndex], unlockRules: { ...rules, chapterIds: next } };
+      return updated;
+    });
+  };
+
+  const togglePhaseUnlockCasPratique = (phaseIndex, casPratiqueId) => {
+    setPhasesTouched(true);
+    setPhases((prev) => {
+      const updated = [...prev];
+      const rules = ensureUnlockRules(updated[phaseIndex]);
+      const list = rules.casPratiqueIds || [];
+      const next = list.includes(casPratiqueId)
+        ? list.filter((id) => id !== casPratiqueId)
+        : [...list, casPratiqueId];
+      updated[phaseIndex] = { ...updated[phaseIndex], unlockRules: { ...rules, casPratiqueIds: next } };
+      return updated;
+    });
+  };
+
+  const setPhaseRequiresAll = (phaseIndex, key, value) => {
+    setPhasesTouched(true);
+    setPhases((prev) => {
+      const updated = [...prev];
+      const rules = ensureUnlockRules(updated[phaseIndex]);
+      updated[phaseIndex] = { ...updated[phaseIndex], unlockRules: { ...rules, [key]: value } };
+      return updated;
+    });
+  };
+
+  const setPhaseSourceCasPratique = (phaseIndex, value) => {
+    setPhasesTouched(true);
+    setPhases((prev) => {
+      const updated = [...prev];
+      updated[phaseIndex] = { ...updated[phaseIndex], sourceCasPratiqueId: value || null };
+      return updated;
+    });
+  };
+
+  /* Validation locale : si sourceCasPratiqueId est défini, il doit être inclus
+     dans unlockRules.casPratiqueIds — sinon l'étudiant ne pourrait jamais
+     atteindre la phase pour utiliser le bouton "Importer livrable". */
+  const phasesValidationErrors = useMemo(() => {
+    return phases.map((p) => {
+      if (!p.sourceCasPratiqueId) return null;
+      const list = (p.unlockRules?.casPratiqueIds || []).map(String);
+      if (!list.includes(String(p.sourceCasPratiqueId))) {
+        return 'Le cas pratique source doit aussi être listé dans les "Études de cas requises".';
+      }
+      return null;
+    });
+  }, [phases]);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
@@ -164,6 +265,13 @@ export default function ProjectCreate() {
     if (phases.length === 0) return setError('Ajoutez au moins une phase.');
     if (phases.some(p => !p.titre.trim())) return setError('Toutes les phases doivent avoir un titre.');
 
+    // Phase 3 — Validation cohérence sourceCasPratiqueId / unlockRules
+    const firstInvalid = phasesValidationErrors.findIndex((e) => e);
+    if (firstInvalid !== -1) {
+      setExpandedUnlock((prev) => ({ ...prev, [firstInvalid]: true }));
+      return setError(`Phase ${firstInvalid + 1} : ${phasesValidationErrors[firstInvalid]}`);
+    }
+
     setSaving(true);
     try {
       const payload = {
@@ -173,13 +281,29 @@ export default function ProjectCreate() {
         enonce: enonce.trim(),
         motsCles,
         // F8 : on envoie phases enrichies (avec description/weight/livrableSpec quand fournies par le template)
-        phases: phases.map(p => ({
-          titre: p.titre.trim(),
-          description: p.description || '',
-          weight: p.weight ?? 0,
-          livrableSpec: p.livrableSpec || null,
-          statut: 'a_faire',
-        })),
+        // Phase 3 : on ajoute unlockRules + sourceCasPratiqueId si configurés
+        phases: phases.map(p => {
+          const out = {
+            titre: p.titre.trim(),
+            description: p.description || '',
+            weight: p.weight ?? 0,
+            livrableSpec: p.livrableSpec || null,
+            statut: 'a_faire',
+          };
+          const rules = p.unlockRules;
+          if (rules && ((rules.chapterIds?.length || 0) + (rules.casPratiqueIds?.length || 0) > 0)) {
+            out.unlockRules = {
+              chapterIds: rules.chapterIds || [],
+              casPratiqueIds: rules.casPratiqueIds || [],
+              requiresAllChapters: rules.requiresAllChapters !== false,
+              requiresAllCasPratiques: rules.requiresAllCasPratiques !== false,
+            };
+          }
+          if (p.sourceCasPratiqueId) {
+            out.sourceCasPratiqueId = p.sourceCasPratiqueId;
+          }
+          return out;
+        }),
         // F8 : la rubric est issue du template (modifiable plus tard via PUT /rubric)
         rubric: rubricFromTemplate,
       };
@@ -497,31 +621,254 @@ export default function ProjectCreate() {
               </button>
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {phases.map((phase, i) => (
-                <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                  <div style={{
-                    width: 28, height: 28, flexShrink: 0,
-                    borderRadius: 'var(--radius-sm)',
-                    backgroundColor: 'var(--color-primary-light)',
-                    color: 'var(--color-primary)',
-                    fontWeight: 700, fontSize: 'var(--font-size-xs)',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  }}>
-                    {i + 1}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {phases.map((phase, i) => {
+                const isExpanded = !!expandedUnlock[i];
+                const rules = phase.unlockRules || {};
+                const chapterCount = (rules.chapterIds || []).length;
+                const cpCount = (rules.casPratiqueIds || []).length;
+                const hasRules = chapterCount + cpCount > 0;
+                const hasImport = !!phase.sourceCasPratiqueId;
+                const validationErr = phasesValidationErrors[i];
+                const cidForLookup = type === 'mono' ? courseId : moduleIds[0] || '';
+
+                return (
+                  <div
+                    key={i}
+                    style={{
+                      borderRadius: 10,
+                      border: `1px solid ${validationErr ? '#FCA5A5' : '#E2E8F0'}`,
+                      overflow: 'hidden',
+                      background: validationErr ? '#FFF5F5' : '#FFFFFF',
+                    }}
+                  >
+                    {/* Ligne principale : numéro + titre + bouton supprimer */}
+                    <div style={{ display: 'flex', gap: 8, alignItems: 'center', padding: 10 }}>
+                      <div style={{
+                        width: 28, height: 28, flexShrink: 0,
+                        borderRadius: 'var(--radius-sm)',
+                        backgroundColor: 'var(--color-primary-light)',
+                        color: 'var(--color-primary)',
+                        fontWeight: 700, fontSize: 'var(--font-size-xs)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      }}>
+                        {i + 1}
+                      </div>
+                      <input
+                        className="form-input"
+                        style={{ flex: 1 }}
+                        placeholder={`Phase ${i + 1}`}
+                        value={phase.titre}
+                        onChange={(e) => updatePhase(i, e.target.value)}
+                      />
+                      <button
+                        type="button"
+                        className="btn btn-ghost btn-sm"
+                        onClick={() => removePhase(i)}
+                        style={{ color: '#e74c3c', padding: '4px 8px' }}
+                        disabled={phases.length <= 1}
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+
+                    {/* Toggle "Conditions de déblocage" */}
+                    <button
+                      type="button"
+                      onClick={() => setExpandedUnlock((prev) => ({ ...prev, [i]: !prev[i] }))}
+                      aria-expanded={isExpanded}
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: 6, width: '100%',
+                        padding: '8px 12px', background: '#F8FAFC',
+                        border: 'none', borderTop: '1px solid #E2E8F0',
+                        cursor: 'pointer', textAlign: 'left',
+                        fontSize: 12, color: '#475569', fontWeight: 600,
+                      }}
+                    >
+                      {isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                      <Lock size={13} color="#1B4F72" />
+                      <span>Conditions de déblocage</span>
+                      {hasRules && (
+                        <span style={{
+                          marginLeft: 6, padding: '1px 8px', borderRadius: 999,
+                          background: '#EFF6FF', color: '#1B4F72',
+                          fontSize: 11, fontWeight: 700,
+                        }}>
+                          {chapterCount > 0 && `${chapterCount} chap.`}
+                          {chapterCount > 0 && cpCount > 0 && ' · '}
+                          {cpCount > 0 && `${cpCount} cas`}
+                        </span>
+                      )}
+                      {hasImport && (
+                        <span style={{
+                          marginLeft: 4, padding: '1px 8px', borderRadius: 999,
+                          background: '#FEF3C7', color: '#92400E',
+                          fontSize: 11, fontWeight: 700,
+                        }}>
+                          import livrable
+                        </span>
+                      )}
+                      {validationErr && (
+                        <span style={{ marginLeft: 'auto', color: '#DC2626', fontSize: 11, fontWeight: 700 }}>
+                          ⚠ erreur
+                        </span>
+                      )}
+                    </button>
+
+                    {/* Contenu replié */}
+                    {isExpanded && (
+                      <div style={{ padding: 14, borderTop: '1px solid #E2E8F0', background: '#FCFCFD' }}>
+                        {!cidForLookup ? (
+                          <p style={{ fontSize: 12.5, color: '#94A3B8', fontStyle: 'italic', margin: 0 }}>
+                            Sélectionne d'abord un module pour configurer les prérequis.
+                          </p>
+                        ) : (
+                          <>
+                            {/* Chapitres requis */}
+                            <div style={{ marginBottom: 14 }}>
+                              <p style={{ fontSize: 12, fontWeight: 600, color: '#475569', margin: '0 0 6px' }}>
+                                Chapitres requis (
+                                {chaptersByCourse.length === 0
+                                  ? 'aucun chapitre dans ce module'
+                                  : `${chaptersByCourse.length} disponibles`}
+                                )
+                              </p>
+                              {chaptersByCourse.length === 0 ? (
+                                <p style={{ fontSize: 11.5, color: '#94A3B8', fontStyle: 'italic', margin: 0 }}>
+                                  Crée des chapitres dans ce module pour les utiliser comme prérequis.
+                                </p>
+                              ) : (
+                                <div style={{
+                                  display: 'flex', flexDirection: 'column', gap: 4,
+                                  maxHeight: 180, overflowY: 'auto',
+                                  border: '1px solid #E2E8F0', borderRadius: 6, padding: 4, background: '#fff',
+                                }}>
+                                  {chaptersByCourse.map((ch) => {
+                                    const checked = (rules.chapterIds || []).map(String).includes(String(ch._id));
+                                    return (
+                                      <label
+                                        key={ch._id}
+                                        style={{
+                                          display: 'flex', alignItems: 'center', gap: 8,
+                                          padding: '5px 8px', borderRadius: 4,
+                                          background: checked ? '#EFF6FF' : 'transparent',
+                                          cursor: 'pointer', fontSize: 12.5, color: '#1E293B',
+                                        }}
+                                      >
+                                        <input
+                                          type="checkbox"
+                                          checked={checked}
+                                          onChange={() => togglePhaseUnlockChapter(i, ch._id)}
+                                        />
+                                        <span>{ch.titre}</span>
+                                      </label>
+                                    );
+                                  })}
+                                </div>
+                              )}
+                              {chapterCount > 1 && (
+                                <label style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 6, fontSize: 11.5, color: '#64748B' }}>
+                                  <input
+                                    type="checkbox"
+                                    checked={rules.requiresAllChapters !== false}
+                                    onChange={(e) => setPhaseRequiresAll(i, 'requiresAllChapters', e.target.checked)}
+                                  />
+                                  Toutes les conditions (sinon : au moins un chapitre suffit)
+                                </label>
+                              )}
+                            </div>
+
+                            {/* Cas pratiques requis */}
+                            <div style={{ marginBottom: 14 }}>
+                              <p style={{ fontSize: 12, fontWeight: 600, color: '#475569', margin: '0 0 6px' }}>
+                                Études de cas requises (
+                                {casPratiquesByCourse.length === 0
+                                  ? 'aucune disponible'
+                                  : `${casPratiquesByCourse.length} disponibles`}
+                                )
+                              </p>
+                              {casPratiquesByCourse.length === 0 ? (
+                                <p style={{ fontSize: 11.5, color: '#94A3B8', fontStyle: 'italic', margin: 0 }}>
+                                  Crée et évalue des études de cas dans ce module pour les utiliser comme prérequis.
+                                </p>
+                              ) : (
+                                <div style={{
+                                  display: 'flex', flexDirection: 'column', gap: 4,
+                                  maxHeight: 180, overflowY: 'auto',
+                                  border: '1px solid #E2E8F0', borderRadius: 6, padding: 4, background: '#fff',
+                                }}>
+                                  {casPratiquesByCourse.map((cp) => {
+                                    const checked = (rules.casPratiqueIds || []).map(String).includes(String(cp._id));
+                                    return (
+                                      <label
+                                        key={cp._id}
+                                        style={{
+                                          display: 'flex', alignItems: 'center', gap: 8,
+                                          padding: '5px 8px', borderRadius: 4,
+                                          background: checked ? '#FEF3C7' : 'transparent',
+                                          cursor: 'pointer', fontSize: 12.5, color: '#1E293B',
+                                        }}
+                                      >
+                                        <input
+                                          type="checkbox"
+                                          checked={checked}
+                                          onChange={() => togglePhaseUnlockCasPratique(i, cp._id)}
+                                        />
+                                        <span>{cp.titre}</span>
+                                        <span style={{ marginLeft: 'auto', fontSize: 10, color: '#94A3B8' }}>
+                                          {cp.statut || '-'}
+                                        </span>
+                                      </label>
+                                    );
+                                  })}
+                                </div>
+                              )}
+                              {cpCount > 1 && (
+                                <label style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 6, fontSize: 11.5, color: '#64748B' }}>
+                                  <input
+                                    type="checkbox"
+                                    checked={rules.requiresAllCasPratiques !== false}
+                                    onChange={(e) => setPhaseRequiresAll(i, 'requiresAllCasPratiques', e.target.checked)}
+                                  />
+                                  Toutes les conditions (sinon : au moins un cas pratique suffit)
+                                </label>
+                              )}
+                            </div>
+
+                            {/* Réutilisation livrable */}
+                            <div>
+                              <p style={{ fontSize: 12, fontWeight: 600, color: '#475569', margin: '0 0 6px', display: 'flex', alignItems: 'center', gap: 6 }}>
+                                <Lightbulb size={13} color="#D97706" />
+                                Réutilisation du livrable (optionnel)
+                              </p>
+                              <select
+                                className="form-input"
+                                style={{ width: '100%', fontSize: 12.5 }}
+                                value={phase.sourceCasPratiqueId || ''}
+                                onChange={(e) => setPhaseSourceCasPratique(i, e.target.value)}
+                                disabled={casPratiquesByCourse.length === 0}
+                              >
+                                <option value="">— Aucun (l'étudiant repart de zéro) —</option>
+                                {casPratiquesByCourse.map((cp) => (
+                                  <option key={cp._id} value={cp._id}>{cp.titre}</option>
+                                ))}
+                              </select>
+                              <p style={{ fontSize: 11, color: '#64748B', margin: '4px 0 0' }}>
+                                Si défini, l'étudiant verra un bouton « Importer mon livrable » pour reprendre son travail du cas pratique.
+                              </p>
+                              {validationErr && (
+                                <p style={{ fontSize: 11.5, color: '#DC2626', margin: '6px 0 0', fontWeight: 600 }}>
+                                  ⚠ {validationErr}
+                                </p>
+                              )}
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    )}
                   </div>
-                  <input
-                    className="form-input"
-                    style={{ flex: 1 }}
-                    placeholder={`Phase ${i + 1}`}
-                    value={phase.titre}
-                    onChange={(e) => updatePhase(i, e.target.value)}
-                  />
-                  <button type="button" className="btn btn-ghost btn-sm" onClick={() => removePhase(i)} style={{ color: '#e74c3c', padding: '4px 8px' }} disabled={phases.length <= 1}>
-                    <Trash2 size={14} />
-                  </button>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
 

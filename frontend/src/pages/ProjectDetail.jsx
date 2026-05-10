@@ -7,6 +7,7 @@ import { ProjectProgressWidget, PhaseChecklist, IdeasPanel } from '../components
 import CoachAIPanel from '../components/CoachAIPanel.jsx';
 import ProjectForum from '../components/ProjectForum.jsx';
 import ProjectPeerReviewPanel from '../components/ProjectPeerReviewPanel.jsx';
+import PhasesProgressionMatrix from '../components/PhasesProgressionMatrix.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
 import api from '../utils/api.js';
 import { capitalizeWords, formatFullName } from '../utils/format.js';
@@ -1117,6 +1118,13 @@ export default function ProjectDetail() {
           )}
         </div>
       </div>
+
+      {/* ── Refonte 2026-05 — Matrice de progression étudiants × phases (prof) ──
+         Affichée tout en bas du contenu, avant les modals. Visible côté prof
+         uniquement ; mode élève pas concerné (il a sa propre vue /my-phases). */}
+      {isProfOrAdmin && project?.phases?.length > 0 && (
+        <PhasesProgressionMatrix project={project} />
+      )}
 
       {/* ══════════════════════════════════════════════════════════════════════
          Modals
