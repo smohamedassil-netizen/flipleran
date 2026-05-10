@@ -2,23 +2,26 @@
  * seed-isil-l3-demo.js — Seed démo articulation Cas Pratique ↔ Projet.
  *
  * Sub-commands :
- *   --cleanup-only  → supprime tout document marqué [DEMO_SEED] dans description
- *   --seed          → seed sans cleanup préalable (idempotent SI cleanup déjà fait)
- *   --full          → cleanup + seed (recommandé)
+ *   --cleanup-only       → supprime tout document marqué [DEMO_SEED]
+ *   --seed               → seed sans cleanup préalable (idempotent SI cleanup déjà fait)
+ *   --full               → cleanup + seed
+ *   --module=cybersec|gl|ia|all   (default: all)
  *
  * Marqueur de démo : `[DEMO_SEED]` en suffixe dans la description des documents
- * (Course, Chapter, Video, QCM, Prosit, Project). Permet un cleanup chirurgical
- * sans toucher au contenu pédagogique réel.
+ * (Course, Chapter, Video, Prosit, Project) ou dans le titre des QCM (qui n'ont
+ * pas de champ description). Permet un cleanup chirurgical sans toucher au
+ * contenu pédagogique réel non tagué.
  *
- * Modules ciblés (3 phases) :
- *   Phase 2 : Cybersécurité & Cloud DevOps (état AVANCÉ ~80%)
- *   Phase 3 : Génie Logiciel & UML (état MILIEU ~50%)         — TODO
+ * Modules ciblés :
+ *   Phase 2 : Cybersécurité & Cloud DevOps (état AVANCÉ ~80%) — DONE
+ *   Phase 3 : Génie Logiciel & UML (état MILIEU ~50%)         — DONE
  *   Phase 4 : IA & Data Mining (état DÉBUT ~10%)              — TODO
  *
  * Validation YouTube : oEmbed API (plus fiable que HEAD).
  *
  * Usage :
- *   node scripts/seed-isil-l3-demo.js --full
+ *   node scripts/seed-isil-l3-demo.js --full --module=all
+ *   node scripts/seed-isil-l3-demo.js --full --module=gl
  */
 import 'dotenv/config';
 import mongoose from 'mongoose';
@@ -113,6 +116,189 @@ const CYBERSEC_VIDEOS = {
 // si jamais une URL devient inaccessible plus tard. Stable car chaîne FR très active.
 const VIDEO_FALLBACK_ID = 'zjEIFFi8Izg';
 const VIDEO_FALLBACK_NOTE = ' [DEMO_SEED — vidéo de remplacement (URL originale invalide)]';
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   YOUTUBE LIBRARY — Génie Logiciel & UML
+   Réutilisation des IDs Phase 2 validés (autorisé par le brief Phase 3) avec
+   titres adaptés. Les IDs sont garantis 200 OK via oEmbed (validés en Phase 2).
+   Note dans la description : [DEMO_SEED — placeholder vidéo réutilisée].
+═══════════════════════════════════════════════════════════════════════════ */
+
+const GL_VIDEO_NOTE_REUSED = ' [DEMO_SEED — vidéo placeholder réutilisée de Phase 2 cybersec, à remplacer par contenu GL réel en démo]';
+
+const GL_VIDEOS = {
+  /* CH1 — Introduction au génie logiciel (cycles V, agile, SCRUM) */
+  ch1: [
+    { ytId: 'zjEIFFi8Izg', titre: 'Cycles de vie & culture sysadmin', description: 'Panorama des cycles de vie logiciel (cascade, V, agile) et culture professionnelle.', duration: 600 },
+    { ytId: 'RpdDIzkAk_Q', titre: 'Méthodes agiles & SCRUM — tendances', description: 'Tendances actuelles, agile vs cycle V, présentation SCRUM (sprints, backlog, rétrospective).', duration: 720 },
+    { ytId: '5FeygmD1fx0', titre: 'Pratiques pro & DevOps', description: 'Du dev au déploiement, intégration continue, qualité de code, hygiène projet.', duration: 540 },
+  ],
+  /* CH2 — Modélisation UML — Cas d'utilisation */
+  ch2: [
+    { ytId: 'A2-YImhNVMU', titre: 'Modélisation des besoins & spec', description: 'Comment formaliser les besoins en cas d\'utilisation : acteurs, scénarios, exigences fonctionnelles.', duration: 660 },
+    { ytId: 'V27fNfRNHkg', titre: 'Cas d\'utilisation — principes', description: 'Diagramme de cas d\'utilisation UML, relations include/extend, niveaux de détail.', duration: 720 },
+    { ytId: 'Goh18xP5yvA', titre: 'Cahier des charges — bonnes pratiques', description: 'Rédaction d\'un cahier des charges en 10 minutes, structure, critères d\'acceptation.', duration: 480 },
+  ],
+  /* CH3 — Diagrammes de classes & d'objets */
+  ch3: [
+    { ytId: 'GSIDS_lvRv4', titre: 'Modélisation orientée objet', description: 'Classes, attributs, méthodes, héritage, encapsulation. Bases du diagramme de classes UML.', duration: 660 },
+    { ytId: 'b4b8ktEV4Bg', titre: 'Relations & associations', description: 'Aggrégation, composition, dépendance, multiplicité, navigabilité.', duration: 600 },
+    { ytId: 'Dk-ZqQ-bfy4', titre: 'Clean code & cohésion', description: 'Diagramme de classes propre : cohésion forte, couplage faible, principes SOLID.', duration: 540 },
+  ],
+  /* CH4 — Diagrammes de séquence & d'activité */
+  ch4: [
+    { ytId: '_jKylhJtPmI', titre: 'Diagramme de séquence', description: 'Flux d\'interaction entre objets, lignes de vie, messages synchrones/asynchrones.', duration: 600 },
+    { ytId: 'EoaDgUgS6QA', titre: 'Diagramme d\'activité', description: 'Workflow métier, branchements, parallélisme, swimlanes.', duration: 540 },
+    { ytId: '3FNYvj2U0HM', titre: 'Scénarios d\'usage & tests', description: 'Du diagramme dynamique aux scénarios de test, traçabilité besoin → test.', duration: 660 },
+  ],
+  /* CH5 — Patterns de conception (GoF) */
+  ch5: [
+    { ytId: 'k1-nGEEEKoo', titre: 'Anti-patterns à éviter', description: 'God object, spaghetti code, copy-paste, comment les détecter et les refactoriser.', duration: 720 },
+    { ytId: 'xe9LN2w7hfE', titre: 'Patterns créationnels (Singleton, Factory)', description: 'Les patterns Gang of Four — création d\'objets : Singleton, Factory Method, Builder.', duration: 900 },
+    { ytId: 'zjEIFFi8Izg', titre: 'Patterns structurels & comportementaux', description: 'Adapter, Decorator, Observer, Strategy. Quand et pourquoi les appliquer.', duration: 600 },
+  ],
+};
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   QCM LIBRARY — Génie Logiciel
+═══════════════════════════════════════════════════════════════════════════ */
+
+const GL_VIDEO_QCM = {
+  'ch1:0': { titre: 'Cycles de vie logiciel', questions: [
+    { texte: 'Le cycle en V se distingue de la cascade par…', options: { A: 'rien', B: 'des phases de validation/vérification miroir des phases de spécification', C: 'l\'absence de tests', D: 'sa rapidité' }, correctAnswer: 'B', explanation: 'Chaque phase descendante a sa contrepartie de tests/validation.' },
+    { texte: 'L\'avantage principal d\'agile sur le cycle V est…', options: { A: 'plus de docs', B: 'adaptation aux changements de besoins', C: 'pas de tests', D: 'pas de spec' }, correctAnswer: 'B', explanation: 'Itérations courtes + feedback continu = adaptation.' },
+    { texte: 'Un sprint SCRUM dure typiquement…', options: { A: '1 jour', B: '2-4 semaines', C: '6 mois', D: '1 an' }, correctAnswer: 'B', explanation: 'Sprints courts pour boucle feedback rapide.' },
+  ]},
+  'ch1:1': { titre: 'SCRUM — bases', questions: [
+    { texte: 'Qui est responsable du backlog produit ?', options: { A: 'le développeur', B: 'le Product Owner', C: 'le Scrum Master', D: 'le client' }, correctAnswer: 'B', explanation: 'Le PO priorise et maintient le backlog.' },
+    { texte: 'La rétrospective sert à…', options: { A: 'planifier le sprint suivant', B: 'améliorer le processus de l\'équipe', C: 'présenter le produit', D: 'recruter' }, correctAnswer: 'B', explanation: 'Inspect & adapt sur la façon de travailler.' },
+    { texte: 'Le daily stand-up dure…', options: { A: '5 min', B: '15 min max', C: '1h', D: 'la journée' }, correctAnswer: 'B', explanation: 'Rapide, focus, debout pour rester court.' },
+  ]},
+  'ch1:2': { titre: 'CI/CD & qualité', questions: [
+    { texte: 'CI signifie…', options: { A: 'Continuous Improvement', B: 'Continuous Integration — merge fréquent + build/test auto', C: 'Code Inspection', D: 'rien' }, correctAnswer: 'B', explanation: 'Intégration fréquente sur main, validée par CI.' },
+    { texte: 'Le linting sert à…', options: { A: 'compiler', B: 'détecter automatiquement style + erreurs courantes', C: 'tester unitairement', D: 'déployer' }, correctAnswer: 'B', explanation: 'ESLint, Prettier, etc. — qualité statique.' },
+    { texte: 'TDD = ?', options: { A: 'Test Driven Design', B: 'Test Driven Development — tests écrits avant le code', C: 'Tests Done Daily', D: 'aucun' }, correctAnswer: 'B', explanation: 'Red-Green-Refactor.' },
+  ]},
+  'ch2:0': { titre: 'Cas d\'utilisation', questions: [
+    { texte: 'Un acteur dans un cas d\'utilisation est…', options: { A: 'toujours un humain', B: 'humain OU système externe interagissant avec le système modélisé', C: 'jamais externe', D: 'aucun' }, correctAnswer: 'B', explanation: 'Acteur = entité externe, humaine ou système.' },
+    { texte: 'Une exigence "non fonctionnelle" est par exemple…', options: { A: 'authentifier l\'utilisateur', B: 'temps de réponse < 200ms', C: 'créer un compte', D: 'supprimer un produit' }, correctAnswer: 'B', explanation: 'Non fonctionnel = qualité (perf, sécurité, dispo).' },
+    { texte: 'Un cas d\'utilisation décrit…', options: { A: 'la structure du code', B: 'une interaction acteur-système avec un objectif', C: 'le déploiement', D: 'aucun' }, correctAnswer: 'B', explanation: 'Use case = scénario fonctionnel.' },
+  ]},
+  'ch2:1': { titre: 'Diagramme cas d\'utilisation UML', questions: [
+    { texte: 'La relation <<include>> indique…', options: { A: 'une dépendance optionnelle', B: 'une inclusion obligatoire d\'un sous-cas', C: 'un héritage', D: 'rien' }, correctAnswer: 'B', explanation: 'Sous-cas réutilisable, toujours appelé.' },
+    { texte: 'La relation <<extend>> indique…', options: { A: 'identique à include', B: 'une extension optionnelle conditionnelle', C: 'composition', D: 'rien' }, correctAnswer: 'B', explanation: 'Cas étendu : optionnel, sous condition.' },
+    { texte: 'Le système est représenté par…', options: { A: 'un cercle', B: 'un rectangle/cadre englobant', C: 'une flèche', D: 'rien' }, correctAnswer: 'B', explanation: 'Cadre système qui contient les cas d\'utilisation.' },
+  ]},
+  'ch2:2': { titre: 'Cahier des charges', questions: [
+    { texte: 'Un critère d\'acceptation doit être…', options: { A: 'flou', B: 'mesurable et testable', C: 'optionnel', D: 'aucun' }, correctAnswer: 'B', explanation: 'Sinon impossible de valider la livraison.' },
+    { texte: 'Une user story s\'écrit typiquement…', options: { A: '"comme [acteur], je veux [action] afin de [bénéfice]"', B: 'en code', C: 'en pseudo-code', D: 'aucun' }, correctAnswer: 'A', explanation: 'Format INVEST de la user story.' },
+    { texte: 'MoSCoW classe les besoins en…', options: { A: 'Must / Should / Could / Won\'t', B: 'Mort / Sec', C: 'aucun', D: 'autre' }, correctAnswer: 'A', explanation: 'Priorisation MoSCoW.' },
+  ]},
+  'ch3:0': { titre: 'Diagramme de classes — bases', questions: [
+    { texte: 'Une classe abstraite…', options: { A: 'peut être instanciée', B: 'ne peut PAS être instanciée directement', C: 'n\'a pas de méthodes', D: 'aucun' }, correctAnswer: 'B', explanation: 'Sert de base à des sous-classes concrètes.' },
+    { texte: 'L\'encapsulation signifie…', options: { A: 'tout en public', B: 'cacher l\'état interne, exposer une API', C: 'pas de méthodes', D: 'aucun' }, correctAnswer: 'B', explanation: 'Pilier OO. Private/protected pour l\'état.' },
+    { texte: 'Une interface UML…', options: { A: 'a une implémentation', B: 'définit un contrat sans implémentation', C: 'identique à classe', D: 'aucun' }, correctAnswer: 'B', explanation: 'Réalisation par les classes implémentantes.' },
+  ]},
+  'ch3:1': { titre: 'Relations entre classes', questions: [
+    { texte: 'L\'aggrégation diffère de la composition par…', options: { A: 'rien', B: 'la composition implique une dépendance forte de cycle de vie', C: 'l\'inverse', D: 'aucun' }, correctAnswer: 'B', explanation: 'Composition = "contient" exclusif (losange noir).' },
+    { texte: 'Une multiplicité "1..*" signifie…', options: { A: 'aucun', B: 'au moins un, plusieurs possibles', C: 'exactement un', D: '0 ou 1' }, correctAnswer: 'B', explanation: 'Min 1, max illimité.' },
+    { texte: 'L\'héritage UML est noté avec…', options: { A: 'une flèche pleine', B: 'une flèche triangulaire creuse vers la classe mère', C: 'un cercle', D: 'rien' }, correctAnswer: 'B', explanation: 'Triangle creux = généralisation.' },
+  ]},
+  'ch3:2': { titre: 'Principes SOLID', questions: [
+    { texte: 'Le S de SOLID = ?', options: { A: 'Speed', B: 'Single Responsibility — une classe = une raison de changer', C: 'Strict', D: 'aucun' }, correctAnswer: 'B', explanation: 'Cohésion forte au niveau classe.' },
+    { texte: 'Le O de SOLID = ?', options: { A: 'Outsourcing', B: 'Open/Closed — ouvert à l\'extension, fermé à la modification', C: 'Object', D: 'aucun' }, correctAnswer: 'B', explanation: 'Étendre par sous-classes/interfaces, pas par modification.' },
+    { texte: 'Couplage faible = ?', options: { A: 'beaucoup de dépendances', B: 'peu de dépendances entre modules', C: 'aucun code', D: 'aucun' }, correctAnswer: 'B', explanation: 'Plus modulaire, plus testable.' },
+  ]},
+  'ch4:0': { titre: 'Diagramme de séquence', questions: [
+    { texte: 'Une ligne de vie représente…', options: { A: 'un acteur exclusivement', B: 'une instance d\'objet ou un acteur sur l\'axe temporel', C: 'un message', D: 'aucun' }, correctAnswer: 'B', explanation: 'Verticale, temps va vers le bas.' },
+    { texte: 'Un message synchrone est…', options: { A: 'identique à asynchrone', B: 'l\'appelant attend la réponse avant de continuer', C: 'sans réponse', D: 'aucun' }, correctAnswer: 'B', explanation: 'Flèche pleine, attente bloquante.' },
+    { texte: 'Un fragment combiné "alt" représente…', options: { A: 'une boucle', B: 'des branches conditionnelles (if/else)', C: 'une exception', D: 'aucun' }, correctAnswer: 'B', explanation: 'Alternative / branchement.' },
+  ]},
+  'ch4:1': { titre: 'Diagramme d\'activité', questions: [
+    { texte: 'Une swimlane sert à…', options: { A: 'une seule activité', B: 'regrouper les activités par responsable/acteur', C: 'séparer le code', D: 'aucun' }, correctAnswer: 'B', explanation: 'Couloir vertical par acteur.' },
+    { texte: 'Un nœud de décision est représenté par…', options: { A: 'un cercle', B: 'un losange', C: 'un rectangle', D: 'aucun' }, correctAnswer: 'B', explanation: 'Losange = choix.' },
+    { texte: 'La barre de fork/join sert à…', options: { A: 'décrire le code', B: 'séparer/synchroniser des flux parallèles', C: 'finir le diagramme', D: 'aucun' }, correctAnswer: 'B', explanation: 'Fork = parallélisme, Join = sync.' },
+  ]},
+  'ch4:2': { titre: 'Traçabilité spec → test', questions: [
+    { texte: 'Un test d\'acceptation valide…', options: { A: 'la performance', B: 'qu\'un cas d\'utilisation est correctement implémenté', C: 'le style de code', D: 'aucun' }, correctAnswer: 'B', explanation: 'BDD/Cucumber : Given-When-Then.' },
+    { texte: 'La traçabilité besoin → test signifie…', options: { A: 'rien', B: 'chaque exigence a au moins un test associé', C: 'pas de test', D: 'aucun' }, correctAnswer: 'B', explanation: 'Matrice de traçabilité.' },
+    { texte: 'Un test fonctionnel teste…', options: { A: 'la perf', B: 'le COMPORTEMENT externe (vs unit test = brique interne)', C: 'le code', D: 'aucun' }, correctAnswer: 'B', explanation: 'Boîte noire vs boîte blanche.' },
+  ]},
+  'ch5:0': { titre: 'Anti-patterns', questions: [
+    { texte: 'Un "God object" est une classe qui…', options: { A: 'fait trop de choses', B: 'a une seule responsabilité', C: 'est utile', D: 'aucun' }, correctAnswer: 'A', explanation: 'Viole SRP, à découper.' },
+    { texte: 'Le "spaghetti code" se caractérise par…', options: { A: 'lisibilité parfaite', B: 'flots de contrôle entremêlés, sans structure', C: 'tests complets', D: 'aucun' }, correctAnswer: 'B', explanation: 'Difficile à comprendre/maintenir.' },
+    { texte: 'Le copy-paste de code conduit à…', options: { A: 'meilleure qualité', B: 'duplication = bug fixé à un endroit, pas à l\'autre', C: 'rien', D: 'aucun' }, correctAnswer: 'B', explanation: 'DRY : Don\'t Repeat Yourself.' },
+  ]},
+  'ch5:1': { titre: 'Patterns créationnels GoF', questions: [
+    { texte: 'Le Singleton garantit…', options: { A: 'plusieurs instances', B: 'une seule instance globale', C: 'aucun objet', D: 'aucun' }, correctAnswer: 'B', explanation: 'Constructeur privé + getInstance().' },
+    { texte: 'Le Factory Method sert à…', options: { A: 'rien', B: 'déléguer la création d\'objets aux sous-classes', C: 'détruire', D: 'aucun' }, correctAnswer: 'B', explanation: 'Pattern de création polymorphe.' },
+    { texte: 'Le Builder est utile quand…', options: { A: 'l\'objet est simple', B: 'l\'objet a beaucoup de paramètres optionnels', C: 'aucun cas', D: 'aucun' }, correctAnswer: 'B', explanation: 'Évite les constructeurs téléscopiques.' },
+  ]},
+  'ch5:2': { titre: 'Patterns structurels & comportementaux', questions: [
+    { texte: 'L\'Adapter sert à…', options: { A: 'créer', B: 'rendre compatible deux interfaces incompatibles', C: 'détruire', D: 'aucun' }, correctAnswer: 'B', explanation: 'Pattern structurel — wrapping.' },
+    { texte: 'L\'Observer notifie…', options: { A: 'rien', B: 'plusieurs observateurs des changements d\'un sujet', C: 'lui-même', D: 'aucun' }, correctAnswer: 'B', explanation: 'Pub/sub local.' },
+    { texte: 'Le Strategy permet de…', options: { A: 'figer un algo', B: 'changer dynamiquement l\'algorithme utilisé', C: 'rien', D: 'aucun' }, correctAnswer: 'B', explanation: 'Encapsule une famille d\'algos interchangeables.' },
+  ]},
+};
+
+const GL_CHAPTER_QCM = {
+  ch1: { titre: 'QCM Chapitre 1 — Génie logiciel & cycles', questions: [
+    { texte: 'Le cycle en V est…', options: { A: 'agile', B: 'séquentiel avec phases de validation symétriques', C: 'incrémental court', D: 'aucun' }, correctAnswer: 'B', explanation: 'V = chaque spec a sa validation associée.' },
+    { texte: 'Quel rôle SCRUM facilite l\'équipe sans la diriger ?', options: { A: 'PO', B: 'Scrum Master', C: 'Architecte', D: 'aucun' }, correctAnswer: 'B', explanation: 'SM = facilitateur, retire les blocages.' },
+    { texte: 'TDD signifie…', options: { A: 'Test Driven Development', B: 'Tests Documentés Daily', C: 'aucun', D: 'autre' }, correctAnswer: 'A', explanation: 'Tests écrits avant le code (red-green-refactor).' },
+    { texte: 'CI/CD vise…', options: { A: 'ralentir le dev', B: 'merge fréquent + déploiement auto/fréquent', C: 'aucun', D: 'plus de bugs' }, correctAnswer: 'B', explanation: 'Boucle de feedback courte = qualité.' },
+    { texte: 'Une "definition of done" sert à…', options: { A: 'rien', B: 'aligner l\'équipe sur ce qui constitue un travail terminé', C: 'figer le scope', D: 'aucun' }, correctAnswer: 'B', explanation: 'Critère partagé pour éviter les ambiguïtés.' },
+  ]},
+  ch2: { titre: 'QCM Chapitre 2 — UML & cas d\'utilisation', questions: [
+    { texte: 'Un acteur principal dans UML est…', options: { A: 'le système', B: 'l\'entité externe qui initie un cas d\'utilisation', C: 'un sous-cas', D: 'aucun' }, correctAnswer: 'B', explanation: 'Acteur primaire / déclencheur.' },
+    { texte: 'Le scénario nominal d\'un cas d\'utilisation décrit…', options: { A: 'les erreurs', B: 'le déroulement standard, sans incident', C: 'une exception', D: 'aucun' }, correctAnswer: 'B', explanation: 'Happy path.' },
+    { texte: 'Une exigence non fonctionnelle = ?', options: { A: 'fonctionnalité', B: 'qualité (performance, sécurité, dispo)', C: 'rien', D: 'aucun' }, correctAnswer: 'B', explanation: 'NFR = qualité, pas comportement métier.' },
+    { texte: 'Le format "user story" est…', options: { A: 'En tant que [acteur], je veux [action] pour [bénéfice]', B: 'Faire [tâche]', C: 'aucun', D: 'autre' }, correctAnswer: 'A', explanation: 'Format INVEST.' },
+    { texte: 'L\'extend UML ajoute…', options: { A: 'rien', B: 'un comportement optionnel et conditionnel', C: 'obligatoire', D: 'aucun' }, correctAnswer: 'B', explanation: 'Cas étendu = optionnel.' },
+  ]},
+  ch3: { titre: 'QCM Chapitre 3 — Diagrammes de classes', questions: [
+    { texte: 'Une composition (losange noir) implique…', options: { A: 'rien', B: 'que la partie est détruite avec le tout', C: 'l\'inverse', D: 'aucun' }, correctAnswer: 'B', explanation: 'Cycle de vie lié.' },
+    { texte: 'L\'encapsulation = ?', options: { A: 'tout public', B: 'cacher l\'état interne, exposer une interface contrôlée', C: 'aucun', D: 'autre' }, correctAnswer: 'B', explanation: 'Pilier OO.' },
+    { texte: 'Une interface en UML est notée…', options: { A: 'avec <<interface>> ou cercle', B: 'sans symbole', C: 'comme une classe normale', D: 'aucun' }, correctAnswer: 'A', explanation: 'Stéréotype <<interface>> ou notation lollipop.' },
+    { texte: 'Le L de SOLID = ?', options: { A: 'Liskov Substitution', B: 'Lisp', C: 'aucun', D: 'autre' }, correctAnswer: 'A', explanation: 'Sous-classes substituables à leur classe parente.' },
+    { texte: 'Couplage fort + cohésion faible = ?', options: { A: 'idéal', B: 'mauvaise conception (à éviter)', C: 'standard', D: 'aucun' }, correctAnswer: 'B', explanation: 'Inverse de l\'objectif.' },
+  ]},
+  ch4: { titre: 'QCM Chapitre 4 — Diagrammes dynamiques', questions: [
+    { texte: 'Un message synchrone bloque l\'appelant ?', options: { A: 'non, jamais', B: 'oui, attend la réponse', C: 'aucun', D: 'autre' }, correctAnswer: 'B', explanation: 'Sync = bloquant.' },
+    { texte: 'Le fragment "loop" représente…', options: { A: 'une condition', B: 'une boucle/itération', C: 'rien', D: 'aucun' }, correctAnswer: 'B', explanation: 'Boucle UML.' },
+    { texte: 'Une swimlane regroupe…', options: { A: 'les méthodes', B: 'les activités d\'un acteur/responsable', C: 'aucun', D: 'autre' }, correctAnswer: 'B', explanation: 'Couloir par acteur.' },
+    { texte: 'Le diagramme d\'activité s\'utilise pour…', options: { A: 'le code source', B: 'modéliser un workflow métier', C: 'rien', D: 'aucun' }, correctAnswer: 'B', explanation: 'Process flow.' },
+    { texte: 'Un nœud "fork" sert à…', options: { A: 'fusionner', B: 'paralléliser plusieurs flux', C: 'arrêter', D: 'aucun' }, correctAnswer: 'B', explanation: 'Fork = split parallèle.' },
+  ]},
+  ch5: { titre: 'QCM Chapitre 5 — Patterns GoF', questions: [
+    { texte: 'Le Singleton garantit…', options: { A: 'N instances', B: 'une seule instance globale', C: 'aucun objet', D: 'aucun' }, correctAnswer: 'B', explanation: 'Une seule instance accessible globalement.' },
+    { texte: 'Le pattern Observer = ?', options: { A: 'aucun', B: 'pub/sub local — N observateurs notifiés par 1 sujet', C: 'inverse', D: 'autre' }, correctAnswer: 'B', explanation: 'Découplage producteur/consommateurs.' },
+    { texte: 'L\'Adapter sert à…', options: { A: 'rien', B: 'rendre compatibles 2 interfaces incompatibles', C: 'créer', D: 'aucun' }, correctAnswer: 'B', explanation: 'Pattern structurel de wrapping.' },
+    { texte: 'Le Strategy permet de…', options: { A: 'figer un algo', B: 'changer d\'algorithme dynamiquement', C: 'rien', D: 'aucun' }, correctAnswer: 'B', explanation: 'Famille d\'algos interchangeables.' },
+    { texte: 'Le Decorator…', options: { A: 'simplifie', B: 'ajoute du comportement à un objet sans modifier sa classe', C: 'aucun', D: 'autre' }, correctAnswer: 'B', explanation: 'Composition vs héritage.' },
+  ]},
+};
+
+const GL_MODULE_QCM = {
+  titre: 'QCM final — Génie Logiciel & UML',
+  questions: [
+    { texte: 'Cycle en V vs cascade ?', options: { A: 'identique', B: 'V ajoute des phases de validation symétriques', C: 'inverse', D: 'aucun' }, correctAnswer: 'B', explanation: 'V = phase de test associée à chaque phase de spec.' },
+    { texte: 'Avantage d\'agile ?', options: { A: 'moins de tests', B: 'adaptation aux changements', C: 'aucun', D: 'autre' }, correctAnswer: 'B', explanation: 'Itérations courtes + feedback.' },
+    { texte: 'Un acteur UML peut-il être un système externe ?', options: { A: 'non', B: 'oui', C: 'aucun', D: 'autre' }, correctAnswer: 'B', explanation: 'Acteur = entité externe humaine OU système.' },
+    { texte: 'Use case <<include>> = ?', options: { A: 'optionnel', B: 'obligatoirement appelé', C: 'aucun', D: 'autre' }, correctAnswer: 'B', explanation: 'Sous-cas inclus dans tous les scénarios.' },
+    { texte: 'Aggrégation vs composition ?', options: { A: 'identique', B: 'composition = cycle de vie lié', C: 'inverse', D: 'aucun' }, correctAnswer: 'B', explanation: 'Losange noir = composition.' },
+    { texte: 'Encapsulation = ?', options: { A: 'tout public', B: 'cacher l\'état interne', C: 'aucun', D: 'autre' }, correctAnswer: 'B', explanation: 'Pilier OO.' },
+    { texte: 'Le S de SOLID = ?', options: { A: 'Speed', B: 'Single Responsibility', C: 'aucun', D: 'autre' }, correctAnswer: 'B', explanation: 'Une classe = une raison de changer.' },
+    { texte: 'Couplage faible + cohésion forte = ?', options: { A: 'mauvais', B: 'idéal', C: 'aucun', D: 'autre' }, correctAnswer: 'B', explanation: 'Objectif de la conception OO.' },
+    { texte: 'Diagramme de séquence représente…', options: { A: 'la structure', B: 'les interactions temporelles entre objets', C: 'aucun', D: 'autre' }, correctAnswer: 'B', explanation: 'Dynamique : qui parle à qui et quand.' },
+    { texte: 'Diagramme d\'activité représente…', options: { A: 'la structure', B: 'un workflow métier', C: 'aucun', D: 'autre' }, correctAnswer: 'B', explanation: 'Process / flowchart.' },
+    { texte: 'Singleton garantit…', options: { A: 'plusieurs instances', B: 'une seule instance', C: 'aucun', D: 'autre' }, correctAnswer: 'B', explanation: 'Constructeur privé + accesseur unique.' },
+    { texte: 'Factory Method = ?', options: { A: 'casser', B: 'déléguer la création aux sous-classes', C: 'aucun', D: 'autre' }, correctAnswer: 'B', explanation: 'Pattern créationnel.' },
+    { texte: 'Observer = ?', options: { A: 'aucun', B: 'pub/sub local', C: 'inverse', D: 'autre' }, correctAnswer: 'B', explanation: 'Notification 1→N.' },
+    { texte: 'Anti-pattern God Object = ?', options: { A: 'classe parfaite', B: 'classe qui fait trop de choses (viole SRP)', C: 'aucun', D: 'autre' }, correctAnswer: 'B', explanation: 'À refactoriser en plusieurs classes.' },
+    { texte: 'Une definition of done sert à…', options: { A: 'rien', B: 'aligner l\'équipe sur le critère de "terminé"', C: 'figer le scope', D: 'aucun' }, correctAnswer: 'B', explanation: 'Évite les ambiguïtés en livraison.' },
+  ],
+};
 
 /* ═══════════════════════════════════════════════════════════════════════════
    QCM LIBRARY — Cybersécurité
@@ -864,6 +1050,551 @@ Les 3 vulnérabilités critiques sont corrigeables en 2-3 jours de dev. Recomman
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
+   SEED GÉNIE LOGICIEL & UML  (état MILIEU ~50%)
+═══════════════════════════════════════════════════════════════════════════ */
+
+async function seedGenieLogicielModule() {
+  console.log('\n🌱 Seed module Génie Logiciel & UML (état MILIEU ~50%)');
+
+  /* ── 1. Course GL ───────────────────────────────────────────────────── */
+  const course = await Course.findOne({ titre: /Génie Logiciel/i, isActive: true });
+  if (!course) throw new Error('Course Génie Logiciel & UML introuvable.');
+  console.log(`  Course trouvé : ${course.titre} (${course._id})`);
+
+  /* ── 2. Users ───────────────────────────────────────────────────────── */
+  const assil = await User.findOne({ email: 'assil.isil.l3@fliplearn.dz' });
+  const tarek = await User.findOne({ email: 'tarek.isil.l3@fliplearn.dz' }); // prof GL
+  const omar = await User.findOne({ email: 'omar.isil.l3@fliplearn.dz' });    // fallback prof
+  const profCreator = (course.professorId && tarek?._id?.equals(course.professorId)) ? tarek : (tarek || omar);
+  if (!assil || !profCreator) throw new Error('Users (assil ou prof GL) introuvables.');
+
+  const studentTest1 = await User.findOne({ email: 'adel.bouhabel.l3@fliplearn.dz' });
+  const studentTest2 = await User.findOne({ email: 'imane.rahmoun.l3@fliplearn.dz' });
+  const otherStudents = await User.find({
+    role: 'etudiant', filiere: 'ISIL', promotion: 'L3',
+    _id: { $nin: [assil._id, studentTest1?._id, studentTest2?._id].filter(Boolean) },
+  }).limit(2).select('_id email prenom nom');
+
+  /* ── 3. Détecter l'order de départ pour ne pas écraser le contenu existant ── */
+  const existingChapters = await Chapter.find({ courseId: course._id }).sort({ order: -1 }).limit(1).lean();
+  const startOrder = existingChapters.length > 0 ? (existingChapters[0].order + 1) : 0;
+  console.log(`  Order de départ pour les nouveaux chapitres : ${startOrder} (${existingChapters.length} chapitre(s) existant(s) préservé(s))`);
+
+  /* ── 4. Créer 5 chapitres taggés ────────────────────────────────────── */
+  const chapterTitles = [
+    'Introduction au génie logiciel',
+    'Modélisation UML — Cas d\'utilisation',
+    'Diagrammes de classes & d\'objets',
+    'Diagrammes de séquence & d\'activité',
+    'Patterns de conception (GoF)',
+  ];
+  const chapters = [];
+  for (let i = 0; i < chapterTitles.length; i++) {
+    const ch = await Chapter.create({
+      courseId: course._id,
+      titre: chapterTitles[i],
+      description: tagDescription(`Chapitre ${i + 1} du module Génie Logiciel & UML.`),
+      order: startOrder + i,
+      unlockedByDefault: i === 0,
+      completionThreshold: 80,
+      practiceMode: { enabled: true, questionCount: 10 },
+    });
+    chapters.push(ch);
+    console.log(`  ✓ Chapitre ${i + 1} créé : ${ch.titre} (order=${ch.order})`);
+  }
+
+  /* ── 5. Capsules (15) — réutilisation IDs Phase 2 validés ──────────── */
+  console.log('\n  Validation des URLs YouTube via oEmbed…');
+  const chapterKeys = ['ch1', 'ch2', 'ch3', 'ch4', 'ch5'];
+  const videosByChapter = {};
+  let validCount = 0, fallbackCount = 0;
+
+  for (let cIdx = 0; cIdx < chapters.length; cIdx++) {
+    const chap = chapters[cIdx];
+    const ck = chapterKeys[cIdx];
+    const videoSpecs = GL_VIDEOS[ck];
+    videosByChapter[String(chap._id)] = [];
+
+    for (let vIdx = 0; vIdx < videoSpecs.length; vIdx++) {
+      const spec = videoSpecs[vIdx];
+      const validation = await validateYouTubeId(spec.ytId);
+
+      let finalYtId = spec.ytId;
+      let extraNote = GL_VIDEO_NOTE_REUSED;
+      if (!validation.ok) {
+        console.warn(`  ⚠️  YouTube ID ${spec.ytId} invalide (HTTP ${validation.statusCode}) — fallback`);
+        finalYtId = VIDEO_FALLBACK_ID;
+        extraNote = VIDEO_FALLBACK_NOTE;
+        fallbackCount += 1;
+      } else {
+        validCount += 1;
+      }
+
+      const video = await Video.create({
+        titre: spec.titre,
+        description: tagDescription(spec.description + extraNote),
+        provider: 'youtube',
+        url: `https://www.youtube.com/embed/${finalYtId}`,
+        youtubeId: finalYtId,
+        thumbnailUrl: `https://i.ytimg.com/vi/${finalYtId}/hqdefault.jpg`,
+        duration: spec.duration,
+        order: vIdx,
+        chapterId: chap._id,
+        courseId: course._id,
+        createdBy: profCreator._id,
+        watchedBy: [],
+      });
+      videosByChapter[String(chap._id)].push(video);
+      console.log(`    ✓ Capsule "${spec.titre}" (${finalYtId})`);
+    }
+  }
+  console.log(`  YouTube : ${validCount} valides, ${fallbackCount} fallbacks`);
+
+  /* ── 6. QCM video + chapter + module ────────────────────────────────── */
+  console.log('\n  Création des QCM…');
+  const qcmsByVideo = {};
+  const qcmsByChapter = {};
+  let qcmCount = 0;
+
+  for (let cIdx = 0; cIdx < chapters.length; cIdx++) {
+    const chap = chapters[cIdx];
+    const ck = chapterKeys[cIdx];
+    const videos = videosByChapter[String(chap._id)];
+
+    for (let vIdx = 0; vIdx < videos.length; vIdx++) {
+      const v = videos[vIdx];
+      const qcmKey = `${ck}:${vIdx}`;
+      const spec = GL_VIDEO_QCM[qcmKey];
+      if (!spec) continue;
+      const qcm = await QCM.create({
+        scope: 'video',
+        videoId: v._id,
+        titre: `${spec.titre} ${DEMO_TAG}`,
+        questions: spec.questions.map((q) => ({ ...q, questionType: 'single', correctAnswers: [q.correctAnswer] })),
+        pointsPerQuestion: 10,
+        timerSeconds: 30,
+        passingScore: 60,
+      });
+      qcmsByVideo[String(v._id)] = qcm;
+      qcmCount += 1;
+    }
+
+    const chapSpec = GL_CHAPTER_QCM[ck];
+    if (chapSpec) {
+      const qcm = await QCM.create({
+        scope: 'chapter',
+        chapterId: chap._id,
+        titre: `${chapSpec.titre} ${DEMO_TAG}`,
+        questions: chapSpec.questions.map((q) => ({ ...q, questionType: 'single', correctAnswers: [q.correctAnswer] })),
+        pointsPerQuestion: 10,
+        timerSeconds: 45,
+        passingScore: 60,
+      });
+      qcmsByChapter[String(chap._id)] = qcm;
+      qcmCount += 1;
+    }
+  }
+
+  // Cleanup défensif : si un QCM scope=module non-DEMO existe déjà sur GL, on le supprime.
+  // (Évite duplicate key. Utilisé seulement pour les seeds répétés sur DB live ; le user
+  // a confirmé qu'il n'y a pas de QCM module GL réel à protéger.)
+  const existingModuleQcm = await QCM.findOne({ scope: 'module', courseId: course._id });
+  if (existingModuleQcm && !DEMO_REGEX.test(existingModuleQcm.titre || '')) {
+    console.warn(`  ⚠️  QCM module GL non-DEMO préexistant trouvé (${existingModuleQcm._id}) — laissé tel quel, on n'en crée pas un nouveau.`);
+  } else {
+    if (existingModuleQcm) await QCM.deleteOne({ _id: existingModuleQcm._id });
+    await QCM.create({
+      scope: 'module',
+      courseId: course._id,
+      titre: `${GL_MODULE_QCM.titre} ${DEMO_TAG}`,
+      questions: GL_MODULE_QCM.questions.map((q) => ({ ...q, questionType: 'single', correctAnswers: [q.correctAnswer] })),
+      pointsPerQuestion: 10,
+      timerSeconds: 30,
+      passingScore: 60,
+    });
+    qcmCount += 1;
+  }
+
+  console.log(`  ✓ ${qcmCount} QCM créés`);
+
+  /* ── 7. Progression assil — état MILIEU ~50% ────────────────────────── */
+  console.log('\n  Progression assil (Ch1 100%, Ch2 100%, Ch3 60%, Ch4 30%, Ch5 0%)…');
+  let qcmAttemptCount = 0;
+
+  // Ch1 + Ch2 : 100% capsules vues + tous les QCM video passés (≥60%) +
+  // QCM chapitre passé. Garantit que isChapterCompletedByUser(Ch1/Ch2) = true
+  // (critère composite videoPercent ≥ threshold ET qcmPercent ≥ 80%).
+  for (const cIdx of [0, 1]) {
+    const videos = videosByChapter[String(chapters[cIdx]._id)];
+    for (let vIdx = 0; vIdx < videos.length; vIdx++) {
+      const v = videos[vIdx];
+      const completedAt = daysAgo(20 - cIdx * 5 - vIdx);
+      v.watchedBy.push({ userId: assil._id, watchedPercent: 100, completed: true, completedAt, lastWatchedAt: completedAt });
+      await v.save();
+
+      // QCM video — score 70-90% (passe le critère 60%)
+      const qcm = qcmsByVideo[String(v._id)];
+      if (qcm) {
+        const score = 70 + Math.floor(Math.random() * 21);
+        qcm.resultats.push({
+          userId: assil._id, score,
+          correctCount: Math.round(qcm.questions.length * (score / 100)),
+          pointsEarned: Math.round(qcm.questions.length * 10 * (score / 100)),
+          answers: qcm.questions.map((q) => ({ questionId: q._id, answer: q.correctAnswer, answers: [q.correctAnswer], correct: true, timedOut: false })),
+          completedAt: daysAgo(19 - cIdx * 5 - vIdx),
+        });
+        await qcm.save();
+        qcmAttemptCount += 1;
+      }
+    }
+    // QCM chapitre score 75-80% (séparé : dérive optionnelle, pas requise par
+    // isChapterCompletedByUser qui ne regarde que les QCM scope=video)
+    const chapQcm = qcmsByChapter[String(chapters[cIdx]._id)];
+    if (chapQcm) {
+      const score = cIdx === 0 ? 75 : 80;
+      chapQcm.resultats.push({
+        userId: assil._id, score,
+        correctCount: Math.round(chapQcm.questions.length * (score / 100)),
+        pointsEarned: Math.round(chapQcm.questions.length * 10 * (score / 100)),
+        answers: chapQcm.questions.map((q) => ({ questionId: q._id, answer: q.correctAnswer, answers: [q.correctAnswer], correct: true, timedOut: false })),
+        completedAt: daysAgo(15 - cIdx * 3),
+      });
+      await chapQcm.save();
+      qcmAttemptCount += 1;
+    }
+  }
+
+  // Ch3 : 60% (2/3 vidéos)
+  {
+    const videos = videosByChapter[String(chapters[2]._id)];
+    for (let vIdx = 0; vIdx < 2; vIdx++) {
+      const v = videos[vIdx];
+      const completedAt = daysAgo(8 - vIdx);
+      v.watchedBy.push({ userId: assil._id, watchedPercent: 100, completed: true, completedAt, lastWatchedAt: completedAt });
+      await v.save();
+      const qcm = qcmsByVideo[String(v._id)];
+      if (qcm) {
+        const score = 70 + Math.floor(Math.random() * 16);
+        qcm.resultats.push({
+          userId: assil._id, score,
+          correctCount: Math.round(qcm.questions.length * (score / 100)),
+          pointsEarned: Math.round(qcm.questions.length * 10 * (score / 100)),
+          answers: qcm.questions.map((q) => ({ questionId: q._id, answer: q.correctAnswer, answers: [q.correctAnswer], correct: true, timedOut: false })),
+          completedAt: daysAgo(7 - vIdx),
+        });
+        await qcm.save();
+        qcmAttemptCount += 1;
+      }
+    }
+    // 60% < 80% → chapitre PAS complet → Phase 2 du projet sera locked sauf via override
+  }
+
+  // Ch4 : 30% (1/3 vidéo)
+  {
+    const videos = videosByChapter[String(chapters[3]._id)];
+    const v = videos[0];
+    const completedAt = daysAgo(2);
+    v.watchedBy.push({ userId: assil._id, watchedPercent: 100, completed: true, completedAt, lastWatchedAt: completedAt });
+    await v.save();
+  }
+
+  // Ch5 : 0% — rien à faire
+  console.log(`  ✓ ${qcmAttemptCount} QCM attempts pour assil`);
+
+  /* ── 8. 2 cas pratiques GL ──────────────────────────────────────────── */
+  console.log('\n  Cas pratiques…');
+
+  const cp1 = await Prosit.create({
+    titre: 'Modéliser un système de réservation',
+    description: tagDescription('Modélisation UML d\'un système de réservation de salles : acteurs, cas d\'utilisation, contraintes métier.'),
+    contexte: 'Un client veut un système de réservation de salles pour son université. Vous devez livrer la modélisation des besoins en UML.',
+    problematique: 'Quels sont les acteurs, cas d\'utilisation principaux et exigences non fonctionnelles ?',
+    courseId: course._id,
+    chapterIds: [chapters[0]._id, chapters[1]._id],
+    statut: 'evalue',
+    phaseCadrageDate: daysAgo(21),
+    phaseBilanDate: daysAgo(14),
+    createdBy: profCreator._id,
+    groupMembers: [
+      { studentId: assil._id, role: 'animateur' },
+      { studentId: studentTest1._id, role: 'scribe' },
+      { studentId: studentTest2._id, role: 'membre' },
+      ...(otherStudents[0] ? [{ studentId: otherStudents[0]._id, role: 'membre' }] : []),
+    ].filter((m) => m.studentId),
+    livrables: [
+      {
+        studentId: assil._id,
+        contenu: `# Système de réservation de salles — Modélisation UML
+
+## Acteurs identifiés
+**Acteurs principaux :**
+- Étudiant : réserve une salle pour révisions, consulte la disponibilité.
+- Enseignant : réserve une salle pour cours/réunion, peut bloquer un créneau récurrent.
+
+**Acteurs secondaires :**
+- Administrateur : gère le catalogue des salles, valide les demandes spéciales.
+- Système de paiement (externe) : pour les salles louées hors université.
+
+## Cas d'utilisation principaux
+1. **Consulter la disponibilité** — un étudiant ou enseignant filtre par date/capacité/équipement.
+2. **Réserver une salle** — création d'une réservation simple. <<include>> Authentification.
+3. **Annuler une réservation** — accessible jusqu'à 1h avant le créneau.
+4. **Valider une demande spéciale** — admin uniquement, pour réservations longues ou hors plages standard.
+
+## Exigences non fonctionnelles
+- Performance : affichage de la disponibilité < 500ms pour une recherche standard.
+- Sécurité : authentification obligatoire, traçabilité des réservations (qui, quand).
+- Disponibilité : 99% durant les heures ouvrées universitaires.
+
+## Diagramme de cas d'utilisation
+(à joindre — exporté depuis StarUML)`,
+        fichierUrl: '',
+        submittedAt: daysAgo(13),
+      },
+      {
+        studentId: studentTest1._id,
+        contenu: 'Modélisation UML par Adel — focus sur les diagrammes de classes du système de réservation...',
+        submittedAt: daysAgo(13),
+      },
+      {
+        studentId: studentTest2._id,
+        contenu: 'Modélisation par Imane — diagrammes de séquence pour le scénario de réservation...',
+        submittedAt: daysAgo(13),
+      },
+    ],
+    notes: [
+      { studentId: assil._id, noteIndividuelle: 16, noteCollective: 14, feedback: 'Bonne identification des acteurs principaux et secondaires, cas d\'utilisation bien décrits.', notedAt: daysAgo(12) },
+      { studentId: studentTest1._id, noteIndividuelle: 13, noteCollective: 14, feedback: 'Diagrammes corrects, à affiner sur les multiplicités.', notedAt: daysAgo(12) },
+      { studentId: studentTest2._id, noteIndividuelle: 14, noteCollective: 14, feedback: 'Bons scénarios. Manque la gestion des cas d\'erreur.', notedAt: daysAgo(12) },
+    ],
+  });
+  console.log(`  ✓ CP GL-1 "Système de réservation" — statut=evalue, assil note 16/20`);
+
+  const cp2 = await Prosit.create({
+    titre: 'Diagrammes de séquence pour app mobile',
+    description: tagDescription('Concevoir les diagrammes de séquence pour les scénarios principaux d\'une app mobile de livraison.'),
+    contexte: 'Une startup algérienne lance une app mobile de livraison. Vous devez modéliser les interactions client/serveur.',
+    problematique: 'Comment modéliser le flux "passer commande → paiement → livraison" en UML dynamique ?',
+    courseId: course._id,
+    chapterIds: [chapters[1]._id, chapters[3]._id],
+    statut: 'cadrage_en_cours',
+    phaseCadrageDate: daysAgo(3),
+    phaseBilanDate: new Date(Date.now() + 4 * 24 * 60 * 60 * 1000),
+    createdBy: profCreator._id,
+    groupMembers: [
+      { studentId: assil._id, role: 'animateur' },
+      { studentId: studentTest1._id, role: 'scribe' },
+      { studentId: studentTest2._id, role: 'membre' },
+      ...(otherStudents[0] ? [{ studentId: otherStudents[0]._id, role: 'membre' }] : []),
+    ].filter((m) => m.studentId),
+    cadrageDocument: {
+      motsCles: ['UML', 'séquence', 'mobile', 'paiement', 'livraison'],
+      problematiqueReformulee: 'Modéliser les 3 flux principaux (commande, paiement, livraison) avec acteurs, lignes de vie et messages.',
+      planAction: ['Identifier les acteurs', 'Lister les scénarios principaux', 'Diagrammer chaque scénario', 'Vérifier la cohérence avec les cas d\'utilisation'],
+      questionsOuvertes: ['Comment gérer les paiements échoués ?', 'Que faire si le livreur n\'est pas dispo ?'],
+      redigePar: assil._id,
+      validatedBy: [],
+      valideParGroupe: false,
+    },
+    livrables: [],
+    notes: [],
+  });
+  console.log(`  ✓ CP GL-2 "Diagrammes séquence" — statut=cadrage_en_cours`);
+
+  /* ── 9. Projet GL — 4 phases avec studentProgress avancé ────────────── */
+  console.log('\n  Projet GL — 4 phases (état MILIEU)…');
+  const projectGroupMembers = [
+    { userId: assil._id, role: 'animateur' },
+    { userId: studentTest1._id, role: 'scribe' },
+    { userId: studentTest2._id, role: 'membre' },
+  ];
+
+  const project = await Project.create({
+    titre: 'Concevoir le SI complet d\'une PME algérienne',
+    description: tagDescription('Projet final GL : modéliser et concevoir le système d\'information complet d\'une PME (50 salariés). Production d\'un dossier UML + architecture.'),
+    type: 'mono',
+    courseId: course._id,
+    createdBy: profCreator._id,
+    status: 'actif',
+    enonce: `Une PME algérienne (50 salariés, secteur agroalimentaire) veut digitaliser sa gestion. Vous devez livrer en 4 étapes le SI complet : besoins → modélisation statique → modélisation dynamique → architecture finale.`,
+    motsCles: ['UML', 'PME', 'modélisation', 'patterns', 'architecture'],
+    dateDebut: daysAgo(15),
+    dateFin: new Date(Date.now() + 45 * 24 * 60 * 60 * 1000),
+    dateSoutenance: new Date(Date.now() + 50 * 24 * 60 * 60 * 1000),
+    groupes: [
+      { nom: 'Groupe GL — ISIL L3', membres: projectGroupMembers },
+    ],
+    phases: [
+      {
+        titre: 'Cas d\'utilisation + cahier des charges',
+        description: 'Identifier les acteurs, cas d\'utilisation, exigences fonctionnelles et non fonctionnelles. Rédiger le cahier des charges.',
+        statut: 'termine',
+        weight: 20,
+        livrableSpec: { type: 'document', isRequired: true, consigne: 'Cahier des charges + diagramme de cas d\'utilisation UML.' },
+        unlockRules: { chapterIds: [chapters[0]._id, chapters[1]._id], casPratiqueIds: [], requiresAllChapters: true, requiresAllCasPratiques: true },
+      },
+      {
+        titre: 'Diagramme de classes + persistance',
+        description: 'Modéliser la structure du SI : diagramme de classes, schéma de BDD, mapping ORM.',
+        statut: 'en_cours',
+        weight: 25,
+        livrableSpec: { type: 'document', isRequired: true, consigne: 'Diagramme de classes UML + schéma BD + extraits de mapping.' },
+        // Prérequis "soft" : avoir vu Ch2 (cas d'usage) OU Ch3 (modélisation classes)
+        // suffit pour démarrer. Pédagogiquement cohérent : Ch2+CP1 forment déjà
+        // la base de la modélisation statique. Ch3 reste idéal mais pas bloquant.
+        unlockRules: { chapterIds: [chapters[1]._id, chapters[2]._id], casPratiqueIds: [cp1._id], requiresAllChapters: false, requiresAllCasPratiques: true },
+        sourceCasPratiqueId: cp1._id,
+      },
+      {
+        titre: 'Diagrammes dynamiques (séquence, activité)',
+        description: 'Modéliser les interactions : diagrammes de séquence pour les flux principaux, diagrammes d\'activité pour les workflows métier.',
+        statut: 'a_faire',
+        weight: 25,
+        livrableSpec: { type: 'document', isRequired: true, consigne: 'Diagrammes de séquence (≥3) + diagrammes d\'activité (≥2).' },
+        unlockRules: { chapterIds: [chapters[3]._id], casPratiqueIds: [cp2._id], requiresAllChapters: true, requiresAllCasPratiques: true },
+        sourceCasPratiqueId: cp2._id,
+      },
+      {
+        titre: 'Architecture finale + patterns appliqués',
+        description: 'Architecture en couches du SI, identification et application des patterns GoF pertinents.',
+        statut: 'a_faire',
+        weight: 30,
+        livrableSpec: { type: 'presentation', isRequired: true, consigne: 'Architecture détaillée + 3 patterns appliqués + slides soutenance.' },
+        unlockRules: { chapterIds: [chapters[4]._id], casPratiqueIds: [], requiresAllChapters: true, requiresAllCasPratiques: true },
+      },
+    ],
+  });
+  console.log(`  ✓ Projet "${project.titre}" créé (id=${project._id})`);
+
+  /* ── 10. Pré-calcul + override studentProgress avancé ───────────────── */
+  // On laisse computePhaseStatus calculer les statuts naturels d'abord, puis on
+  // override Phase 1 (validated) et Phase 2 (in-progress importée) — ces statuts
+  // terminaux/intermédiaires ne sont pas recalculables par le service.
+  const { computePhaseStatus } = await import('../services/projectMilestoneService.js');
+  await computePhaseStatus(project._id, assil._id);
+  await computePhaseStatus(project._id, studentTest1._id);
+  await computePhaseStatus(project._id, studentTest2._id);
+
+  // Re-fetch et override
+  const proj = await Project.findById(project._id);
+
+  function setSp(phaseIdx, studentId, patch) {
+    const phase = proj.phases[phaseIdx];
+    let sp = phase.studentProgress.find((s) => String(s.studentId) === String(studentId));
+    if (!sp) {
+      phase.studentProgress.push({ studentId, status: 'locked' });
+      sp = phase.studentProgress[phase.studentProgress.length - 1];
+    }
+    Object.assign(sp, patch);
+  }
+
+  // Phase 1 — assil & adel = validated, imane = submitted
+  setSp(0, assil._id, {
+    status: 'validated',
+    submission: `# Cahier des charges — SI PME agroalimentaire
+
+## Acteurs
+- Salarié : pointage, demandes de congés, accès intranet.
+- Manager : validation des congés de son équipe, planning.
+- RH : gestion des contrats, paie, formation.
+- DG : tableaux de bord, indicateurs.
+- Système comptable externe : import/export pour la comptabilité.
+
+## Cas d'utilisation prioritaires (MVP)
+1. Pointage électronique (entrée/sortie) — Salarié.
+2. Demande de congés + validation Manager — workflow.
+3. Édition fiches de paie — RH avec template + données pointage.
+4. Tableau de bord Manager — vue équipe (présences, congés en cours).
+5. Tableau de bord DG — KPI globaux.
+
+## Exigences non fonctionnelles
+- Performance : pointage < 1s, dashboard < 3s.
+- Disponibilité : 99% en heures ouvrées (8h-18h).
+- Sécurité : auth MFA pour RH/DG, traçabilité des accès.
+- Conformité : export comptable au format SAGE.
+
+## Critères de succès du MVP
+- 80% des salariés utilisent le pointage électronique sous 1 mois.
+- Workflow congés : 95% validé sous 48h.
+- 0 erreur de calcul paie au 1er trimestre.`,
+    submittedAt: daysAgo(8),
+    validatedAt: daysAgo(5),
+    feedback: 'Excellent cahier des charges. Cas d\'utilisation clairement définis. Continue sur cette dynamique.',
+  });
+  setSp(0, studentTest1._id, {
+    status: 'validated',
+    submission: 'Cahier des charges par Adel — vue alternative axée sur la digitalisation des processus opérationnels...',
+    submittedAt: daysAgo(7),
+    validatedAt: daysAgo(4),
+    feedback: 'Bon travail. Approche complémentaire à celle d\'Assil.',
+  });
+  setSp(0, studentTest2._id, {
+    status: 'submitted',
+    submission: 'Cahier des charges par Imane — focus sur les exigences non fonctionnelles et la conformité RGPD.',
+    submittedAt: daysAgo(2),
+  });
+
+  // Phase 2 — assil = in-progress (importé du CP1), adel = unlocked, imane = locked
+  setSp(1, assil._id, {
+    status: 'in-progress',
+    submission: cp1.livrables[0].contenu + `
+
+---
+
+# Enrichissement Phase 2 — Diagramme de classes du SI PME
+
+À partir de la modélisation des cas d'utilisation du système de réservation (réutilisée comme base méthodologique), je structure le diagramme de classes du SI PME comme suit :
+
+**Classes principales :**
+- Salarie (id, nom, prenom, email, role, contratId)
+- Contrat (id, type, dateDebut, dateFin, salaire)
+- Pointage (id, salarieId, dateEntree, dateSortie)
+- Conge (id, salarieId, dateDebut, dateFin, statut, validePar)
+- FichePaie (id, salarieId, mois, brut, net, charges)
+
+**Relations :**
+- Salarie 1 — 0..1 Contrat (composition : la suppression du salarié supprime ses contrats archivés)
+- Salarie 1 — * Pointage (aggregation : pointages liés au salarié)
+- Salarie 1 — * Conge
+- Salarie 1 — * FichePaie
+
+À compléter : mapping ORM Mongoose, schémas de validation, indexes performance.`,
+    importedFromCasPratiqueId: cp1._id,
+    fichierUrl: null,
+    submittedAt: null,
+  });
+  setSp(1, studentTest1._id, { status: 'unlocked' });
+  setSp(1, studentTest2._id, { status: 'locked' });
+
+  // Phase 3 — tous locked
+  for (const sId of [assil._id, studentTest1._id, studentTest2._id]) {
+    setSp(2, sId, { status: 'locked' });
+  }
+  // Phase 4 — tous locked
+  for (const sId of [assil._id, studentTest1._id, studentTest2._id]) {
+    setSp(3, sId, { status: 'locked' });
+  }
+
+  proj.markModified('phases');
+  await proj.save();
+
+  // Re-fetch les phases finales pour assertions
+  const myPhasesAssil = await computePhaseStatus(proj._id, assil._id);
+
+  return {
+    course,
+    chapters,
+    videos: Object.values(videosByChapter).flat(),
+    qcms: qcmCount,
+    casPratiques: [cp1, cp2],
+    project: proj,
+    youtube: { valid: validCount, fallback: fallbackCount },
+    qcmAttempts: qcmAttemptCount,
+    myPhasesAssil,
+  };
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
    AUTOMATED ASSERTIONS
 ═══════════════════════════════════════════════════════════════════════════ */
 
@@ -913,18 +1644,68 @@ async function assertCybersecExpectations(seedResult) {
   return true;
 }
 
+async function assertGenieLogicielExpectations(seedResult) {
+  console.log('\n🔬 Vérifications automatiques (GL)…');
+  const errors = [];
+  const phases = seedResult.myPhasesAssil.phases;
+  const expected = [
+    { idx: 0, titre: 'Cas d\'utilisation + cahier des charges',     status: 'validated' },
+    { idx: 1, titre: 'Diagramme de classes + persistance',           status: 'in-progress' },
+    { idx: 2, titre: 'Diagrammes dynamiques (séquence, activité)',  status: 'locked' },
+    { idx: 3, titre: 'Architecture finale + patterns appliqués',     status: 'locked' },
+  ];
+
+  expected.forEach(({ idx, titre, status }) => {
+    const actual = phases[idx];
+    if (!actual) { errors.push(`Phase ${idx} manquante`); return; }
+    if (actual.titre !== titre) errors.push(`Phase ${idx} : titre attendu "${titre}", reçu "${actual.titre}"`);
+    if (actual.status !== status) errors.push(`Phase ${idx} ("${titre}") : status attendu "${status}", reçu "${actual.status}"`);
+  });
+
+  // Phase 2 : doit avoir importedFromCasPratiqueId pour assil
+  if (phases[1] && !phases[1].studentProgress?.importedFromCasPratiqueId) {
+    errors.push('Phase 2 ("Diagramme de classes") : importedFromCasPratiqueId manquant pour assil — l\'import livrable n\'a pas été tracé.');
+  }
+  if (phases[1] && !phases[1].sourceCasPratiqueId) {
+    errors.push('Phase 2 : sourceCasPratiqueId (CP1) manquant côté phase.');
+  }
+
+  if (errors.length > 0) {
+    console.error('  ❌ ÉCHEC GL :');
+    errors.forEach((e) => console.error(`     - ${e}`));
+    return false;
+  }
+  console.log('  ✅ Phase 1 (cas usage) = validated (avec feedback prof)');
+  console.log('  ✅ Phase 2 (classes) = in-progress, importedFromCasPratiqueId défini (livrable CP1 réutilisé)');
+  console.log('  ✅ Phase 3 (séquence) = locked (Ch4 30%, CP2 cadrage_en_cours)');
+  console.log('  ✅ Phase 4 (architecture) = locked (Ch5 0%)');
+  return true;
+}
+
 /* ═══════════════════════════════════════════════════════════════════════════
    MAIN
 ═══════════════════════════════════════════════════════════════════════════ */
+
+function parseModuleArg(args) {
+  const eq = args.find((a) => a.startsWith('--module='));
+  if (eq) return eq.split('=')[1];
+  return 'all';
+}
 
 async function main() {
   const args = process.argv.slice(2);
   const isCleanup = args.includes('--cleanup-only');
   const isSeed = args.includes('--seed');
   const isFull = args.includes('--full');
+  const moduleSel = parseModuleArg(args);
+  const validModules = new Set(['cybersec', 'gl', 'ia', 'all']);
+  if (!validModules.has(moduleSel)) {
+    console.error(`Module invalide : ${moduleSel}. Valeurs : cybersec | gl | ia | all`);
+    process.exit(1);
+  }
 
   if (!isCleanup && !isSeed && !isFull) {
-    console.error('Usage: node scripts/seed-isil-l3-demo.js [--cleanup-only|--seed|--full]');
+    console.error('Usage: node scripts/seed-isil-l3-demo.js [--cleanup-only|--seed|--full] [--module=cybersec|gl|ia|all]');
     process.exit(1);
   }
 
@@ -934,18 +1715,38 @@ async function main() {
     await cleanupDemoSeeds();
   }
 
+  let allAssertOK = true;
+
   if (isSeed || isFull) {
-    const result = await seedCybersecModule();
-    const assertOK = await assertCybersecExpectations(result);
+    if (moduleSel === 'cybersec' || moduleSel === 'all') {
+      const result = await seedCybersecModule();
+      const ok = await assertCybersecExpectations(result);
+      console.log('\n📊 Récap Cybersec :');
+      console.log(`  • ${result.chapters.length} chapitres, ${result.videos.length} capsules, ${result.qcms} QCM`);
+      console.log(`  • 3 cas pratiques : ${result.casPratiques.map((c) => c.statut).join(', ')}`);
+      console.log(`  • 1 projet 5 phases (${result.project._id})`);
+      console.log(`  • Progression assil : ${result.qcmAttempts} QCM tentés`);
+      console.log(`  • URLs YouTube : ${result.youtube.valid}/15 valides, ${result.youtube.fallback}/15 fallback`);
+      if (!ok) allAssertOK = false;
+    }
 
-    console.log('\n📊 Récapitulatif :');
-    console.log(`  • Module Cybersec : ${result.chapters.length} chapitres, ${result.videos.length} capsules, ${result.qcms} QCM`);
-    console.log(`  • 3 cas pratiques : ${result.casPratiques.map((c) => c.statut).join(', ')}`);
-    console.log(`  • 1 projet 5 phases articulées (${result.project._id})`);
-    console.log(`  • Progression assil : ${result.qcmAttempts} QCM tentés`);
-    console.log(`  • URLs YouTube : ${result.youtube.valid}/15 valides, ${result.youtube.fallback}/15 fallback`);
+    if (moduleSel === 'gl' || moduleSel === 'all') {
+      const result = await seedGenieLogicielModule();
+      const ok = await assertGenieLogicielExpectations(result);
+      console.log('\n📊 Récap Génie Logiciel :');
+      console.log(`  • ${result.chapters.length} chapitres, ${result.videos.length} capsules, ${result.qcms} QCM`);
+      console.log(`  • 2 cas pratiques : ${result.casPratiques.map((c) => c.statut).join(', ')}`);
+      console.log(`  • 1 projet 4 phases (${result.project._id})`);
+      console.log(`  • Progression assil : ${result.qcmAttempts} QCM tentés (état MILIEU ~50%)`);
+      console.log(`  • URLs YouTube : ${result.youtube.valid}/15 valides, ${result.youtube.fallback}/15 fallback`);
+      if (!ok) allAssertOK = false;
+    }
 
-    if (!assertOK) {
+    if (moduleSel === 'ia' || moduleSel === 'all') {
+      console.log('\n⏭  Module IA & Data Mining : non encore seedé (Phase 4 du plan).');
+    }
+
+    if (!allAssertOK) {
       console.error('\n💥 Assertions échouées — exit code 1');
       await mongoose.disconnect();
       process.exit(1);
