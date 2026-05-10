@@ -1,0 +1,133 @@
+@startuml sequence-autoprep-ia
+!theme cerulean-outline
+title FlipLearn — Séquence "Auto-préparation IA d'une capsule" (5 appels Groq parallèles)
+
+skinparam participant {
+  BackgroundColor<<prof>> #FEF3C7
+  BorderColor<<prof>> #B45309
+  BackgroundColor<<front>> #E0F2FE
+  BorderColor<<front>> #0369A1
+  BackgroundColor<<api>> #DCFCE7
+  BorderColor<<api>> #166534
+  BackgroundColor<<service>> #F3E8FF
+  BorderColor<<service>> #7C3AED
+  BackgroundColor<<ai>> #FAE8FF
+  BorderColor<<ai>> #A21CAF
+  BackgroundColor<<db>> #FEF3C7
+  BorderColor<<db>> #B45309
+}
+
+actor "Professeur\n(omar)" as Prof <<prof>>
+participant "AutoPrepReview.jsx\n(React)" as Front <<front>>
+participant "courseAutoPrep\nController" as API <<api>>
+participant "courseAutoPrep\nService" as Service <<service>>
+participant "Whisper\n(OpenAI)" as Whisper <<ai>>
+participant "Groq Llama-3.3" as Groq <<ai>>
+database "MongoDB" as DB <<db>>
+
+== Démarrage du job ==
+
+Prof -> Front: clique "✨ IA" sur capsule
+activate Front
+Front -> API: POST /api/courses/:cid/videos/:vid/auto-prep
+activate API
+API -> API: vérifie quota (5/jour/prof)
+API -> DB: AutoPrepJob.create\n{ status: 'pending' }
+activate DB
+DB --> API: jobId
+deactivate DB
+API --> Front: 202 { jobId }
+Front -> Front: setJobId(...)\nstart polling
+
+== Récupération transcript ==
+
+API -> Service: runJob(jobId) [async]
+activate Service
+Service -> DB: VideoAnalysis.findOne(\n  { videoId })
+activate DB
+DB --> Service: existingAnalysis ?
+deactivate DB
+
+alt analyse Whisper inexistante
+  Service -> Whisper: transcribe(videoUrl)
+  activate Whisper
+  Whisper --> Service: transcript text
+  deactivate Whisper
+  Service -> DB: VideoAnalysis.create
+end
+
+== 5 appels Groq parallèles ==
+
+Service -> Service: const tasks = [\n  generateInVideoQuestions,\n  generateQCM,\n  generateOutcomes,\n  generatePrositIdea,\n  generateFlashcards\n]
+
+note right of Service #FFFAE6
+  **Promise.allSettled([5 tâches])**
+  → robustesse : 1 échec parmi 5
+  ne fait pas échouer le pipeline.
+  Le prof récupère les 4 valides.
+end note
+
+par Appel parallèle 1 — InVideoQuestions
+  Service -> Groq: prompt + transcript
+  Groq --> Service: questions[] (timestamps)
+also Appel 2 — QCM
+  Service -> Groq: prompt + transcript
+  Groq --> Service: qcm 10 questions
+also Appel 3 — Outcomes Bloom
+  Service -> Groq: prompt + transcript
+  Groq --> Service: outcomes 3-5 niveaux
+also Appel 4 — Prosit Idea
+  Service -> Groq: prompt + transcript
+  Groq --> Service: prosit suggestion
+also Appel 5 — Flashcards SM-2
+  Service -> Groq: prompt + transcript
+  Groq --> Service: cards 8-12
+end
+
+== Persistance résultats ==
+
+Service -> DB: AutoPrepJob.update(jobId, {\n  status: 'completed',\n  results: { ... }\n})
+activate DB
+DB --> Service: ok
+deactivate DB
+deactivate Service
+
+== Polling front + affichage ==
+
+Front -> API: GET /api/auto-prep-jobs/:jobId\n(toutes les 3s)
+API -> DB: AutoPrepJob.findById
+activate DB
+DB --> API: job complet
+deactivate DB
+API --> Front: { status: 'completed', results }
+deactivate API
+Front --> Prof: 5 sections avec toggles\n[Garder] / [Rejeter]
+
+== Validation par le prof ==
+
+Prof -> Front: décoche éléments non pertinents,\nclique "Publier"
+activate Front
+Front -> API: POST /api/auto-prep-jobs/:jobId/publish\n{ selections }
+activate API
+
+== Création atomique entités ==
+
+API -> DB: insert QCM
+API -> DB: insert VideoQuestion[]
+API -> DB: update Course.learningOutcomes
+API -> DB: insert Prosit (statut: 'brouillon')
+API -> DB: insert Deck + Cards SM-2
+
+API --> Front: 200 ok
+deactivate API
+Front --> Prof: "Publié — 1 QCM, 3 questions in-video,\n5 outcomes, 1 cas pratique brouillon, 10 flashcards"
+deactivate Front
+
+note over Service #FFFAE6
+  Coût : ~30-60 secondes pour le prof
+  vs ~2-3 heures de travail manuel.
+  Quota free tier Groq : largement
+  suffisant pour usage pédagogique.
+end note
+
+@enduml

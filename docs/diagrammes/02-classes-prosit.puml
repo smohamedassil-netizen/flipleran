@@ -1,0 +1,120 @@
+@startuml classes-prosit
+!theme cerulean-outline
+title FlipLearn — Domaine Cas Pratique (Prosit) — méthodologie CESI
+
+skinparam class {
+  BackgroundColor<<root>> #FEF3C7
+  BorderColor<<root>> #B45309
+  BackgroundColor<<sub>> #DBEAFE
+  BorderColor<<sub>> #1B4F72
+  BackgroundColor<<assess>> #F3E8FF
+  BorderColor<<assess>> #7C3AED
+  BackgroundColor<<external>> #F1F5F9
+  BorderColor<<external>> #475569
+}
+
+class Prosit <<root>> {
+  - _id : ObjectId
+  - titre : String
+  - description : String
+  - contexte : String
+  - problematique : String
+  - courseId : ObjectId
+  - chapterIds : [ObjectId]
+  - statut : enum [planifie, cadrage_en_cours,\n  travail_individuel, bilan_en_cours, evalue]
+  - phaseCadrageDate : Date
+  - phaseBilanDate : Date
+  - createdBy : ObjectId
+  --
+  + getMyGroup(userId)
+  + computeFinalGrade()
+}
+
+class GroupMember <<sub>> {
+  - studentId : ObjectId
+  - role : enum [animateur, scribe, membre]
+}
+
+class CadrageDocument <<sub>> {
+  - motsCles : [String]
+  - problematiqueReformulee : String
+  - planAction : [String]
+  - questionsOuvertes : [String]
+  - redigePar : ObjectId
+  - validatedBy : [ObjectId]
+  - valideParGroupe : Boolean
+  - completedAt : Date
+}
+
+class Livrable <<sub>> {
+  - studentId : ObjectId
+  - contenu : String
+  - fichierUrl : String
+  - submittedAt : Date
+  - aiDetection : { score, flags, reasons }
+}
+
+class BilanDocument <<sub>> {
+  - syntheseSolutions : String
+  - pointsAccomplis : [String]
+  - pointsNonAccomplis : [String]
+  - apprentissages : [String]
+  - completedAt : Date
+}
+
+class Note <<assess>> {
+  - studentId : ObjectId
+  - noteIndividuelle : Number (0-20)
+  - noteCollective : Number (0-20)
+  - feedback : String
+  - notedAt : Date
+}
+
+class Resource <<sub>> {
+  - type : enum [pdf, link, article]
+  - title : String
+  - url : String
+  - description : String
+}
+
+class User <<external>> {
+  - email
+  - role
+}
+
+class Chapter <<external>> {
+  - titre
+  - courseId
+}
+
+' Compositions
+Prosit "1" *-- "*" GroupMember : groupMembers[]
+Prosit "1" *-- "0..1" CadrageDocument : cadrageDocument
+Prosit "1" *-- "*" Livrable : livrables[]
+Prosit "1" *-- "0..1" BilanDocument : bilanDocument
+Prosit "1" *-- "*" Note : notes[]
+Prosit "1" *-- "*" Resource : resources[]
+
+' Références externes
+GroupMember ..> User : studentId
+Livrable ..> User : studentId
+Note ..> User : studentId
+Prosit ..> Chapter : chapterIds[]
+
+note right of Prosit
+  **Refonte 2026-05** : Prosit (DB)
+  exposé sous le nom "Cas Pratique" (UI).
+  3 phases : Cadrage → Travail individuel
+  → Bilan → Évaluation.
+  3 rôles tournants : animateur, scribe, membre.
+end note
+
+note bottom of Note
+  **Conditions evaluation pour articulation
+  projet** (cf. progressService) :
+  • statut === 'evalue'
+  • Livrable de l'étudiant présent
+  • Note individuelle ou collective
+end note
+
+@enduml

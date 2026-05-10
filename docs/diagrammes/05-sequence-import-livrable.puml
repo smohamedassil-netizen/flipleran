@@ -1,0 +1,134 @@
+@startuml sequence-import-livrable
+!theme cerulean-outline
+title FlipLearn — Séquence "Importer livrable cas pratique" (refonte 2026-05)
+
+skinparam participant {
+  BackgroundColor<<student>> #DBEAFE
+  BorderColor<<student>> #1B4F72
+  BackgroundColor<<front>> #E0F2FE
+  BorderColor<<front>> #0369A1
+  BackgroundColor<<api>> #DCFCE7
+  BorderColor<<api>> #166534
+  BackgroundColor<<service>> #F3E8FF
+  BorderColor<<service>> #7C3AED
+  BackgroundColor<<db>> #FEF3C7
+  BorderColor<<db>> #B45309
+}
+skinparam sequence {
+  ArrowColor #475569
+  LifeLineBorderColor #94A3B8
+  LifeLineBackgroundColor #F8FAFC
+}
+
+actor "Étudiant\n(assil)" as Student <<student>>
+participant "StudentPhaseCard.jsx\n(React)" as Front <<front>>
+participant "projectController\n.importPhaseLivrable" as API <<api>>
+participant "progressService\n.isCasPratiqueEvaluatedForUser" as Progress <<service>>
+database "Project\n(MongoDB)" as ProjectDB <<db>>
+database "Prosit\n(MongoDB)" as PrositDB <<db>>
+
+== Phase initiale : étudiant constate l'option d'import ==
+
+Student -> Front: ouvre /projects/:id\n→ phase 🔓 unlocked\navec sourceCasPratiqueId
+note right: Bandeau "Tu as déjà rendu un\nlivrable sur ce sujet"\n[Importer] [Repartir de zéro]
+
+== Click "Importer et enrichir" ==
+
+Student -> Front: click [Importer et enrichir]
+activate Front
+Front -> API: POST /api/projects/:id/phases/:phaseId/import-livrable
+activate API
+
+== Étape 1 : Récupérer le projet ==
+
+API -> ProjectDB: Project.findById(projectId)
+activate ProjectDB
+ProjectDB --> API: project (avec phases + studentProgress)
+deactivate ProjectDB
+
+alt projet introuvable
+  API --> Front: 404 "Projet introuvable"
+end
+
+== Étape 2 : Vérifier inscription dans un groupe ==
+
+API -> API: enrolled = project.groupes.some(\n  g => g.membres.some(m => m.userId === user.id))
+
+alt non inscrit
+  API --> Front: 403 "Vous n'êtes pas inscrit"
+end
+
+== Étape 3 : Vérifier sourceCasPratiqueId existe ==
+
+API -> API: phase = project.phases.id(phaseId)\nphase.sourceCasPratiqueId ?
+
+alt sourceCasPratiqueId absent
+  API --> Front: 400 "Aucun cas pratique source"
+end
+
+== Étape 4 : Vérifier éligibilité étudiant ==
+
+API -> Progress: isCasPratiqueEvaluatedForUser(\n  user.id, sourceCasPratiqueId)
+activate Progress
+Progress -> PrositDB: Prosit.findById(sourceId)\n.select('statut livrables notes')
+activate PrositDB
+PrositDB --> Progress: prosit
+deactivate PrositDB
+Progress -> Progress: vérifier 3 conditions :\n• statut === 'evalue'\n• livrables.find(my)\n• notes.find(my)
+Progress --> API: true
+deactivate Progress
+
+alt pas évalué pour cet étudiant
+  API --> Front: 400 "Cas pratique pas évalué"
+end
+
+== Étape 5 : Récupérer le livrable de l'étudiant ==
+
+API -> PrositDB: Prosit.findById(sourceId)\n.select('titre livrables')
+activate PrositDB
+PrositDB --> API: cp (avec livrables[])
+deactivate PrositDB
+API -> API: livrable = cp.livrables.find(\n  l => l.studentId === user.id)
+
+alt livrable introuvable
+  API --> Front: 404 "Aucun livrable trouvé"
+end
+
+== Étape 6 : Copier le livrable dans la phase ==
+
+API -> API: sp = phase.studentProgress.find(my)\n  || créer nouvelle entrée
+API -> API: vérifier sp.status ∈\n  {unlocked, in-progress}
+
+alt phase déjà soumise/validée
+  API --> Front: 400 "Phase verrouillée"
+end
+
+API -> API: sp.submission = livrable.contenu\nsp.fichierUrl = livrable.fichierUrl\nsp.importedFromCasPratiqueId = sourceId\nsp.status = 'in-progress'
+API -> ProjectDB: project.markModified('phases')\nproject.save()
+activate ProjectDB
+ProjectDB --> API: ok
+deactivate ProjectDB
+
+== Réponse ==
+
+API --> Front: 200 + phase mise à jour\n{ status, submission, fichierUrl,\n  importedFromCasPratiqueId,\n  casPratiqueTitre }
+deactivate API
+Front -> Front: refreshMyPhases()
+Front --> Student: phase 🟡 in-progress\nformulaire pré-rempli +\nbandeau "Livrable importé\ndepuis l'étude de cas X"
+deactivate Front
+
+note over API #FFFAE6
+  **5 vérifications de défense en profondeur**
+  (Saltzer & Schroeder, 1975) :
+  1. Projet existe        → 404
+  2. Étudiant inscrit     → 403
+  3. SourceId déclaré     → 400
+  4. Évalué pour user     → 400
+  5. Livrable existe      → 404
+
+  Aucun étudiant ne peut récupérer le
+  livrable d'un autre, même via requête
+  HTTP forgée manuellement.
+end note
+
+@enduml

@@ -461,7 +461,11 @@ Le verrouillage *macro* présenté en § 4.3.3 fonctionne au grain du cours : l'
 
 ## 4.4 Diagrammes UML
 
+> **Note méthodologique.** Les diagrammes des sections § 4.4.1 à § 4.4.6 sont rédigés en **PlantUML** et versionnés dans `docs/diagrammes/*.puml`. La représentation textuelle ASCII conservée ci-dessous (pour lecture immédiate) est une vue simplifiée — les sources `.puml` produisent un rendu PNG/SVG académique avec packages colorés, couleurs distinctes par participant dans les séquences, et notes contextuelles. La génération s'effectue via `plantuml -tpng docs/diagrammes/*.puml` ou un service en ligne (cf. `docs/diagrammes/README.md`).
+
 ### 4.4.1 Diagramme de cas d'utilisation simplifié
+
+> Source PlantUML : [`docs/diagrammes/01-cas-utilisation.puml`](../diagrammes/01-cas-utilisation.puml)
 
 **Figure 4.4 — Cas d'utilisation principaux par acteur**
 
@@ -503,6 +507,8 @@ Le verrouillage *macro* présenté en § 4.3.3 fonctionne au grain du cours : l'
 ```
 
 ### 4.4.2 Diagramme de séquence — Cas d'utilisation *Auto-préparation IA*
+
+> Source PlantUML : [`docs/diagrammes/04-sequence-autoprep-ia.puml`](../diagrammes/04-sequence-autoprep-ia.puml)
 
 **Figure 4.5 — Séquence Auto-préparation cours**
 
@@ -555,6 +561,8 @@ Le verrouillage *macro* présenté en § 4.3.3 fonctionne au grain du cours : l'
 
 ### 4.4.3 Diagramme de classes — Domaine *Apprentissage par problème*
 
+> Source PlantUML : [`docs/diagrammes/02-classes-prosit.puml`](../diagrammes/02-classes-prosit.puml)
+
 **Figure 4.6 — Classes du domaine Prosit**
 
 ```
@@ -599,6 +607,8 @@ Le verrouillage *macro* présenté en § 4.3.3 fonctionne au grain du cours : l'
 ```
 
 ### 4.4.4 Diagramme de classes — Domaine *Apprentissage par projet (refonte 2026-05)*
+
+> Source PlantUML : [`docs/diagrammes/03-classes-project-articulation.puml`](../diagrammes/03-classes-project-articulation.puml)
 
 **Figure 4.7 — Classes du domaine Project enrichi (articulation CAI 3 → 4)**
 
@@ -660,6 +670,8 @@ Le diagramme ci-dessous précise les sous-documents introduits par la refonte de
 Le sous-document `unlockRules` est *singleton* sur la phase (toutes les règles s'appliquent à toutes les soumissions de la phase) ; à l'inverse, `studentProgress` est *multi-occurrences* (un statut par étudiant). Cette asymétrie reflète la différence entre la *définition* du parcours (commune au groupe) et son *parcours effectif* (individuel).
 
 ### 4.4.5 Diagramme de séquence — Cas d'utilisation *Importer le livrable d'un cas pratique*
+
+> Source PlantUML : [`docs/diagrammes/05-sequence-import-livrable.puml`](../diagrammes/05-sequence-import-livrable.puml)
 
 **Figure 4.8 — Séquence Import livrable cas pratique → phase de projet**
 
@@ -727,6 +739,80 @@ Le sous-document `unlockRules` est *singleton* sur la phase (toutes les règles 
 ```
 
 **Lecture du diagramme.** Le contrôleur `importPhaseLivrable` orchestre cinq vérifications successives — projet existant, phase existante, étudiant inscrit, cas pratique source déclaré, cas pratique évalué pour cet étudiant — avant la copie effective du contenu. Cette défense en profondeur (Saltzer & Schroeder, 1975, *defense in depth*) garantit qu'aucun étudiant ne peut récupérer le livrable d'un autre, même en construisant manuellement une requête HTTP. L'écriture finale en base est *idempotente* : un import déjà effectué, puis ré-effectué, écrasera la `submission` mais restera cohérent (seule l'horodatage `submittedAt` reste à `null` tant que la phase n'est pas réellement soumise).
+
+### 4.4.6 Diagramme de déploiement
+
+> Source PlantUML : [`docs/diagrammes/06-deploiement.puml`](../diagrammes/06-deploiement.puml)
+
+**Figure 4.9 — Architecture de déploiement monolithique sur Render**
+
+Le diagramme de déploiement formalise la topologie physique de l'application en production. FlipLearn adopte une architecture **monolithique** : un unique service Node.js (Express + Socket.io) hébergé sur Render Cloud sert à la fois la *Single Page Application* React (en static, depuis `frontend/dist/`) et l'API REST (`/api/*`), sur la même origine HTTPS. Cette unification simplifie le déploiement, élimine les problèmes de CORS cross-origin et réduit le coût opérationnel à un seul service free tier.
+
+```
+┌──────────────────────────────────────────────────────────────────────────┐
+│  ☁️ Navigateur étudiant/professeur                                        │
+│  ┌─────────────────────────────────────────────────────────┐              │
+│  │  React 18 SPA (Vite build)                              │              │
+│  │  - frontend/dist/index.html  +  /assets/*.js, *.css     │              │
+│  │  - Socket.io-client (WebSocket)                         │              │
+│  └─────────────────────────────────────────────────────────┘              │
+└──────────────────┬─────────────────────┬──────────────────┬───────────────┘
+                   │ HTTPS GET /         │ /api/*           │ WSS Socket.io
+                   │ (HTML+JS+CSS)       │ (REST + JWT)     │ (token JWT)
+                   ▼                     ▼                  ▼
+┌──────────────────────────────────────────────────────────────────────────┐
+│                                                                          │
+│   🟢 RENDER (Cloud, free tier, datacenter Frankfurt)                     │
+│   ┌────────────────────────────────────────────────────────────┐         │
+│   │  📦 Service "fliplearn-api" — Node.js 20.x port 10000        │         │
+│   │                                                            │         │
+│   │  🌐 Express 4                                              │         │
+│   │   ├── Static middleware → frontend/dist/                   │         │
+│   │   ├── Routes /api/* (35 routers)                           │         │
+│   │   └── Socket.io 4 (chat, battle, notifications)            │         │
+│   │                                                            │         │
+│   │  ⚙️ Services métier (15+ fichiers)                          │         │
+│   │   ├── progressService + projectMilestoneService            │         │
+│   │   ├── courseAutoPrep (5 appels Groq parallèles)            │         │
+│   │   ├── videoAnalyzer (Whisper + GPT-4o)                     │         │
+│   │   ├── notificationScheduler (4 crons)                      │         │
+│   │   └── emailService (cascade Brevo > Resend > Gmail)        │         │
+│   │                                                            │         │
+│   │  🔐 11 env vars (MONGODB_URI, JWT_SECRET, GROQ_API_KEY...)  │         │
+│   │  📋 render.yaml (blueprint)                                 │         │
+│   └────────────────────────────────────────────────────────────┘         │
+│                                                                          │
+└─────┬─────────────┬──────────────┬──────────────┬─────────────┬──────────┘
+      │             │              │              │             │
+      ▼             ▼              ▼              ▼             ▼
+┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌─────────────┐
+│ MongoDB  │  │Cloudinary│  │   Groq   │  │  OpenAI  │  │ Email cascade│
+│ Atlas M0 │  │ (médias) │  │Llama 3.3 │  │ Whisper  │  │ Brevo →      │
+│Frankfurt │  │ 100MB max│  │~1500tok/s│  │+ GPT-4o  │  │ Resend →     │
+│ 32 colls │  │ par fich.│  │ free tier│  │payant lim│  │ Gmail SMTP   │
+└──────────┘  └──────────┘  └──────────┘  └──────────┘  └─────────────┘
+
+   ▲ GitHub                                    ▲ YouTube (iframe)
+   │  push main → auto-deploy Render            │ tracking via IFrame API
+   │  (npm install + build + restart)           │ (POST /api/videos/:id/progress)
+   │                                            │
+   └────────────────── Browser ─────────────────┘
+```
+
+**Lecture du diagramme.** Le déploiement repose sur **un seul service Render** comme nœud central, encadré par six services externes spécialisés :
+- **MongoDB Atlas M0** (free tier, 512 Mo, cluster 3 nœuds) pour la persistance des 32 collections.
+- **Cloudinary** pour le stockage des vidéos et fichiers uploadés (limite 100 Mo par fichier en free tier, encodage automatique).
+- **Groq Cloud** (free tier, modèle Llama-3.3-70B-versatile) pour les agents conversationnels et les appels parallèles d'auto-préparation IA.
+- **OpenAI** (Whisper + GPT-4o) pour la transcription audio et l'analyse multimodale des vidéos.
+- **Email providers** (Brevo en primaire, Resend en repli, Gmail SMTP en dernier recours) pour les notifications transactionnelles, avec cascade implémentée dans `emailService.js`.
+- **YouTube** (IFrame Player API) consulté directement par le navigateur pour les capsules embarquées (le serveur Render n'intermédie pas la lecture).
+
+Le pipeline CI/CD est élémentaire : un `git push` sur la branche `main` du dépôt GitHub déclenche automatiquement, sur Render, un re-build (`npm install` puis `node server.js`) avec migration *blue-green* (le service précédent reste actif jusqu'à ce que le nouveau ait passé le `healthCheckPath` `/`). Aucun pipeline GitHub Actions n'est requis pour le déploiement applicatif lui-même — la simplicité étant ici un choix assumé compatible avec les ressources d'un projet étudiant.
+
+**Particularités du free tier Render documentées :**
+- *Sleep* automatique du service après 15 minutes d'inactivité, avec un *cold start* de 30 à 60 secondes au prochain accès. Acceptable en démo (préchauffage 1-2 min avant la soutenance) mais inadapté à un usage en production réelle qui nécessiterait un upgrade Starter ($7/mois) ou un pinger UptimeRobot toutes les 5 minutes (cf. *technical-decisions.md*, ADR-009).
+- 512 Mo de RAM, 0,1 vCPU partagé : suffisant pour un usage de démonstration (< 50 connexions simultanées) mais limitatif pour un déploiement à l'échelle d'une promotion entière.
+- Disque éphémère : tout l'état persistant transite obligatoirement par MongoDB Atlas ou Cloudinary, ce qui correspond aux bonnes pratiques *cloud-native* (stateless services) sans effort supplémentaire de conception.
 
 ## 4.5 Design des interfaces utilisateur
 

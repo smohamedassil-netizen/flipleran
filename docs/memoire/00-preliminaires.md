@@ -185,7 +185,12 @@ Figure 2.2  Flux des appels Groq dans le service Auto-prep ...... 28
 Figure 4.1  Architecture trois couches ......................... 44
 Figure 4.2  ERD des 25 collections MongoDB .................... 47
 Figure 4.3  Le Cycle d'Apprentissage Inversé (5 étapes) ....... 51
-Figure 4.4  Diagramme de séquence — Pulse Préparation ......... 54
+Figure 4.4  Diagramme de cas d'utilisation principaux .......... 54
+Figure 4.5  Séquence Auto-préparation IA (5 appels Groq) ....... 56
+Figure 4.6  Diagramme de classes — Domaine Cas Pratique (CESI) . 58
+Figure 4.7  Diagramme de classes — Domaine Projet (refonte) .... 60
+Figure 4.8  Séquence Import livrable cas pratique → phase ...... 62
+Figure 4.9  Diagramme de déploiement (monolithique Render) ..... 64
 Figure 5.1  Page « Mon Parcours » côté étudiant ............... 59
 Figure 5.2  Page « Préparation classe » côté professeur ........ 63
 Figure 5.3  Dashboard administrateur — vue d'ensemble .......... 66

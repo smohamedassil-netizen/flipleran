@@ -1,0 +1,185 @@
+@startuml deploiement
+!theme cerulean-outline
+title FlipLearn — Diagramme de déploiement (architecture monolithique Render)
+
+skinparam node {
+  BackgroundColor<<client>> #DBEAFE
+  BorderColor<<client>> #1B4F72
+  BackgroundColor<<render>> #DCFCE7
+  BorderColor<<render>> #166534
+  BackgroundColor<<db>> #FEF3C7
+  BorderColor<<db>> #B45309
+  BackgroundColor<<media>> #FCE7F3
+  BorderColor<<media>> #BE185D
+  BackgroundColor<<ai>> #F3E8FF
+  BorderColor<<ai>> #7C3AED
+  BackgroundColor<<email>> #FFEDD5
+  BorderColor<<email>> #C2410C
+  BackgroundColor<<git>> #F1F5F9
+  BorderColor<<git>> #475569
+}
+skinparam component {
+  BackgroundColor<<runtime>> #F0FDF4
+  BorderColor<<runtime>> #16A34A
+}
+
+' ═══════════════════════════════════════════════════════════════
+' CLIENT
+' ═══════════════════════════════════════════════════════════════
+
+node "Navigateur étudiant/prof\n(Chrome, Firefox, Edge…)" as Browser <<client>> {
+  component "FlipLearn SPA" as SPA <<runtime>> {
+    component "React 18 build\n(frontend/dist/index.html\n+ assets/*.js, *.css)" as React
+    component "Socket.io-client\n(WebSocket)" as SocketClient
+  }
+}
+
+' ═══════════════════════════════════════════════════════════════
+' GITHUB (CI/CD)
+' ═══════════════════════════════════════════════════════════════
+
+node "GitHub" as GitHub <<git>> {
+  component "Repo flipleran\nbranch main" as Repo
+}
+
+' ═══════════════════════════════════════════════════════════════
+' RENDER (production)
+' ═══════════════════════════════════════════════════════════════
+
+node "Render — fliplearn-api\n(free tier, datacenter Frankfurt)" as Render <<render>> {
+
+  component "Node.js 20.x runtime\nport 10000" as Node <<runtime>> {
+
+    component "Express 4 server" as Express {
+      component "Static middleware\n→ frontend/dist/" as Static
+      component "Routes /api/*\n(35 routers)" as Routes
+      component "Socket.io 4 server\n(rooms : chat, battle,\n  notifications)" as SocketServer
+    }
+
+    component "Services métier\n(15+ fichiers)" as Services {
+      component "progressService\n+ projectMilestoneService" as MilestoneService
+      component "courseAutoPrep\n(5 appels Groq parallèles)" as AutoPrep
+      component "videoAnalyzer\n(Whisper + GPT-4o)" as Analyzer
+      component "notificationScheduler\n(node-cron : 4 jobs)" as Cron
+      component "emailService\n(Brevo > Resend > Gmail)" as Email
+    }
+  }
+
+  artifact "render.yaml\n(blueprint)" as RenderConfig
+  artifact "11 env vars\n(MONGODB_URI, JWT_SECRET,\nCLOUDINARY_*, GROQ_API_KEY,\nOPENAI_API_KEY, BREVO_*, ...)" as EnvVars
+}
+
+' ═══════════════════════════════════════════════════════════════
+' SERVICES EXTERNES
+' ═══════════════════════════════════════════════════════════════
+
+cloud "MongoDB Atlas\n(M0 free tier, Frankfurt)" as Atlas <<db>> {
+  database "fliplearn DB\n32 collections" as MongoDB {
+    component "User, Course, Chapter,\nVideo, QCM, Prosit, Project,\nDeck, Card, Badge, ..." as Collections
+  }
+}
+
+cloud "Cloudinary" as Cloudinary <<media>> {
+  artifact "Vidéos uploadées prof\n(100 MB max / fichier)" as VideoFiles
+  artifact "Avatars + ressources\nPDF/PPTX/ZIP" as ResourceFiles
+}
+
+cloud "Groq Cloud" as Groq <<ai>> {
+  component "Llama-3.3-70b-versatile\n(~1500 tok/s, free tier)" as Llama
+}
+
+cloud "OpenAI API" as OpenAI <<ai>> {
+  component "Whisper (transcription)" as Whisper
+  component "GPT-4o (analyse vidéo)" as GPT4o
+}
+
+cloud "Email providers" as EmailProviders <<email>> {
+  component "Brevo\n(300/jour free)" as Brevo
+  component "Resend\n(fallback)" as Resend
+  component "Gmail SMTP\n(fallback final)" as Gmail
+}
+
+cloud "YouTube\n(IFrame Player API)" as YouTube <<media>> {
+  artifact "Vidéos embarquées\nvia youtubeId" as YTVideos
+}
+
+' ═══════════════════════════════════════════════════════════════
+' CONNEXIONS
+' ═══════════════════════════════════════════════════════════════
+
+' GitHub → Render
+Repo --> Render : push main\n→ auto-deploy\n(npm install + node server.js)
+
+' Browser → Render (HTTPS unique URL)
+React -down-> Static : GET /\n(HTTPS, HTML+JS+CSS)
+React -down-> Routes : /api/*\n(REST, JWT Bearer)
+SocketClient -down-> SocketServer : WSS\n(token JWT)
+
+' Browser → YouTube (iframe direct, contourne Render)
+React -right-> YouTube : iframe embed\n+ IFrame API\n(tracking watchedPercent)
+
+' Express ↔ services
+Express *-- Services
+Routes -down-> Services : appels métier
+SocketServer -down-> Services : push notifications
+
+' Services → externes
+MilestoneService -down-> MongoDB : lecture/écriture\nProject + Prosit
+AutoPrep -down-> Llama : 5 appels parallèles\n(Promise.allSettled)
+Analyzer -down-> Whisper : transcription audio
+Analyzer -down-> GPT4o : analyse multimodale
+Cron -down-> MongoDB : queries deadline\n(8h, 18h, 6h lun)
+Email -down-> Brevo : POST /api/v3/smtp/email
+Email .down.> Resend : fallback si Brevo échoue
+Email .down.> Gmail : fallback final
+
+' Express → DB et Cloudinary
+Routes -down-> MongoDB : Mongoose queries
+Routes -down-> Cloudinary : multer upload\n+ delete asset
+
+' Render config
+RenderConfig ..> Express : déclare runtime\n+ healthCheckPath /
+EnvVars ..> Node : injecte secrets
+
+' ═══════════════════════════════════════════════════════════════
+' NOTES
+' ═══════════════════════════════════════════════════════════════
+
+note right of Render #FFFAE6
+  **Architecture monolithique** :
+  un seul service Render sert :
+  • la SPA React (frontend/dist en static)
+  • l'API Express (/api/*)
+  • Socket.io (même origine)
+
+  → une seule URL publique :
+    **https://fliplearn-5lsz.onrender.com**
+
+  Free tier : sleep 15min, cold start 30-60s.
+end note
+
+note bottom of Atlas #FFFAE6
+  **MongoDB Atlas M0** (free tier)
+  • 512 MB stockage
+  • Réplicat 3 nœuds (haute dispo)
+  • Réseau allowlist : 0.0.0.0/0
+    (Render n'expose pas d'IP fixe)
+end note
+
+note bottom of YouTube #FFFAE6
+  **15 capsules par module** seedées
+  via POST /api/videos/youtube.
+  Tracking complétion : polling
+  IFrame API toutes les 2s, POST
+  /api/videos/:id/progress.
+end note
+
+note left of EmailProviders #FFFAE6
+  **Fallback en cascade**
+  emailService.js tente Brevo, puis
+  Resend, puis Gmail SMTP.
+  Robustesse : 1 panne provider
+  ne bloque pas les notifications.
+end note
+
+@enduml

@@ -1,0 +1,108 @@
+@startuml cas-utilisation
+!theme cerulean-outline
+title FlipLearn — Diagramme de cas d'utilisation principaux
+
+skinparam usecase {
+  BackgroundColor #FEFCE8
+  BorderColor #1B4F72
+}
+skinparam actor {
+  BackgroundColor #DBEAFE
+  BorderColor #1B4F72
+}
+
+left to right direction
+
+actor "Étudiant" as student #DBEAFE
+actor "Professeur" as prof #FEF3C7
+actor "Administrateur" as admin #FEE2E2
+
+rectangle "FlipLearn" {
+
+  package "Apprentissage" #E0F2FE {
+    usecase "Consulter Mon Parcours\n(CAI 5 étapes)" as UC_Journey
+    usecase "Visionner capsule\n+ tracking 80%" as UC_Watch
+    usecase "Passer QCM\n(scope video/chapter/module)" as UC_QCM
+    usecase "Réviser flashcards\n(SM-2)" as UC_Cards
+    usecase "Dialoguer Tuteur IA" as UC_Tutor
+  }
+
+  package "Application — Cas pratique" #FEF3C7 {
+    usecase "Participer Cas pratique\n(rôle CESI)" as UC_CP
+    usecase "Soumettre livrable\nindividuel" as UC_CP_Liv
+    usecase "Évaluer le groupe\n(note ind + coll)" as UC_CP_Eval
+  }
+
+  package "Production — Projet" #DCFCE7 {
+    usecase "Configurer prérequis\nphase (unlockRules)" as UC_Unlock #FFE4B5
+    usecase "Consulter mes phases\n(5 états visuels)" as UC_MyPhases #FFE4B5
+    usecase "Importer livrable\ncas pratique" as UC_Import #FFE4B5
+    usecase "Soumettre livrable\nde phase" as UC_Submit
+    usecase "Consulter matrice\nde progression" as UC_Matrix #FFE4B5
+  }
+
+  package "Création prof" #F3E8FF {
+    usecase "Créer cours\n+ chapitres + capsules" as UC_Course
+    usecase "Lancer Auto-prep IA\n(Whisper + Groq×5)" as UC_AutoPrep
+    usecase "Créer QCM\n(manuel ou IA)" as UC_CreateQCM
+    usecase "Créer cas pratique\n+ projet" as UC_CreateCP
+  }
+
+  package "Communication" #FCE7F3 {
+    usecase "Chat course\n/ private / bot" as UC_Chat
+    usecase "Quiz Battle\n(temps réel 1v1)" as UC_Battle
+    usecase "Consulter\nnotifications" as UC_Notif
+  }
+
+  package "Administration" #F1F5F9 {
+    usecase "Approuver/rejeter\ninscription" as UC_Approve
+    usecase "Gérer utilisateurs\n(CRUD)" as UC_Users
+    usecase "Modérer chat" as UC_Moderate
+  }
+}
+
+' --- ÉTUDIANT ---
+student --> UC_Journey
+student --> UC_Watch
+student --> UC_QCM
+student --> UC_Cards
+student --> UC_Tutor
+student --> UC_CP
+student --> UC_CP_Liv
+student --> UC_MyPhases
+student --> UC_Import
+student --> UC_Submit
+student --> UC_Chat
+student --> UC_Battle
+student --> UC_Notif
+
+' --- PROFESSEUR ---
+prof --> UC_Course
+prof --> UC_AutoPrep
+prof --> UC_CreateQCM
+prof --> UC_CreateCP
+prof --> UC_Unlock
+prof --> UC_CP_Eval
+prof --> UC_Matrix
+prof --> UC_Chat
+prof --> UC_Notif
+
+' --- ADMIN ---
+admin --> UC_Approve
+admin --> UC_Users
+admin --> UC_Moderate
+
+note right of UC_Unlock #FFFAE6
+  Refonte 2026-05
+  Articulation CAI étape 3 → 4
+end note
+
+note right of UC_Matrix #FFFAE6
+  Refonte 2026-05
+  5 états visuels :
+  ✅ validated · ⚠️ submitted
+  🟡 in-progress · 🔓 unlocked
+  🔒 locked
+end note
+
+@enduml

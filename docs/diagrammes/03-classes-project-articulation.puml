@@ -1,0 +1,132 @@
+@startuml classes-project-articulation
+!theme cerulean-outline
+title FlipLearn — Domaine Projet (refonte 2026-05)\nArticulation Cas Pratique ↔ Projet via unlockRules + sourceCasPratiqueId + studentProgress
+
+skinparam class {
+  BackgroundColor<<root>> #DCFCE7
+  BorderColor<<root>> #166534
+  BackgroundColor<<phase>> #DBEAFE
+  BorderColor<<phase>> #1B4F72
+  BackgroundColor<<unlock>> #FEF3C7
+  BorderColor<<unlock>> #B45309
+  BackgroundColor<<progress>> #F3E8FF
+  BorderColor<<progress>> #7C3AED
+  BackgroundColor<<external>> #F1F5F9
+  BorderColor<<external>> #475569
+}
+
+class Project <<root>> {
+  - _id : ObjectId
+  - titre : String
+  - description : String
+  - type : enum [mono, groupe, pfe]
+  - courseId : ObjectId
+  - modules : [ObjectId]
+  - createdBy : ObjectId
+  - status : enum [brouillon, actif, termine]
+  - dateDebut, dateFin, dateSoutenance : Date
+  - linkedCasPratiqueId : ObjectId
+  --
+  + addPhase()
+  + computeProjectGrade()
+}
+
+class Phase <<phase>> {
+  - _id : ObjectId
+  - titre : String
+  - description : String
+  - statut : enum [a_faire, en_cours, termine]
+  - dateDebut, dateFin : Date
+  - weight : Number (0-100)
+  - livrableSpec : { type, isRequired, consigne }
+  - sourceCasPratiqueId : ObjectId
+  --
+  + isUnlockedFor(studentId)
+}
+
+class UnlockRules <<unlock>> {
+  - chapterIds : [ObjectId]
+  - casPratiqueIds : [ObjectId]
+  - requiresAllChapters : Boolean (true)
+  - requiresAllCasPratiques : Boolean (true)
+}
+
+class StudentProgress <<progress>> {
+  - studentId : ObjectId
+  - status : enum [locked, unlocked,\n  in-progress, submitted, validated]
+  - submission : String
+  - fichierUrl : String
+  - importedFromCasPratiqueId : ObjectId
+  - submittedAt : Date
+  - validatedAt : Date
+  - feedback : String
+}
+
+class ChecklistItem <<phase>> {
+  - texte : String
+  - done : Boolean
+  - doneBy : ObjectId
+  - doneAt : Date
+}
+
+class Groupe <<phase>> {
+  - nom : String
+  - membres : [{ userId, role }]
+}
+
+' Modèles externes référencés
+class Chapter <<external>> {
+  - titre, courseId
+  - completionThreshold (80%)
+}
+
+class Prosit <<external>> {
+  (= Cas Pratique)
+  - statut : evalue
+  - livrables[]
+  - notes[]
+}
+
+class User <<external>> {
+  - email, role
+}
+
+' --- Compositions Project → sub-docs ---
+Project "1" *-- "*" Phase : phases[]
+Project "1" *-- "*" Groupe : groupes[]
+
+' --- Sub-docs de Phase ---
+Phase "1" *-- "0..1" UnlockRules : unlockRules
+Phase "1" *-- "*" StudentProgress : studentProgress[]
+Phase "1" *-- "*" ChecklistItem : checklist[]
+
+' --- Références externes ---
+UnlockRules ..> Chapter : chapterIds
+UnlockRules ..> Prosit : casPratiqueIds
+Phase ..> Prosit : sourceCasPratiqueId\n(import livrable)
+StudentProgress ..> User : studentId
+StudentProgress ..> Prosit : importedFromCasPratiqueId\n(traçabilité)
+Project ..> Prosit : linkedCasPratiqueId\n(lien CAI étape 3 → 4)
+Groupe "1" o-- "*" User : membres[]
+
+note right of UnlockRules
+  Règles déclaratives évaluées par
+  **projectMilestoneService.computePhaseStatus**
+  via **progressService**:
+  • isChapterCompletedByUser
+    (capsules ≥ threshold ET QCM ≥ 80%)
+  • isCasPratiqueEvaluatedForUser
+    (statut + livrable + note)
+end note
+
+note right of StudentProgress
+  **5 états visuels** (immutabilité
+  des statuts terminaux)
+  ✅ validated  ← prof valide
+  ⚠️ submitted  ← attente validation
+  🟡 in-progress ← importé/commencé
+  🔓 unlocked   ← prérequis OK
+  🔒 locked     ← prérequis manquants
+end note
+
+@enduml

@@ -197,8 +197,135 @@ fliplearn/
 
 ---
 
+## Articulation Cas Pratique ↔ Projet (refonte 2026-05)
+
+Apport conceptuel majeur du projet, ajouté en mai 2026 (commits `2ba23d6`, `414622b`, `27db476`). L'objectif : éviter que chaque dispositif pédagogique soit silotté et faire émerger une **continuité visible** entre l'étape 3 (Application — cas pratique en groupe court) et l'étape 4 (Production — projet sur la durée) du Cycle d'Apprentissage Inversé.
+
+```mermaid
+graph LR
+    subgraph "Étape 1-2 : Préparation"
+        CAPSULES[Capsules vidéo<br/>Video.watchedBy]
+        QCM_VIDEO[QCM scope=video]
+    end
+
+    subgraph "Étape 3 : Application"
+        CP[Cas Pratique<br/>Prosit.statut = evalue<br/>Prosit.notes]
+    end
+
+    subgraph "Étape 4 : Production"
+        PROJET[Projet]
+        P1[Phase 1 unlockRules]
+        P2[Phase 2 unlockRules<br/>+ sourceCasPratiqueId]
+        P3[Phase 3 unlockRules]
+    end
+
+    CAPSULES -->|isChapterCompletedByUser| P1
+    QCM_VIDEO -->|composite ≥80%| P1
+    CP -->|isCasPratiqueEvaluatedForUser| P2
+    CP -.->|importer livrable| P2
+
+    style CAPSULES fill:#dbeafe
+    style QCM_VIDEO fill:#dbeafe
+    style CP fill:#fef3c7
+    style PROJET fill:#dcfce7
+    style P1 fill:#dcfce7
+    style P2 fill:#dcfce7
+    style P3 fill:#dcfce7
+```
+
+**Deux services backend ajoutés :**
+- `progressService.js` — source unique de vérité (`isChapterCompletedByUser`, `isCasPratiqueEvaluatedForUser`)
+- `projectMilestoneService.js` — orchestre `computePhaseStatus` + trigger asynchrone post-évaluation
+
+**Trois endpoints ajoutés :**
+- `GET /api/projects/:id/my-phases` — vue étudiant calculée
+- `POST /api/projects/:id/phases/:phaseId/import-livrable` — réutilise livrable cas pratique
+- `POST /api/projects/:id/phases/:phaseId/submit` — soumission finale
+
+**Cinq états visuels par phase (UI) :** ✅ validated · ⚠️ submitted · 🟡 in-progress · 🔓 unlocked · 🔒 locked.
+
+Détail dans le mémoire **§ 4.3.5 — Articulation fine étape 3 → 4** + diagrammes PlantUML `docs/diagrammes/03-classes-project-articulation.puml` et `05-sequence-import-livrable.puml`.
+
+---
+
+## Déploiement Render — détail opérationnel
+
+```mermaid
+graph TB
+    GIT[GitHub<br/>main branch]
+    RENDER[Render<br/>fliplearn-api service]
+    BROWSER[Navigateur étudiant/prof]
+
+    GIT -->|push main| RENDER
+    RENDER -.->|build npm install + node server.js| RENDER
+    BROWSER -->|HTTPS GET /| RENDER
+    BROWSER -->|HTTPS /api/*| RENDER
+    BROWSER <-.->|WSS Socket.io| RENDER
+
+    subgraph "Services externes"
+        ATLAS[(MongoDB Atlas M0)]
+        CLOUD[Cloudinary]
+        GROQ[Groq]
+        OAI[OpenAI]
+        BREVO[Brevo + Resend]
+    end
+
+    RENDER --> ATLAS
+    RENDER --> CLOUD
+    RENDER --> GROQ
+    RENDER --> OAI
+    RENDER --> BREVO
+
+    style RENDER fill:#dcfce7,stroke:#166534
+    style ATLAS fill:#fef3c7
+    style BROWSER fill:#dbeafe
+```
+
+**Configuration `render.yaml` :**
+
+| Champ | Valeur |
+|---|---|
+| `type` | `web` |
+| `runtime` | `node` |
+| `plan` | `free` |
+| `buildCommand` | `npm install` |
+| `startCommand` | `node server.js` |
+| `healthCheckPath` | `/` |
+| `port` | 10000 (env `PORT`) |
+
+**11 variables d'environnement** configurées via dashboard Render (sync: false) :
+- `MONGODB_URI`, `JWT_SECRET` (auto-généré), `CLIENT_URL`
+- `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET`
+- `GROQ_API_KEY`, `OPENAI_API_KEY`
+- `BREVO_API_KEY`, `RESEND_API_KEY`, `SMTP_*` (5 vars Gmail fallback)
+
+**Particularités free tier :**
+- Sleep après 15 min d'inactivité → cold start ~30-60 s. Mitigation : UptimeRobot ping `/` toutes les 5 min (option non activée en démo PFE pour préserver les heures gratuites).
+- 512 Mo RAM, 0.1 CPU partagé.
+- Disque éphémère → tout l'état persiste en MongoDB / Cloudinary.
+
+URL publique unique : **https://fliplearn-5lsz.onrender.com** sert à la fois la SPA React (route `/`) et l'API Express (`/api/*`).
+
+---
+
+## Modules ISIL L3 seedés (démo soutenance)
+
+Trois modules peuplés bout-en-bout avec progression différenciée pour le compte assil :
+
+| Module | État seed | Contenu | Projet |
+|---|---|---|---|
+| **Cybersécurité & Cloud DevOps** | AVANCÉ ~80% | 5 chap · 15 caps YouTube · 21 QCM · 3 cas pratiques | 5 phases articulées (P1 P2 P5 unlocked, P3 P4 locked) |
+| **Génie Logiciel & UML** | MILIEU ~50% | 5 chap · 15 caps · 21 QCM · 2 cas pratiques | 4 phases (P1 validated, P2 in-progress importée CP1, P3 P4 locked) |
+| **IA & Data Mining** | DÉBUT ~20% | 5 chap · 15 caps · 21 QCM · 1 cas pratique planifié | 3 phases (toutes locked, démontre l'état initial) |
+
+Toutes les capsules ont leurs URLs YouTube validées via oEmbed (45/45 OK). Tag `[DEMO_SEED]` dans description pour cleanup chirurgical via `node scripts/seed-isil-l3-demo.js --cleanup-only`.
+
+---
+
 ## Voir aussi
 
 - [Modèle de données](data-model.md) — diagramme ERD
 - [Décisions techniques](technical-decisions.md) — ADR détaillés
-- [Diagrammes](diagrams/) — Mermaid additionnels
+- [Guide de déploiement complet](deployment.md) — pas-à-pas Render
+- [Mémoire académique](memoire/) — chap 4 § 4.3.5 articulation, § 4.4 diagrammes UML
+- [Diagrammes PlantUML](diagrammes/) — sources versionnées (.puml) + rendus PNG
