@@ -927,3 +927,199 @@ export const getProjectTemplate = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
+
+/* ═══════════════════════════════════════════════════════════════════════
+   MILESTONES — Déblocage progressif (refonte 2026-05, articulation CAI)
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/**
+ * GET /api/projects/:projectId/my-phases
+ * Renvoie les phases du projet avec leur statut de déblocage pour l'étudiant
+ * connecté + détails (chapitres/cas pratiques requis et leur état).
+ *
+ * Auth : étudiant inscrit dans un groupe du projet.
+ * Côté prof/admin : on tolère l'accès à des fins de démo (pas d'inscription
+ * requise) et on renvoie une vue lecture sans recalculer studentProgress.
+ */
+export const getMyPhases = async (req, res) => {
+  try {
+    const { computePhaseStatus, isStudentEnrolledInProject } = await import('../services/projectMilestoneService.js');
+    const { projectId } = req.params;
+
+    if (req.user.role === 'professeur' || req.user.role === 'admin') {
+      // Vue prof : retourne le projet + phases brut (sans recalcul individuel)
+      const project = await Project.findById(projectId).lean();
+      if (!project) return res.status(404).json({ message: 'Projet introuvable.' });
+      return res.json({
+        project: {
+          _id: project._id, titre: project.titre, type: project.type,
+          status: project.status, courseId: project.courseId,
+        },
+        phases: (project.phases || []).map((p) => ({
+          _id: p._id,
+          titre: p.titre,
+          status: 'unlocked',
+          details: { hasRules: !!(p.unlockRules && (
+            (p.unlockRules.chapterIds?.length || 0) +
+            (p.unlockRules.casPratiqueIds?.length || 0)
+          )) },
+        })),
+      });
+    }
+
+    const result = await computePhaseStatus(projectId, req.user.id);
+    return res.json(result);
+  } catch (err) {
+    if (err.status) return res.status(err.status).json({ message: err.message });
+    console.error('[getMyPhases]', err);
+    return res.status(500).json({ message: err.message || 'Erreur serveur.' });
+  }
+};
+
+/**
+ * POST /api/projects/:projectId/phases/:phaseId/import-livrable
+ * Réutilise le livrable de l'étudiant pour le cas pratique source de la phase.
+ * Conditions :
+ *   - phase.sourceCasPratiqueId renseigné
+ *   - studentProgress.status ∈ {unlocked, in-progress}
+ *   - cas pratique évalué pour cet étudiant (livrable + note présents)
+ */
+export const importPhaseLivrable = async (req, res) => {
+  try {
+    const { isCasPratiqueEvaluatedForUser } = await import('../services/progressService.js');
+    const Prosit = (await import('../models/Prosit.js')).default;
+    const { projectId, phaseId } = req.params;
+
+    const project = await Project.findById(projectId);
+    if (!project) return res.status(404).json({ message: 'Projet introuvable.' });
+
+    const phase = project.phases.id(phaseId);
+    if (!phase) return res.status(404).json({ message: 'Phase introuvable.' });
+
+    if (!phase.sourceCasPratiqueId) {
+      return res.status(400).json({
+        message: 'Aucun cas pratique source défini pour cette phase.',
+      });
+    }
+
+    // Étudiant inscrit ?
+    const userId = req.user.id;
+    const enrolled = (project.groupes || []).some((g) =>
+      (g.membres || []).some((m) => String(m.userId) === String(userId))
+    );
+    if (!enrolled) {
+      return res.status(403).json({ message: "Vous n'êtes pas inscrit dans un groupe de ce projet." });
+    }
+
+    // Cas pratique évalué pour cet étudiant ?
+    const evaluated = await isCasPratiqueEvaluatedForUser(userId, phase.sourceCasPratiqueId);
+    if (!evaluated) {
+      return res.status(400).json({
+        message: "Ce cas pratique n'est pas encore évalué pour vous (livrable ou note manquant).",
+      });
+    }
+
+    // Récupère le livrable
+    const cp = await Prosit.findById(phase.sourceCasPratiqueId).select('titre livrables').lean();
+    const livrable = (cp?.livrables || []).find((l) => String(l.studentId) === String(userId));
+    if (!livrable) {
+      return res.status(404).json({ message: 'Aucun livrable trouvé pour vous sur ce cas pratique.' });
+    }
+
+    // Vérifie / crée le studentProgress, contrôle le statut
+    let sp = phase.studentProgress.find((s) => String(s.studentId) === String(userId));
+    if (!sp) {
+      phase.studentProgress.push({ studentId: userId, status: 'unlocked' });
+      sp = phase.studentProgress[phase.studentProgress.length - 1];
+    }
+    if (!['unlocked', 'in-progress'].includes(sp.status)) {
+      return res.status(400).json({
+        message: `Phase verrouillée ou déjà soumise (statut: ${sp.status}).`,
+      });
+    }
+
+    // Copie du contenu : on tente le contenu texte d'abord, puis le fichier
+    sp.submission = livrable.contenu || sp.submission || '';
+    if (livrable.fichierUrl) sp.fichierUrl = livrable.fichierUrl;
+    sp.importedFromCasPratiqueId = phase.sourceCasPratiqueId;
+    sp.status = 'in-progress';
+
+    project.markModified('phases');
+    await project.save();
+
+    return res.json({
+      _id: phase._id,
+      titre: phase.titre,
+      status: sp.status,
+      submission: sp.submission,
+      fichierUrl: sp.fichierUrl,
+      importedFromCasPratiqueId: sp.importedFromCasPratiqueId,
+      casPratiqueTitre: cp?.titre,
+    });
+  } catch (err) {
+    console.error('[importPhaseLivrable]', err);
+    return res.status(500).json({ message: err.message || 'Erreur serveur.' });
+  }
+};
+
+/**
+ * POST /api/projects/:projectId/phases/:phaseId/submit
+ * Soumet la version finale de la phase pour l'étudiant.
+ * Body : { submission: String, fichierUrl?: String }
+ * Conditions : status ∈ {unlocked, in-progress}.
+ */
+export const submitPhaseLivrable = async (req, res) => {
+  try {
+    const { projectId, phaseId } = req.params;
+    const { submission, fichierUrl } = req.body || {};
+
+    const project = await Project.findById(projectId);
+    if (!project) return res.status(404).json({ message: 'Projet introuvable.' });
+
+    const phase = project.phases.id(phaseId);
+    if (!phase) return res.status(404).json({ message: 'Phase introuvable.' });
+
+    const userId = req.user.id;
+    const enrolled = (project.groupes || []).some((g) =>
+      (g.membres || []).some((m) => String(m.userId) === String(userId))
+    );
+    if (!enrolled) {
+      return res.status(403).json({ message: "Vous n'êtes pas inscrit dans un groupe de ce projet." });
+    }
+
+    if (typeof submission !== 'string' || submission.trim().length === 0) {
+      return res.status(400).json({ message: 'submission (texte) est requis.' });
+    }
+
+    let sp = phase.studentProgress.find((s) => String(s.studentId) === String(userId));
+    if (!sp) {
+      phase.studentProgress.push({ studentId: userId, status: 'unlocked' });
+      sp = phase.studentProgress[phase.studentProgress.length - 1];
+    }
+    if (!['unlocked', 'in-progress'].includes(sp.status)) {
+      return res.status(400).json({
+        message: `Phase verrouillée ou déjà soumise (statut: ${sp.status}).`,
+      });
+    }
+
+    sp.submission = submission.trim();
+    if (typeof fichierUrl === 'string') sp.fichierUrl = fichierUrl || null;
+    sp.status = 'submitted';
+    sp.submittedAt = new Date();
+
+    project.markModified('phases');
+    await project.save();
+
+    return res.json({
+      _id: phase._id,
+      titre: phase.titre,
+      status: sp.status,
+      submission: sp.submission,
+      fichierUrl: sp.fichierUrl,
+      submittedAt: sp.submittedAt,
+    });
+  } catch (err) {
+    console.error('[submitPhaseLivrable]', err);
+    return res.status(500).json({ message: err.message || 'Erreur serveur.' });
+  }
+};

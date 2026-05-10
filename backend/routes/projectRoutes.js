@@ -26,6 +26,10 @@ import {
   setProjectRubric,
   getProjectRubric,
   getProjectTemplate,
+  // Refonte 2026-05 — milestones / déblocage progressif (articulation CAI)
+  getMyPhases,
+  importPhaseLivrable,
+  submitPhaseLivrable,
 } from '../controllers/projectController.js';
 import {
   projectCoachStatus, projectCoachSuggest, projectCoachReview, projectCoachSources,
@@ -104,5 +108,12 @@ router.post('/:id/peer-reviews/assign',                      requireRole('profes
 router.get('/:id/peer-reviews/mine',                         requireRole('etudiant'), getMyAssignments);
 router.post('/:id/peer-reviews/:reviewId/submit',            requireRole('etudiant'), submitPeerReview);
 router.get('/:id/peer-reviews/summary',                      requireRole('professeur', 'admin'), getPeerReviewSummary);
+
+/* ─── Refonte 2026-05 — Milestones (articulation CAI chapitres + cas pratiques)
+   /:id/my-phases : étudiant inscrit OU prof/admin (vue lecture)
+   /import-livrable + /submit : étudiant inscrit uniquement */
+router.get('/:id/my-phases',                                  getMyPhases);
+router.post('/:id/phases/:phaseId/import-livrable',           requireRole('etudiant'), importPhaseLivrable);
+router.post('/:id/phases/:phaseId/submit',                    requireRole('etudiant'), submitPhaseLivrable);
 
 export default router;

@@ -659,6 +659,26 @@ export async function evaluate(req, res) {
       message: `Ton cas pratique "${cp.titre}" a été noté.`,
     });
 
+    // Trigger articulation CAI : recalcule les phases projet déblocables pour
+    // chaque étudiant noté. Fire-and-forget : un échec ici NE DOIT PAS faire
+    // échouer l'évaluation (la note est déjà sauvegardée).
+    if (cp.courseId) {
+      (async () => {
+        try {
+          const { recomputePhasesForStudentOnCourse } = await import('../services/projectMilestoneService.js');
+          for (const note of notes) {
+            await recomputePhasesForStudentOnCourse(note.studentId, cp.courseId)
+              .catch((err) => console.warn(
+                `[caspratique evaluate→milestones] student ${note.studentId}:`,
+                err.message
+              ));
+          }
+        } catch (err) {
+          console.warn('[caspratique evaluate→milestones] import failed:', err.message);
+        }
+      })();
+    }
+
     res.json({ statut: cp.statut, notes: cp.notes });
   } catch (err) {
     console.error('[caspratique] evaluate:', err);

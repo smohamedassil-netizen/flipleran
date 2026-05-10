@@ -56,6 +56,51 @@ const livrableSpecSchema = new mongoose.Schema({
   consigne:   { type: String, default: '', maxlength: 1000 },
 }, { _id: false });
 
+/**
+ * Règles de déblocage d'une phase pour un étudiant donné (refonte 2026-05).
+ * Si chapterIds[] et casPratiqueIds[] sont vides → phase débloquée d'office
+ * (rétrocompat avec les projets existants qui n'ont pas ces champs).
+ *
+ * - requiresAllChapters=true → l'étudiant doit avoir terminé TOUS les chapitres listés
+ *   (sinon : au moins un suffit)
+ * - requiresAllCasPratiques=true → idem pour les cas pratiques évalués
+ *
+ * "Chapitre terminé" et "Cas pratique évalué" sont définis par progressService.js
+ * (composite capsules+QCM ; statut+livrable+note).
+ */
+const unlockRulesSchema = new mongoose.Schema({
+  chapterIds:               [{ type: mongoose.Schema.Types.ObjectId, ref: 'Chapter' }],
+  casPratiqueIds:           [{ type: mongoose.Schema.Types.ObjectId, ref: 'Prosit' }],
+  requiresAllChapters:      { type: Boolean, default: true },
+  requiresAllCasPratiques:  { type: Boolean, default: true },
+}, { _id: false });
+
+/**
+ * Progression personnelle d'un étudiant sur une phase.
+ * Stockée en sous-doc dans phaseSchema.studentProgress[] : 1 entrée par étudiant.
+ *
+ * Cycle : locked → unlocked → in-progress → submitted → validated
+ *   - locked        : prérequis non remplis
+ *   - unlocked      : prérequis OK, pas encore commencé
+ *   - in-progress   : étudiant a importé un livrable cas pratique ou commencé
+ *   - submitted     : livrable final soumis (en attente validation prof)
+ *   - validated     : prof a validé
+ */
+const phaseStudentProgressSchema = new mongoose.Schema({
+  studentId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  status: {
+    type: String,
+    enum: ['locked', 'unlocked', 'in-progress', 'submitted', 'validated'],
+    default: 'locked',
+  },
+  submission:                   { type: String, default: '' },
+  fichierUrl:                   { type: String, default: null },
+  importedFromCasPratiqueId:    { type: mongoose.Schema.Types.ObjectId, ref: 'Prosit', default: null },
+  submittedAt:                  Date,
+  validatedAt:                  Date,
+  feedback:                     String,
+}, { _id: true });
+
 const phaseSchema = new mongoose.Schema({
   titre: { type: String, required: true },
   description: { type: String, default: '' },
@@ -71,6 +116,23 @@ const phaseSchema = new mongoose.Schema({
   weight:       { type: Number, min: 0, max: 100, default: 0 },
   // F8 — spécification du livrable attendu
   livrableSpec: { type: livrableSpecSchema, default: null },
+
+  // Refonte 2026-05 — articulation CAI : prérequis pour débloquer cette phase.
+  // Optionnel ; absent → phase toujours débloquée (rétrocompat).
+  unlockRules: { type: unlockRulesSchema, default: () => ({}) },
+
+  // Refonte 2026-05 — cas pratique source pour le bouton "Importer livrable".
+  // Si renseigné, et si l'étudiant a un livrable évalué pour ce cas pratique,
+  // il peut le réutiliser comme point de départ de la soumission de phase.
+  sourceCasPratiqueId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Prosit',
+    default: null,
+  },
+
+  // Refonte 2026-05 — progression individuelle par étudiant.
+  // Calculée par projectMilestoneService.computePhaseStatus.
+  studentProgress: { type: [phaseStudentProgressSchema], default: [] },
 }, { _id: true });
 
 /**

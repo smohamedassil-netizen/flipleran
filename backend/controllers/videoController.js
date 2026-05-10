@@ -304,25 +304,21 @@ export const saveProgress = async (req, res) => {
       }
 
       // Notif déblocage du chapitre suivant (Mastery Learning Bloom 1968)
-      // Quand l'étudiant atteint le completionThreshold du chapitre courant,
-      // on l'informe que le chapitre suivant est débloqué.
+      // Critère composite (capsules ≥ threshold ET QCM ≥ 80% si présents) délégué
+      // à progressService — DRY avec ChaptersView et projectMilestoneService.
+      // On déclenche la notif seulement au moment où l'étudiant franchit le seuil
+      // (avant cette vidéo : pas complété ; maintenant : complété).
       if (video.chapterId && !wasAlreadyCompleted) {
         try {
           const Chapter = (await import('../models/Chapter.js')).default;
+          const { isChapterCompletedByUser } = await import('../services/progressService.js');
+
           const chapter = await Chapter.findById(video.chapterId).lean();
           if (chapter) {
-            const chapterVideos = await Video.find({ chapterId: chapter._id })
-              .select('_id watchedBy').lean();
-            const completedCount = chapterVideos.filter(v =>
-              (v.watchedBy || []).some(w => w.userId?.toString() === req.user.id && w.completed === true)
-            ).length;
-            const totalCount = chapterVideos.length;
-            const pct = totalCount > 0 ? (completedCount / totalCount) * 100 : 0;
-            const threshold = chapter.completionThreshold ?? 80;
-
-            // On déclenche au moment où on franchit le seuil (avant cette vidéo on était <, maintenant >=)
-            const previousPct = totalCount > 0 ? ((completedCount - 1) / totalCount) * 100 : 0;
-            if (pct >= threshold && previousPct < threshold) {
+            const isNowComplete = await isChapterCompletedByUser(req.user.id, chapter._id);
+            if (isNowComplete) {
+              // Petit lock applicatif anti-spam : on pousse la notif une seule fois
+              // par (user, chapter) grâce au dedupKey du notificationService.
               const nextChapter = await Chapter.findOne({
                 courseId: chapter.courseId,
                 order: { $gt: chapter.order },
@@ -343,6 +339,16 @@ export const saveProgress = async (req, res) => {
                 relatedId: chapter._id,
                 dedupKey: `chapter_unlocked_${req.user.id}_${chapter._id}`,
               });
+
+              // Recalcul des phases projet déblocables pour cet étudiant.
+              // Fire-and-forget : ne bloque pas la réponse HTTP.
+              try {
+                const { recomputePhasesForStudentOnCourse } = await import('../services/projectMilestoneService.js');
+                recomputePhasesForStudentOnCourse(req.user.id, chapter.courseId)
+                  .catch((e) => console.warn('[milestones recompute on chapter]', e.message));
+              } catch (e) {
+                // Service pas encore importé — silent
+              }
             }
           }
         } catch (e) {
