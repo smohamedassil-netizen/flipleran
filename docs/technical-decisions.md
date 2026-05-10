@@ -212,7 +212,7 @@ Render free tier endort le serveur après 15 min d'inactivité → cold start 30
 **Alternatives écartées**
 - *Self-ping setInterval* : risqué (Render peut détecter et bannir).
 - *Upgrade Starter $7/mois* : évité pendant le PFE.
-- *Migration vers Vercel/Railway* : trop tard, coût de migration > coût UptimeRobot.
+- *Migration vers Railway / Fly.io* : trop tard, coût de migration > coût UptimeRobot.
 
 **Conséquences**
 - ✅ Démo soutenance fluide (pas de cold start).

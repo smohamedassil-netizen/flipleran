@@ -375,7 +375,7 @@ L'utilisateur (Mohamed Assil SERAY, L3 ISIL EM Alger Business School) a dit litt
 
 ## 17. État actuel des branches Git (1er mai 2026)
 
-- `main` : déployée Render+Vercel, audit 1er mai inclus, tous bugs étudiant+prof fixés
+- `main` : déployée Render (front + API monolithe), audit 1er mai inclus, tous bugs étudiant+prof fixés
 - `mvp-soutenance` : version simplifiée (F2/F3/F5/F6/F7 désactivées) — utilisable pour démo si on veut moins de features
 - `backup-30-avril-complete` : snapshot avant simplify
 - `sprint-final` : référence dev

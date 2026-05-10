@@ -48,7 +48,7 @@ Cette limite est inhérente au cadre temporel et matériel d'un PFE de Licence. 
 
 ### 7.2.2 Dépendance à des services tiers gratuits
 
-L'architecture de production repose sur les **tiers gratuits** de plusieurs services externes (MongoDB Atlas M0, Render free, Vercel hobby, Cloudinary free, Groq free, Brevo 300 emails/jour). Cette frugalité économique, qui rend le projet viable pour un étudiant, induit en contrepartie plusieurs fragilités opérationnelles :
+L'architecture de production repose sur les **tiers gratuits** de plusieurs services externes (MongoDB Atlas M0, Render free, Cloudinary free, Groq free, Brevo 300 emails/jour). Cette frugalité économique, qui rend le projet viable pour un étudiant, induit en contrepartie plusieurs fragilités opérationnelles :
 
 - La **mise en sommeil automatique** de Render free après 15 minutes d'inactivité produit un délai de 30 secondes au premier accès suivant — pénalisant pour la première impression utilisateur.
 - Les **quotas Groq gratuits** sont confortables mais bornés ; un déploiement à l'échelle d'une promotion de plusieurs centaines d'étudiants nécessiterait probablement le passage à un tier payant (estimé entre 50 et 200 USD/mois selon la volumétrie).

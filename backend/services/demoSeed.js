@@ -704,7 +704,7 @@ const PROJECT_DEFS = [
       { titre: 'Développement', statut: 'a_faire', dateFin: new Date('2026-06-05'), checklist: [
         { texte: 'Backend API (auth, cours, vidéos)', done: false },
         { texte: 'Frontend React', done: false },
-        { texte: 'Déploiement Render/Vercel', done: false },
+        { texte: 'Déploiement Render', done: false },
         { texte: 'Tests unitaires et E2E', done: false },
       ]},
       { titre: 'Préparation soutenance', statut: 'a_faire', dateFin: new Date('2026-06-18'), checklist: [

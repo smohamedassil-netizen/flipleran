@@ -182,13 +182,15 @@ Le serveur back-end est déployé sur **Render**, plateforme PaaS (Platform as a
 
 Une particularité du tier gratuit de Render est la **mise en sommeil automatique** du service après 15 minutes d'inactivité ; le premier appel suivant l'inactivité subit alors un délai de réveil d'environ 30 secondes. Cette contrainte est compensable en démo soit par un appel "warm-up" préalable, soit par l'usage d'un service de ping périodique (UptimeRobot).
 
-### 2.6.3 Hébergement front-end : double déploiement
+### 2.6.3 Hébergement front-end : déploiement monolithique
 
-Pour optimiser les performances de chargement du front-end, deux stratégies de déploiement coexistent :
+Le front-end et le back-end sont déployés conjointement sur Render via un **déploiement monolithique** : en production, le serveur Express sert les fichiers statiques compilés du front-end (`frontend/dist/`) sur la racine `/` et les routes API sur `/api/*`. Cette approche présente plusieurs avantages dans le contexte d'un projet étudiant :
 
-1. **Mode unifié** : en production sur Render, le serveur Express sert également les fichiers statiques compilés du front-end (`frontend/dist/`). Cette approche minimise la complexité opérationnelle.
+- **Simplicité opérationnelle** : une seule URL publique (`https://fliplearn-5lsz.onrender.com`), une seule pipeline de déploiement à monitorer, pas de configuration CORS cross-origin entre front et back.
+- **Cohérence des sessions et des cookies** : Socket.io et l'authentification JWT partagent la même origine, ce qui simplifie la gestion des en-têtes `SameSite` et l'envoi automatique des cookies.
+- **Coût nul** : un seul service Render free tier suffit, là où une séparation imposerait deux services à monitorer.
 
-2. **Mode séparé** : un déploiement parallèle du front-end uniquement est maintenu sur **Vercel** à l'adresse `https://fliplearn-frontend3.vercel.app`. Vercel propose un CDN edge optimisé qui réduit significativement le *Time To First Byte* (TTFB) pour les utilisateurs géographiquement distants du datacenter Render.
+Le compromis est une latence plus uniforme (pas de CDN edge mondial), acceptable pour le périmètre académique du projet (utilisateurs principalement en Algérie, datacenter Render Frankfurt à ~50 ms de latence).
 
 ### 2.6.4 Service d'envoi d'emails : Brevo (anciennement Sendinblue)
 
@@ -227,8 +229,7 @@ Le tableau suivant récapitule l'ensemble de la stack technique mobilisée :
 | | OpenAI Whisper | 1 | Transcription audio vidéos |
 | | OpenAI GPT-4o | latest | Analyse multimodale vidéo |
 | **Hébergement** | Cloudinary | API v2 | Stockage vidéos & fichiers |
-| | Render | free tier | Hébergement back-end |
-| | Vercel | hobby tier | Hébergement front-end (CDN) |
+| | Render | free tier | Hébergement unifié front-end + back-end |
 | | Brevo / Resend / Gmail | API | Envoi d'emails (fallback 3 niveaux) |
 
 Cette stack a été stabilisée à mi-parcours et n'a pas connu de réécriture majeure depuis. La plupart des choix initiaux (React, Node.js, MongoDB) se sont révélés robustes ; seuls des choix périphériques ont été révisés en cours de projet, notamment l'**abandon en avril 2026 d'un microservice Python en TensorFlow** initialement prévu pour la prédiction d'échec étudiant — décision documentée dans l'ADR n°6 du document `docs/technical-decisions.md` et motivée par la volonté de centrer le projet sur les agents conversationnels jugés plus défendables académiquement et plus utiles en pratique.

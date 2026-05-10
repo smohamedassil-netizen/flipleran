@@ -134,7 +134,7 @@ CHAPITRE 2 — TECHNOLOGIES APPLIQUÉES .......................... 18
   2.3 Back-end (Node.js, Express, Socket.io) ................. 22
   2.4 Base de données (MongoDB Atlas, Mongoose) .............. 24
   2.5 Agents d'intelligence artificielle ..................... 26
-  2.6 Hébergement et déploiement (Cloudinary, Render, Vercel)  30
+  2.6 Hébergement et déploiement (Cloudinary, Render) ........ 30
   2.7 Synthèse de la stack technique ......................... 32
 
 CHAPITRE 3 — ANALYSE DU SYSTÈME ............................... 33

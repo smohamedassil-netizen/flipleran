@@ -16,7 +16,7 @@ services:
       - key: JWT_SECRET
         generateValue: true  # Render génère automatiquement
       - key: CLIENT_URL
-        sync: false          # URL Vercel du frontend
+        sync: false          # URL publique du service Render (origine CORS)
       - key: CLOUDINARY_CLOUD_NAME
         sync: false
       - key: CLOUDINARY_API_KEY

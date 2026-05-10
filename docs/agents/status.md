@@ -8,8 +8,7 @@
 
 ## Production
 
-- **Frontend** : <https://fliplearn-frontend3.vercel.app> (Vercel)
-- **Backend + frontend statique** : <https://fliplearn-5lsz.onrender.com> (Render free tier — dort après 15 min d'inactivité)
+- **Application complète (frontend + API)** : <https://fliplearn-5lsz.onrender.com> (Render free tier, monolithe Express qui sert `frontend/dist` en static + routes `/api/*` — dort après 15 min d'inactivité, cold start ~30-60 s).
 - **Base de données** : MongoDB Atlas
 - **Stockage médias** : Cloudinary (vidéos & images, 100 MB par fichier)
 - **IA** : Groq (Llama 3.3 70B, gratuit) + OpenAI (Whisper + GPT-4o pour analyse vidéo)

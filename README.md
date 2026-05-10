@@ -65,17 +65,22 @@ FlipLearn est une plateforme d'apprentissage collaboratif basée sur la pédagog
 ## Architecture
 
 ```
-┌──────────────────┐     HTTPS / WebSocket     ┌──────────────────┐
-│  React SPA       │ ◄─────────────────────── ►│  Express API     │
-│  (Vercel)        │      REST + Socket.io      │  (Render)        │
-└──────────────────┘                            └────────┬─────────┘
-                                                         │
-                                    ┌────────────────────┼────────────────────┐
-                                    │                    │                    │
-                              ┌─────▼─────┐       ┌─────▼─────┐       ┌─────▼─────┐
-                              │ MongoDB   │       │ Cloudinary│       │ Groq /    │
-                              │ Atlas     │       │  (media)  │       │ OpenAI    │
-                              └───────────┘       └───────────┘       └───────────┘
+                  ┌──────────────────────────────────────────┐
+                  │  Render (monolithe)                       │
+                  │   ┌──────────────┐    ┌──────────────┐    │
+                  │   │ React SPA    │ ←  │ Express API  │    │
+                  │   │ (statique    │    │ /api/*       │    │
+                  │   │  servi par   │    │ + Socket.io  │    │
+                  │   │  Express)    │    │              │    │
+                  │   └──────────────┘    └──────┬───────┘    │
+                  └──────────────────────────────┼────────────┘
+                                                 │
+                          ┌──────────────────────┼──────────────────────┐
+                          │                      │                      │
+                    ┌─────▼─────┐          ┌─────▼─────┐          ┌─────▼─────┐
+                    │ MongoDB   │          │ Cloudinary│          │ Groq /    │
+                    │ Atlas     │          │  (media)  │          │ OpenAI    │
+                    └───────────┘          └───────────┘          └───────────┘
 ```
 
 ---
@@ -228,17 +233,13 @@ Les nouveaux comptes ont un statut `pending` jusqu'à validation par un administ
 
 ## Déploiement
 
-### Backend — Render.com
+### Render.com — service unifié front + back
 
 Le fichier [`backend/render.yaml`](./backend/render.yaml) décrit la configuration du service. Variables d'environnement à définir dans le dashboard Render (cf. section [Variables d'environnement](#variables-denvironnement)).
 
-### Frontend — Vercel
+Architecture monolithique : en `NODE_ENV=production`, Express sert directement `frontend/dist/` en static + les routes `/api/*`. Une seule URL pour tout le projet ([https://fliplearn-5lsz.onrender.com](https://fliplearn-5lsz.onrender.com)).
 
-Le fichier [`frontend/vercel.json`](./frontend/vercel.json) définit les rewrites SPA. Configurer `VITE_API_URL` vers l'URL Render du backend.
-
-### Build unifié (optionnel)
-
-En mode `NODE_ENV=production`, le backend sert automatiquement le build React depuis `frontend/dist/` — utile pour un déploiement mono-instance.
+Auto-deploy sur push `main` ; free tier dort après 15 min d'inactivité (cold start ~30-60s au réveil).
 
 ---
 

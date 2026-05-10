@@ -60,7 +60,7 @@ Session orientée documentation : mise à jour exhaustive des deux livrables Wor
 
 ### Guide de compréhension technique (`livrables/Guide_Comprendre_FlipLearn.docx`)
 - Réécriture complète : 9 725 mots, 120 titres, 65 KB.
-- **Architecture détaillée** : analogie restaurant maintenue, stack 12 technologies justifiées (React/Vite, Express/Mongoose, MongoDB, Cloudinary, Groq, OpenAI, Brevo/Resend, Vercel/Render, Tailwind, Socket.io, JWT).
+- **Architecture détaillée** : analogie restaurant maintenue, stack 11 technologies justifiées (React/Vite, Express/Mongoose, MongoDB, Cloudinary, Groq, OpenAI, Brevo/Resend, Render, Tailwind, Socket.io, JWT).
 - **Base de données** : inventaire des 33 modèles MongoDB regroupés en 8 domaines, exemples de relations et populate.
 - **Authentification** : flow complet inscription → login → JWT → refresh token httpOnly, étape par étape avec extraits de code.
 - **Sécurité** : 11 couches détaillées (bcrypt, JWT, HTTPS, helmet, rate limiting, CORS, validation d'entrées, permissions par rôle, ACL Socket.io, secrets en env vars, sessionStorage).

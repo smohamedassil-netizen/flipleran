@@ -252,7 +252,7 @@ Les exigences non fonctionnelles décrivent **comment le système doit fonctionn
 
 ### 3.3.6 Coût d'exploitation
 
-**ENF-COUT-1** — La plateforme doit fonctionner intégralement sur les **tiers gratuits** des services externes (MongoDB Atlas M0, Render free, Vercel hobby, Cloudinary free, Groq free, Brevo 300 emails/jour). Le coût marginal d'exploitation doit rester **inférieur à 5 USD/mois** (essentiellement les appels OpenAI Whisper + GPT-4o pour les nouvelles vidéos analysées).
+**ENF-COUT-1** — La plateforme doit fonctionner intégralement sur les **tiers gratuits** des services externes (MongoDB Atlas M0, Render free, Cloudinary free, Groq free, Brevo 300 emails/jour). Le coût marginal d'exploitation doit rester **inférieur à 5 USD/mois** (essentiellement les appels OpenAI Whisper + GPT-4o pour les nouvelles vidéos analysées).
 
 ## 3.4 Cas d'utilisation principaux
 

@@ -71,7 +71,7 @@ FlipLearn adopte une architecture web **trois couches** classique, séparant str
 
 ### 4.1.2 La couche présentation
 
-La couche présentation est une **Single Page Application (SPA)** React 18, compilée par Vite et servie soit par le serveur Express en production unifiée, soit par Vercel pour bénéficier d'un CDN edge mondial. Elle communique avec la couche métier via deux canaux complémentaires :
+La couche présentation est une **Single Page Application (SPA)** React 18, compilée par Vite et servie en production par le serveur Express dans un déploiement monolithique unifié (Express délivre les fichiers statiques de `frontend/dist/` sur la racine `/` et expose simultanément les routes API sur `/api/*` à la même origine). Elle communique avec la couche métier via deux canaux complémentaires :
 
 - **REST HTTP/JSON** pour les opérations classiques (lecture, écriture, recherche), via une instance Axios centralisée qui injecte automatiquement le JWT dans le header `Authorization`.
 - **Socket.io WebSocket** pour le temps réel : chat de cours, chat privé, notifications instantanées, synchronisation Quiz Battle multijoueurs.
