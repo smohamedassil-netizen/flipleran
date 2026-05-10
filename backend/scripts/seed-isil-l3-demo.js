@@ -301,6 +301,187 @@ const GL_MODULE_QCM = {
 };
 
 /* ═══════════════════════════════════════════════════════════════════════════
+   YOUTUBE LIBRARY — IA & Data Mining
+   Réutilisation IDs Phase 2 validés, titres adaptés au sujet IA/ML.
+═══════════════════════════════════════════════════════════════════════════ */
+
+const IA_VIDEO_NOTE_REUSED = ' [DEMO_SEED — vidéo placeholder réutilisée Phase 2, à remplacer par contenu IA réel en démo]';
+
+const IA_VIDEOS = {
+  /* CH1 — Introduction IA & ML */
+  ch1: [
+    { ytId: 'zjEIFFi8Izg', titre: 'Qu\'est-ce que l\'intelligence artificielle ?', description: 'Panorama de l\'IA : définitions, histoire, IA faible vs forte, applications concrètes.', duration: 600 },
+    { ytId: 'RpdDIzkAk_Q', titre: 'Machine learning expliqué simplement', description: 'Différence entre programmation classique et ML, données vs règles, étapes d\'un projet ML.', duration: 720 },
+    { ytId: 'k1-nGEEEKoo', titre: 'ChatGPT — comment ça marche', description: 'Vulgarisation des LLM (Large Language Models), tokens, transformers, fine-tuning.', duration: 540 },
+  ],
+  /* CH2 — Apprentissage supervisé */
+  ch2: [
+    { ytId: 'GSIDS_lvRv4', titre: 'Régression linéaire expliquée', description: 'Modèle le plus simple : prédire une valeur continue à partir de features, droite des moindres carrés.', duration: 660 },
+    { ytId: 'b4b8ktEV4Bg', titre: 'Classification : régression logistique', description: 'Adapter la régression à la classification binaire (0/1), fonction sigmoïde, frontières de décision.', duration: 720 },
+    { ytId: 'Dk-ZqQ-bfy4', titre: 'Random forest & arbres de décision', description: 'Arbres simples → forêts aléatoires, ensemble learning, feature importance.', duration: 480 },
+  ],
+  /* CH3 — Apprentissage non supervisé */
+  ch3: [
+    { ytId: '_jKylhJtPmI', titre: 'K-means clustering', description: 'Algorithme de clustering le plus utilisé : initialisation, mise à jour des centroïdes, choix de k.', duration: 600 },
+    { ytId: 'EoaDgUgS6QA', titre: 'Réduction de dimension : PCA', description: 'Principal Component Analysis : projeter des données haute dimension dans un espace réduit.', duration: 540 },
+    { ytId: '3FNYvj2U0HM', titre: 'Détection d\'anomalies', description: 'Identifier les outliers : isolation forest, autoencoders, applications fraude/cybersec.', duration: 660 },
+  ],
+  /* CH4 — Deep learning */
+  ch4: [
+    { ytId: 'A2-YImhNVMU', titre: 'Réseaux de neurones — bases', description: 'Neurones, couches, fonction d\'activation, propagation avant, backpropagation.', duration: 720 },
+    { ytId: 'V27fNfRNHkg', titre: 'CNN — réseaux convolutionnels', description: 'Architecture pour la vision : convolutions, pooling, applications classification d\'images.', duration: 660 },
+    { ytId: 'Goh18xP5yvA', titre: 'Transformers & attention', description: 'L\'architecture qui a révolutionné le NLP (BERT, GPT) : mécanisme d\'attention, encoder/decoder.', duration: 540 },
+  ],
+  /* CH5 — Éthique & biais en IA */
+  ch5: [
+    { ytId: 'xe9LN2w7hfE', titre: 'Biais algorithmiques en IA', description: 'D\'où viennent les biais (données, conception, déploiement), exemples concrets et impacts sociaux.', duration: 720 },
+    { ytId: '5FeygmD1fx0', titre: 'Éthique de l\'IA', description: 'Cadre réglementaire (RGPD, AI Act EU), enjeux éthiques, IA responsable.', duration: 660 },
+    { ytId: 'k1-nGEEEKoo', titre: 'ChatGPT — dangers et limites', description: 'Hallucinations, désinformation, deepfakes, dépendance, dégradation des compétences.', duration: 540 },
+  ],
+};
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   QCM LIBRARY — IA & Data Mining
+═══════════════════════════════════════════════════════════════════════════ */
+
+const IA_VIDEO_QCM = {
+  'ch1:0': { titre: 'IA — bases', questions: [
+    { texte: 'L\'IA "faible" vise…', options: { A: 'à dépasser l\'humain', B: 'à résoudre des tâches précises (classification, traduction…)', C: 'rien', D: 'à remplacer le cerveau' }, correctAnswer: 'B', explanation: 'Narrow AI = tâche spécifique. Forte = AGI hypothétique.' },
+    { texte: 'Le test de Turing évalue…', options: { A: 'la vitesse', B: 'la capacité à imiter une conversation humaine', C: 'la mémoire', D: 'aucun' }, correctAnswer: 'B', explanation: 'Critère historique de Turing (1950).' },
+    { texte: 'Quel domaine de l\'IA traite des images ?', options: { A: 'NLP', B: 'Computer Vision', C: 'RL', D: 'aucun' }, correctAnswer: 'B', explanation: 'CV pour les images, NLP pour le texte.' },
+  ]},
+  'ch1:1': { titre: 'Machine learning — vue d\'ensemble', questions: [
+    { texte: 'En ML supervisé, on apprend à partir de…', options: { A: 'rien', B: 'données labellisées (input + output attendu)', C: 'données aléatoires', D: 'aucun' }, correctAnswer: 'B', explanation: 'Supervisé = labels fournis.' },
+    { texte: 'Une époque (epoch) en ML correspond à…', options: { A: 'une heure', B: 'un passage complet sur le dataset', C: 'rien', D: 'aucun' }, correctAnswer: 'B', explanation: 'On répète sur N epochs jusqu\'à convergence.' },
+    { texte: 'L\'overfitting signifie…', options: { A: 'modèle parfait', B: 'modèle apprend par cœur le train, échoue sur test', C: 'aucun', D: 'sous-apprentissage' }, correctAnswer: 'B', explanation: 'Trop bien sur train, mauvais en généralisation.' },
+  ]},
+  'ch1:2': { titre: 'LLM & ChatGPT', questions: [
+    { texte: 'GPT signifie…', options: { A: 'General Purpose Transformer', B: 'Generative Pre-trained Transformer', C: 'aucun', D: 'autre' }, correctAnswer: 'B', explanation: 'Transformer pré-entraîné, génératif.' },
+    { texte: 'Un "token" en NLP est typiquement…', options: { A: 'un mot complet', B: 'un fragment de mot ou caractère', C: 'une phrase', D: 'aucun' }, correctAnswer: 'B', explanation: 'BPE / sentencepiece — fragments sub-word.' },
+    { texte: 'Les LLM peuvent halluciner = ?', options: { A: 'rien', B: 'générer des faits faux avec confiance', C: 'voir des images', D: 'aucun' }, correctAnswer: 'B', explanation: 'Limite majeure des LLM actuels.' },
+  ]},
+  'ch2:0': { titre: 'Régression linéaire', questions: [
+    { texte: 'L\'objectif de la régression linéaire est…', options: { A: 'classer', B: 'prédire une valeur continue', C: 'rien', D: 'aucun' }, correctAnswer: 'B', explanation: 'Output ∈ ℝ, pas une classe.' },
+    { texte: 'La fonction de coût classique est…', options: { A: 'cross-entropy', B: 'MSE (mean squared error)', C: 'aucun', D: 'log loss' }, correctAnswer: 'B', explanation: 'Moindre carrés ordinaires.' },
+    { texte: 'La descente de gradient sert à…', options: { A: 'régulariser', B: 'minimiser la fonction de coût itérativement', C: 'rien', D: 'augmenter le coût' }, correctAnswer: 'B', explanation: 'Optimisation par déplacement opposé au gradient.' },
+  ]},
+  'ch2:1': { titre: 'Régression logistique', questions: [
+    { texte: 'La fonction sigmoïde renvoie…', options: { A: 'tout réel', B: 'une valeur entre 0 et 1 (probabilité)', C: 'rien', D: 'aucun' }, correctAnswer: 'B', explanation: 'σ(x) = 1/(1+e^-x), borné [0,1].' },
+    { texte: 'La régression logistique est…', options: { A: 'une régression', B: 'un classifieur binaire malgré son nom', C: 'aucun', D: 'régression non-linéaire' }, correctAnswer: 'B', explanation: 'Output = proba de classe 1.' },
+    { texte: 'Pour évaluer un classifieur, on utilise…', options: { A: 'MSE', B: 'accuracy, precision, recall, F1', C: 'rien', D: 'temps' }, correctAnswer: 'B', explanation: 'Métriques de classification.' },
+  ]},
+  'ch2:2': { titre: 'Random Forest', questions: [
+    { texte: 'Une forêt aléatoire est…', options: { A: 'un arbre seul', B: 'un ensemble d\'arbres de décision votant', C: 'aucun', D: 'autre' }, correctAnswer: 'B', explanation: 'Bagging d\'arbres → réduit variance.' },
+    { texte: 'Avantage principal vs un arbre seul ?', options: { A: 'plus rapide', B: 'moins d\'overfitting + meilleure généralisation', C: 'aucun', D: 'plus simple' }, correctAnswer: 'B', explanation: 'Diversification des arbres.' },
+    { texte: 'Feature importance dans RF = ?', options: { A: 'aléatoire', B: 'mesure de contribution de chaque variable aux décisions', C: 'aucun', D: 'autre' }, correctAnswer: 'B', explanation: 'Aide à l\'interprétation.' },
+  ]},
+  'ch3:0': { titre: 'K-means', questions: [
+    { texte: 'K-means demande…', options: { A: 'des données labellisées', B: 'le nombre de clusters k à trouver', C: 'rien', D: 'autre' }, correctAnswer: 'B', explanation: 'Hyperparamètre principal.' },
+    { texte: 'Méthode du coude (elbow method) sert à…', options: { A: 'mesurer la perf', B: 'choisir k optimal', C: 'aucun', D: 'autre' }, correctAnswer: 'B', explanation: 'Tracer inertie vs k, prendre le coude.' },
+    { texte: 'K-means converge-t-il toujours au minimum global ?', options: { A: 'oui', B: 'non, optimum local possible (relancer plusieurs fois)', C: 'aucun', D: 'autre' }, correctAnswer: 'B', explanation: 'Sensibilité à l\'initialisation. K-means++ améliore.' },
+  ]},
+  'ch3:1': { titre: 'PCA', questions: [
+    { texte: 'PCA réduit la dimension en…', options: { A: 'supprimant des features au hasard', B: 'projetant sur les directions de variance maximale', C: 'rien', D: 'autre' }, correctAnswer: 'B', explanation: 'Composantes principales = vecteurs propres.' },
+    { texte: 'PCA est…', options: { A: 'supervisé', B: 'non supervisé (pas de labels)', C: 'aucun', D: 'autre' }, correctAnswer: 'B', explanation: 'Pure analyse de structure.' },
+    { texte: 'Avantage principal de PCA ?', options: { A: 'classification', B: 'visualiser des données haute dimension + accélérer modèles', C: 'aucun', D: 'autre' }, correctAnswer: 'B', explanation: 'Visualisation 2D/3D + features réduites.' },
+  ]},
+  'ch3:2': { titre: 'Détection d\'anomalies', questions: [
+    { texte: 'Une anomalie en data mining = ?', options: { A: 'donnée standard', B: 'point très différent du reste (outlier)', C: 'aucun', D: 'autre' }, correctAnswer: 'B', explanation: 'Détection : fraude, intrusion, défaut produit.' },
+    { texte: 'Isolation Forest fonctionne en…', options: { A: 'forêt classique', B: 'isolant des points par splits aléatoires (anomalies isolées vite)', C: 'aucun', D: 'autre' }, correctAnswer: 'B', explanation: 'Anomalies = profondeur d\'isolation faible.' },
+    { texte: 'Application typique en cybersec ?', options: { A: 'rien', B: 'détection d\'intrusion réseau (IDS basé ML)', C: 'aucun', D: 'autre' }, correctAnswer: 'B', explanation: 'Trafic anormal = attaque potentielle.' },
+  ]},
+  'ch4:0': { titre: 'Réseaux de neurones', questions: [
+    { texte: 'Un perceptron est…', options: { A: 'rien', B: 'un neurone artificiel : combinaison linéaire + activation', C: 'aucun', D: 'autre' }, correctAnswer: 'B', explanation: 'Brique de base.' },
+    { texte: 'La backpropagation calcule…', options: { A: 'rien', B: 'le gradient de la loss par rapport à chaque poids (chain rule)', C: 'aucun', D: 'autre' }, correctAnswer: 'B', explanation: 'Permet d\'entraîner les NN.' },
+    { texte: 'ReLU vs Sigmoïde en activation ?', options: { A: 'identiques', B: 'ReLU plus efficace (pas de vanishing gradient)', C: 'aucun', D: 'autre' }, correctAnswer: 'B', explanation: 'ReLU = max(0, x), simple et efficace.' },
+  ]},
+  'ch4:1': { titre: 'CNN', questions: [
+    { texte: 'CNN = ?', options: { A: 'Convolutional Neural Network', B: 'Cable News Network', C: 'aucun', D: 'autre' }, correctAnswer: 'A', explanation: 'Architecture conçue pour la vision.' },
+    { texte: 'Le pooling sert à…', options: { A: 'rien', B: 'réduire la dimension spatiale (downsampling)', C: 'aucun', D: 'autre' }, correctAnswer: 'B', explanation: 'Max pooling typique.' },
+    { texte: 'Un filtre conv apprend…', options: { A: 'rien', B: 'à détecter des features locales (contours, textures, motifs)', C: 'aucun', D: 'autre' }, correctAnswer: 'B', explanation: 'Hiérarchie : couches profondes = features de haut niveau.' },
+  ]},
+  'ch4:2': { titre: 'Transformers', questions: [
+    { texte: 'Le mécanisme central des Transformers est…', options: { A: 'la convolution', B: 'l\'attention (self-attention)', C: 'aucun', D: 'autre' }, correctAnswer: 'B', explanation: 'Attention is all you need (Vaswani 2017).' },
+    { texte: 'BERT vs GPT : différence principale ?', options: { A: 'identiques', B: 'BERT bidirectionnel (encoder), GPT autoregressif (decoder)', C: 'aucun', D: 'autre' }, correctAnswer: 'B', explanation: 'BERT pour comprendre, GPT pour générer.' },
+    { texte: 'Le fine-tuning consiste à…', options: { A: 'rien', B: 'adapter un modèle pré-entraîné à une tâche spécifique', C: 'aucun', D: 'autre' }, correctAnswer: 'B', explanation: 'Transfert d\'apprentissage.' },
+  ]},
+  'ch5:0': { titre: 'Biais algorithmiques', questions: [
+    { texte: 'Les biais en IA viennent principalement…', options: { A: 'du code', B: 'des données d\'entraînement non représentatives', C: 'aucun', D: 'autre' }, correctAnswer: 'B', explanation: 'Garbage in, garbage out.' },
+    { texte: 'COMPAS (justice US) a été critiqué pour…', options: { A: 'rien', B: 'biais raciaux dans la prédiction de récidive', C: 'aucun', D: 'autre' }, correctAnswer: 'B', explanation: 'Cas emblématique de biais en IA.' },
+    { texte: 'Comment mitiger un biais ?', options: { A: 'ignorer', B: 'auditer + équilibrer données + tester sur sous-groupes', C: 'rien', D: 'autre' }, correctAnswer: 'B', explanation: 'Pratiques de fairness ML.' },
+  ]},
+  'ch5:1': { titre: 'Éthique & régulation', questions: [
+    { texte: 'L\'AI Act EU est…', options: { A: 'volontaire', B: 'régulation contraignante avec catégorisation par risque', C: 'aucun', D: 'autre' }, correctAnswer: 'B', explanation: 'Risque inacceptable / élevé / limité / minimal.' },
+    { texte: 'Le RGPD impose pour les décisions automatisées…', options: { A: 'rien', B: 'droit à l\'explication + intervention humaine', C: 'aucun', D: 'autre' }, correctAnswer: 'B', explanation: 'Article 22 RGPD.' },
+    { texte: 'Une IA explicable (XAI) sert à…', options: { A: 'cacher', B: 'rendre transparentes les décisions du modèle', C: 'aucun', D: 'autre' }, correctAnswer: 'B', explanation: 'LIME, SHAP, etc.' },
+  ]},
+  'ch5:2': { titre: 'LLM — dangers', questions: [
+    { texte: 'Une hallucination LLM est…', options: { A: 'créative', B: 'génération de fait inexact présenté avec assurance', C: 'aucun', D: 'autre' }, correctAnswer: 'B', explanation: 'Limite majeure des LLM.' },
+    { texte: 'Un deepfake = ?', options: { A: 'rien', B: 'média synthétique (vidéo/audio) trompeur généré par IA', C: 'aucun', D: 'autre' }, correctAnswer: 'B', explanation: 'Défi éthique et sécuritaire.' },
+    { texte: 'Précaution face à un output LLM ?', options: { A: 'aucune', B: 'vérifier les sources, ne pas faire confiance aveuglément', C: 'recopier', D: 'autre' }, correctAnswer: 'B', explanation: 'Esprit critique indispensable.' },
+  ]},
+};
+
+const IA_CHAPTER_QCM = {
+  ch1: { titre: 'QCM Chapitre 1 — Intro IA & ML', questions: [
+    { texte: 'IA forte vs faible : la "forte" vise…', options: { A: 'tâche précise', B: 'intelligence générale comparable à l\'humain', C: 'rien', D: 'autre' }, correctAnswer: 'B', explanation: 'AGI = aujourd\'hui hypothétique.' },
+    { texte: 'Apprentissage supervisé requiert…', options: { A: 'rien', B: 'des données labellisées', C: 'aucun', D: 'autre' }, correctAnswer: 'B', explanation: 'Inputs + outputs attendus.' },
+    { texte: 'Overfitting = ?', options: { A: 'modèle parfait', B: 'apprendre par cœur, mauvaise généralisation', C: 'aucun', D: 'autre' }, correctAnswer: 'B', explanation: 'Trop ajusté au train.' },
+    { texte: 'NLP = ?', options: { A: 'Natural Language Processing', B: 'Network Layer Protocol', C: 'aucun', D: 'autre' }, correctAnswer: 'A', explanation: 'Domaine du langage.' },
+    { texte: 'Test de Turing évalue…', options: { A: 'la vitesse', B: 'la capacité d\'une IA à imiter un humain en conversation', C: 'aucun', D: 'autre' }, correctAnswer: 'B', explanation: 'Critère historique 1950.' },
+  ]},
+  ch2: { titre: 'QCM Chapitre 2 — Apprentissage supervisé', questions: [
+    { texte: 'Régression linéaire prédit…', options: { A: 'des classes', B: 'des valeurs continues', C: 'aucun', D: 'autre' }, correctAnswer: 'B', explanation: 'Output ∈ ℝ.' },
+    { texte: 'Régression logistique malgré son nom est…', options: { A: 'une régression', B: 'un classifieur binaire', C: 'aucun', D: 'autre' }, correctAnswer: 'B', explanation: 'Sortie = proba.' },
+    { texte: 'Random Forest = ?', options: { A: 'un arbre seul', B: 'ensemble d\'arbres votant (bagging)', C: 'aucun', D: 'autre' }, correctAnswer: 'B', explanation: 'Réduit variance, robustesse.' },
+    { texte: 'Métriques de classification incluent…', options: { A: 'MSE seulement', B: 'accuracy, precision, recall, F1', C: 'aucun', D: 'autre' }, correctAnswer: 'B', explanation: 'Métriques discrètes.' },
+    { texte: 'Train/test split sert à…', options: { A: 'rien', B: 'évaluer la généralisation hors données vues', C: 'aucun', D: 'autre' }, correctAnswer: 'B', explanation: 'Validation classique.' },
+  ]},
+  ch3: { titre: 'QCM Chapitre 3 — Apprentissage non supervisé', questions: [
+    { texte: 'Apprentissage non supervisé = ?', options: { A: 'avec labels', B: 'sans labels — on cherche structure intrinsèque', C: 'aucun', D: 'autre' }, correctAnswer: 'B', explanation: 'Clustering, dim. reduction.' },
+    { texte: 'K-means demande…', options: { A: 'rien', B: 'le nombre k de clusters à priori', C: 'aucun', D: 'autre' }, correctAnswer: 'B', explanation: 'Hyperparamètre.' },
+    { texte: 'PCA est…', options: { A: 'supervisé', B: 'non supervisé, réduction de dimension linéaire', C: 'aucun', D: 'autre' }, correctAnswer: 'B', explanation: 'Composantes principales.' },
+    { texte: 'Détection d\'anomalies utile pour…', options: { A: 'rien', B: 'fraude, intrusion réseau, défauts produits', C: 'aucun', D: 'autre' }, correctAnswer: 'B', explanation: 'Outliers signalent un événement rare.' },
+    { texte: 'Méthode du coude pour k-means sert à…', options: { A: 'rien', B: 'choisir k optimal', C: 'aucun', D: 'autre' }, correctAnswer: 'B', explanation: 'Trace inertie vs k.' },
+  ]},
+  ch4: { titre: 'QCM Chapitre 4 — Deep Learning', questions: [
+    { texte: 'Un réseau profond a…', options: { A: '1 couche', B: 'plusieurs couches cachées (≥2)', C: 'aucun', D: 'autre' }, correctAnswer: 'B', explanation: 'Profond = plusieurs couches.' },
+    { texte: 'CNN excellent pour…', options: { A: 'NLP seulement', B: 'la vision (images)', C: 'aucun', D: 'autre' }, correctAnswer: 'B', explanation: 'Convolutions = features visuelles.' },
+    { texte: 'Transformer central par…', options: { A: 'convolution', B: 'self-attention', C: 'aucun', D: 'autre' }, correctAnswer: 'B', explanation: 'Attention is all you need.' },
+    { texte: 'Backpropagation calcule…', options: { A: 'rien', B: 'gradients des poids via règle de chaîne', C: 'aucun', D: 'autre' }, correctAnswer: 'B', explanation: 'Cœur de l\'apprentissage NN.' },
+    { texte: 'Transfer learning = ?', options: { A: 'recommencer à zéro', B: 'partir d\'un modèle pré-entraîné et l\'adapter', C: 'aucun', D: 'autre' }, correctAnswer: 'B', explanation: 'Économise data + temps.' },
+  ]},
+  ch5: { titre: 'QCM Chapitre 5 — Éthique & biais', questions: [
+    { texte: 'Origine principale des biais en IA = ?', options: { A: 'le code', B: 'les données d\'entraînement', C: 'aucun', D: 'autre' }, correctAnswer: 'B', explanation: 'Biais social → biais data → biais modèle.' },
+    { texte: 'AI Act EU classifie les systèmes par…', options: { A: 'taille', B: 'niveau de risque', C: 'aucun', D: 'autre' }, correctAnswer: 'B', explanation: 'Inacceptable / élevé / limité / minimal.' },
+    { texte: 'XAI = ?', options: { A: 'eXtra AI', B: 'eXplainable AI — rendre les décisions transparentes', C: 'aucun', D: 'autre' }, correctAnswer: 'B', explanation: 'LIME, SHAP, attention maps.' },
+    { texte: 'Hallucination LLM = ?', options: { A: 'créatif', B: 'fait inexact généré avec assurance', C: 'aucun', D: 'autre' }, correctAnswer: 'B', explanation: 'Limite des LLM, vérifier les sources.' },
+    { texte: 'RGPD impose pour décisions automatisées…', options: { A: 'rien', B: 'droit à l\'explication + intervention humaine', C: 'aucun', D: 'autre' }, correctAnswer: 'B', explanation: 'Art. 22.' },
+  ]},
+};
+
+const IA_MODULE_QCM = {
+  titre: 'QCM final — IA & Data Mining',
+  questions: [
+    { texte: 'IA faible vs forte : faible = ?', options: { A: 'AGI', B: 'tâche spécifique', C: 'aucun', D: 'autre' }, correctAnswer: 'B', explanation: 'Narrow AI.' },
+    { texte: 'Supervisé vs non supervisé : non sup = ?', options: { A: 'avec labels', B: 'sans labels', C: 'aucun', D: 'autre' }, correctAnswer: 'B', explanation: 'Pure structure.' },
+    { texte: 'Régression linéaire prédit…', options: { A: 'classe', B: 'valeur continue', C: 'aucun', D: 'autre' }, correctAnswer: 'B', explanation: 'Output ∈ ℝ.' },
+    { texte: 'Sigmoïde renvoie…', options: { A: 'tout réel', B: 'valeur ∈ [0, 1]', C: 'aucun', D: 'autre' }, correctAnswer: 'B', explanation: 'Bornée.' },
+    { texte: 'Random Forest = ?', options: { A: 'arbre seul', B: 'ensemble d\'arbres', C: 'aucun', D: 'autre' }, correctAnswer: 'B', explanation: 'Bagging.' },
+    { texte: 'K-means demande…', options: { A: 'rien', B: 'k', C: 'aucun', D: 'autre' }, correctAnswer: 'B', explanation: 'Nb clusters.' },
+    { texte: 'PCA = ?', options: { A: 'classifieur', B: 'réduction de dimension non supervisée', C: 'aucun', D: 'autre' }, correctAnswer: 'B', explanation: 'Variance maximale.' },
+    { texte: 'Backpropagation = ?', options: { A: 'forward pass', B: 'calcul gradient via chain rule', C: 'aucun', D: 'autre' }, correctAnswer: 'B', explanation: 'Cœur entraînement NN.' },
+    { texte: 'CNN spécialisé pour…', options: { A: 'NLP', B: 'vision', C: 'aucun', D: 'autre' }, correctAnswer: 'B', explanation: 'Convolutions.' },
+    { texte: 'Transformer central = ?', options: { A: 'convolution', B: 'attention', C: 'aucun', D: 'autre' }, correctAnswer: 'B', explanation: 'Self-attention.' },
+    { texte: 'BERT vs GPT : BERT…', options: { A: 'génératif', B: 'encoder bidirectionnel', C: 'aucun', D: 'autre' }, correctAnswer: 'B', explanation: 'Compréhension.' },
+    { texte: 'Origine biais IA = ?', options: { A: 'code', B: 'données', C: 'aucun', D: 'autre' }, correctAnswer: 'B', explanation: 'Garbage in, garbage out.' },
+    { texte: 'XAI = ?', options: { A: 'eXtra AI', B: 'eXplainable AI', C: 'aucun', D: 'autre' }, correctAnswer: 'B', explanation: 'Transparence.' },
+    { texte: 'Hallucination LLM = ?', options: { A: 'créatif', B: 'fait faux avec assurance', C: 'aucun', D: 'autre' }, correctAnswer: 'B', explanation: 'Limite à connaître.' },
+    { texte: 'AI Act EU classifie par…', options: { A: 'taille', B: 'risque', C: 'aucun', D: 'autre' }, correctAnswer: 'B', explanation: '4 niveaux.' },
+  ],
+};
+
+/* ═══════════════════════════════════════════════════════════════════════════
    QCM LIBRARY — Cybersécurité
    Questions cohérentes avec les sujets de chapitre, indépendantes du contenu
    exact des vidéos.
@@ -1595,6 +1776,279 @@ async function seedGenieLogicielModule() {
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
+   SEED IA & DATA MINING  (état DÉBUT ~20%)
+═══════════════════════════════════════════════════════════════════════════ */
+
+async function seedIaDataMiningModule() {
+  console.log('\n🌱 Seed module IA & Data Mining (état DÉBUT ~20%)');
+
+  const course = await Course.findOne({ titre: /Intelligence Artificielle.*Data Mining/i, isActive: true });
+  if (!course) throw new Error('Course IA & Data Mining introuvable.');
+  console.log(`  Course trouvé : ${course.titre} (${course._id})`);
+
+  const assil = await User.findOne({ email: 'assil.isil.l3@fliplearn.dz' });
+  const yasmine = await User.findOne({ email: 'yasmine.isil.l3@fliplearn.dz' });
+  const omar = await User.findOne({ email: 'omar.isil.l3@fliplearn.dz' });
+  const profCreator = (course.professorId && yasmine?._id?.equals(course.professorId)) ? yasmine : (yasmine || omar);
+  if (!assil || !profCreator) throw new Error('Users (assil ou prof IA) introuvables.');
+
+  const studentTest1 = await User.findOne({ email: 'adel.bouhabel.l3@fliplearn.dz' });
+  const studentTest2 = await User.findOne({ email: 'imane.rahmoun.l3@fliplearn.dz' });
+  const otherStudents = await User.find({
+    role: 'etudiant', filiere: 'ISIL', promotion: 'L3',
+    _id: { $nin: [assil._id, studentTest1?._id, studentTest2?._id].filter(Boolean) },
+  }).limit(2).select('_id email prenom nom');
+
+  /* ── Détecter order de départ pour préserver l'existant ── */
+  const existingChapters = await Chapter.find({ courseId: course._id }).sort({ order: -1 }).limit(1).lean();
+  const startOrder = existingChapters.length > 0 ? (existingChapters[0].order + 1) : 0;
+  console.log(`  Order de départ : ${startOrder} (${existingChapters.length} chapitre(s) existant(s) préservé(s))`);
+
+  /* ── 5 chapitres ── */
+  const chapterTitles = [
+    'Introduction à l\'IA et au machine learning',
+    'Apprentissage supervisé : régression et classification',
+    'Apprentissage non supervisé : clustering',
+    'Réseaux de neurones et deep learning',
+    'Éthique et biais en IA',
+  ];
+  const chapters = [];
+  for (let i = 0; i < chapterTitles.length; i++) {
+    const ch = await Chapter.create({
+      courseId: course._id,
+      titre: chapterTitles[i],
+      description: tagDescription(`Chapitre ${i + 1} du module IA & Data Mining.`),
+      order: startOrder + i,
+      unlockedByDefault: i === 0,
+      completionThreshold: 80,
+      practiceMode: { enabled: true, questionCount: 10 },
+    });
+    chapters.push(ch);
+    console.log(`  ✓ Chapitre ${i + 1} créé : ${ch.titre} (order=${ch.order})`);
+  }
+
+  /* ── Capsules (15) ── */
+  console.log('\n  Validation des URLs YouTube via oEmbed…');
+  const chapterKeys = ['ch1', 'ch2', 'ch3', 'ch4', 'ch5'];
+  const videosByChapter = {};
+  let validCount = 0, fallbackCount = 0;
+
+  for (let cIdx = 0; cIdx < chapters.length; cIdx++) {
+    const chap = chapters[cIdx];
+    const ck = chapterKeys[cIdx];
+    const videoSpecs = IA_VIDEOS[ck];
+    videosByChapter[String(chap._id)] = [];
+
+    for (let vIdx = 0; vIdx < videoSpecs.length; vIdx++) {
+      const spec = videoSpecs[vIdx];
+      const validation = await validateYouTubeId(spec.ytId);
+      let finalYtId = spec.ytId;
+      let extraNote = IA_VIDEO_NOTE_REUSED;
+      if (!validation.ok) {
+        console.warn(`  ⚠️  YouTube ID ${spec.ytId} invalide (HTTP ${validation.statusCode}) — fallback`);
+        finalYtId = VIDEO_FALLBACK_ID;
+        extraNote = VIDEO_FALLBACK_NOTE;
+        fallbackCount += 1;
+      } else {
+        validCount += 1;
+      }
+      const video = await Video.create({
+        titre: spec.titre,
+        description: tagDescription(spec.description + extraNote),
+        provider: 'youtube',
+        url: `https://www.youtube.com/embed/${finalYtId}`,
+        youtubeId: finalYtId,
+        thumbnailUrl: `https://i.ytimg.com/vi/${finalYtId}/hqdefault.jpg`,
+        duration: spec.duration,
+        order: vIdx,
+        chapterId: chap._id,
+        courseId: course._id,
+        createdBy: profCreator._id,
+        watchedBy: [],
+      });
+      videosByChapter[String(chap._id)].push(video);
+      console.log(`    ✓ Capsule "${spec.titre}" (${finalYtId})`);
+    }
+  }
+  console.log(`  YouTube : ${validCount} valides, ${fallbackCount} fallbacks`);
+
+  /* ── QCM ── */
+  console.log('\n  Création des QCM…');
+  const qcmsByVideo = {};
+  const qcmsByChapter = {};
+  let qcmCount = 0;
+
+  for (let cIdx = 0; cIdx < chapters.length; cIdx++) {
+    const chap = chapters[cIdx];
+    const ck = chapterKeys[cIdx];
+    const videos = videosByChapter[String(chap._id)];
+    for (let vIdx = 0; vIdx < videos.length; vIdx++) {
+      const v = videos[vIdx];
+      const spec = IA_VIDEO_QCM[`${ck}:${vIdx}`];
+      if (!spec) continue;
+      const qcm = await QCM.create({
+        scope: 'video', videoId: v._id,
+        titre: `${spec.titre} ${DEMO_TAG}`,
+        questions: spec.questions.map((q) => ({ ...q, questionType: 'single', correctAnswers: [q.correctAnswer] })),
+        pointsPerQuestion: 10, timerSeconds: 30, passingScore: 60,
+      });
+      qcmsByVideo[String(v._id)] = qcm;
+      qcmCount += 1;
+    }
+    const chapSpec = IA_CHAPTER_QCM[ck];
+    if (chapSpec) {
+      const qcm = await QCM.create({
+        scope: 'chapter', chapterId: chap._id,
+        titre: `${chapSpec.titre} ${DEMO_TAG}`,
+        questions: chapSpec.questions.map((q) => ({ ...q, questionType: 'single', correctAnswers: [q.correctAnswer] })),
+        pointsPerQuestion: 10, timerSeconds: 45, passingScore: 60,
+      });
+      qcmsByChapter[String(chap._id)] = qcm;
+      qcmCount += 1;
+    }
+  }
+
+  // QCM module — défensif (pas écraser un éventuel non-DEMO existant)
+  const existingModuleQcm = await QCM.findOne({ scope: 'module', courseId: course._id });
+  if (existingModuleQcm && !DEMO_REGEX.test(existingModuleQcm.titre || '')) {
+    console.warn(`  ⚠️  QCM module IA non-DEMO préexistant trouvé (${existingModuleQcm._id}) — préservé.`);
+  } else {
+    if (existingModuleQcm) await QCM.deleteOne({ _id: existingModuleQcm._id });
+    await QCM.create({
+      scope: 'module', courseId: course._id,
+      titre: `${IA_MODULE_QCM.titre} ${DEMO_TAG}`,
+      questions: IA_MODULE_QCM.questions.map((q) => ({ ...q, questionType: 'single', correctAnswers: [q.correctAnswer] })),
+      pointsPerQuestion: 10, timerSeconds: 30, passingScore: 60,
+    });
+    qcmCount += 1;
+  }
+  console.log(`  ✓ ${qcmCount} QCM créés`);
+
+  /* ── Progression assil DÉBUT ~20% : 1/3 capsule Ch1 + 1 QCM video tenté 60% ── */
+  console.log('\n  Progression assil (DÉBUT — 1 capsule Ch1 vue, 1 QCM tenté à 60%)…');
+  let qcmAttemptCount = 0;
+  {
+    const v = videosByChapter[String(chapters[0]._id)][0];
+    v.watchedBy.push({
+      userId: assil._id, watchedPercent: 100, completed: true,
+      completedAt: daysAgo(2), lastWatchedAt: daysAgo(2),
+    });
+    await v.save();
+
+    const qcm = qcmsByVideo[String(v._id)];
+    if (qcm) {
+      const score = 60;
+      qcm.resultats.push({
+        userId: assil._id, score,
+        correctCount: Math.round(qcm.questions.length * (score / 100)),
+        pointsEarned: Math.round(qcm.questions.length * 10 * (score / 100)),
+        answers: qcm.questions.map((q, i) => ({
+          questionId: q._id,
+          answer: i < Math.round(qcm.questions.length * (score / 100)) ? q.correctAnswer : 'A',
+          answers: [i < Math.round(qcm.questions.length * (score / 100)) ? q.correctAnswer : 'A'],
+          correct: i < Math.round(qcm.questions.length * (score / 100)),
+          timedOut: false,
+        })),
+        completedAt: daysAgo(1),
+      });
+      await qcm.save();
+      qcmAttemptCount += 1;
+    }
+  }
+  console.log(`  ✓ ${qcmAttemptCount} QCM attempt pour assil`);
+
+  /* ── 1 cas pratique planifie ── */
+  console.log('\n  Cas pratique…');
+  const cp1 = await Prosit.create({
+    titre: 'Premier modèle de classification (Iris dataset)',
+    description: tagDescription('Implémenter un classifieur supervisé sur le dataset Iris classique. Découvrir le workflow ML : split train/test, entraînement, évaluation.'),
+    contexte: 'Vous découvrez la classification ML. Le dataset Iris (3 espèces de fleurs, 4 features) est le "Hello World" du ML.',
+    problematique: 'Comment construire un classifieur qui prédit l\'espèce d\'une fleur à partir de ses mesures ?',
+    courseId: course._id,
+    chapterIds: [chapters[0]._id, chapters[1]._id],
+    statut: 'planifie',
+    phaseCadrageDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+    phaseBilanDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000),
+    createdBy: profCreator._id,
+    groupMembers: [],
+    livrables: [],
+    notes: [],
+  });
+  console.log(`  ✓ CP IA-1 "Iris" — statut=planifie, sans groupe`);
+
+  /* ── Projet IA — 3 phases (toutes locked pour assil) ── */
+  console.log('\n  Projet IA — 3 phases…');
+  const projectGroupMembers = [
+    { userId: assil._id, role: 'animateur' },
+    { userId: studentTest1._id, role: 'scribe' },
+    { userId: studentTest2._id, role: 'membre' },
+  ];
+
+  const project = await Project.create({
+    titre: 'Système de recommandation pour une plateforme algérienne',
+    description: tagDescription('Projet final IA : concevoir un système de recommandation (musique/films/produits) en 3 phases progressives.'),
+    type: 'mono',
+    courseId: course._id,
+    createdBy: profCreator._id,
+    status: 'actif',
+    enonce: `Une plateforme algérienne (e-commerce ou musicale) veut intégrer un système de recommandation. Vous le construisez en 3 étapes : cas d\'usage + données → baseline supervisé → amélioration deep learning.`,
+    motsCles: ['ML', 'recommandation', 'classification', 'deep learning'],
+    dateDebut: new Date(),
+    dateFin: new Date(Date.now() + 75 * 24 * 60 * 60 * 1000),
+    dateSoutenance: new Date(Date.now() + 80 * 24 * 60 * 60 * 1000),
+    groupes: [
+      { nom: 'Groupe IA — ISIL L3', membres: projectGroupMembers },
+    ],
+    phases: [
+      {
+        titre: 'Définir le cas d\'usage + collecter les données',
+        description: 'Choisir un domaine (musique, e-commerce…), définir le pb business, collecter et nettoyer le dataset.',
+        statut: 'a_faire',
+        weight: 25,
+        livrableSpec: { type: 'document', isRequired: true, consigne: 'Fiche de cadrage + EDA (Exploratory Data Analysis) du dataset.' },
+        unlockRules: { chapterIds: [chapters[0]._id], casPratiqueIds: [], requiresAllChapters: true, requiresAllCasPratiques: true },
+      },
+      {
+        titre: 'Implémenter un baseline (régression/classification)',
+        description: 'Premier modèle simple (régression logistique, random forest) pour avoir une référence de performance.',
+        statut: 'a_faire',
+        weight: 35,
+        livrableSpec: { type: 'document', isRequired: true, consigne: 'Notebook + métriques baseline (accuracy, precision, recall) + analyse erreurs.' },
+        unlockRules: { chapterIds: [chapters[1]._id], casPratiqueIds: [], requiresAllChapters: true, requiresAllCasPratiques: true },
+      },
+      {
+        titre: 'Améliorer avec deep learning',
+        description: 'Implémenter une approche deep learning (CNN, embedding, NN dense) et comparer aux baselines.',
+        statut: 'a_faire',
+        weight: 40,
+        livrableSpec: { type: 'presentation', isRequired: true, consigne: 'Modèle DL + comparaison baselines + slides soutenance.' },
+        unlockRules: { chapterIds: [chapters[3]._id], casPratiqueIds: [cp1._id], requiresAllChapters: true, requiresAllCasPratiques: true },
+        sourceCasPratiqueId: cp1._id,
+      },
+    ],
+  });
+  console.log(`  ✓ Projet "${project.titre}" créé (id=${project._id})`);
+
+  /* ── Pré-calcul studentProgress (toutes locked car prérequis non remplis) ── */
+  const { computePhaseStatus } = await import('../services/projectMilestoneService.js');
+  const myPhasesAssil = await computePhaseStatus(project._id, assil._id);
+  await computePhaseStatus(project._id, studentTest1._id);
+  await computePhaseStatus(project._id, studentTest2._id);
+
+  return {
+    course,
+    chapters,
+    videos: Object.values(videosByChapter).flat(),
+    qcms: qcmCount,
+    casPratiques: [cp1],
+    project,
+    youtube: { valid: validCount, fallback: fallbackCount },
+    qcmAttempts: qcmAttemptCount,
+    myPhasesAssil,
+  };
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
    AUTOMATED ASSERTIONS
 ═══════════════════════════════════════════════════════════════════════════ */
 
@@ -1682,6 +2136,34 @@ async function assertGenieLogicielExpectations(seedResult) {
   return true;
 }
 
+async function assertIaDataMiningExpectations(seedResult) {
+  console.log('\n🔬 Vérifications automatiques (IA)…');
+  const errors = [];
+  const phases = seedResult.myPhasesAssil.phases;
+  const expected = [
+    { idx: 0, status: 'locked' },  // Ch1 33% → pas complet
+    { idx: 1, status: 'locked' },  // Ch2 0%
+    { idx: 2, status: 'locked' },  // Ch4 0% + CP1 planifie
+  ];
+  expected.forEach(({ idx, status }) => {
+    const actual = phases[idx];
+    if (!actual) { errors.push(`Phase ${idx} manquante`); return; }
+    if (actual.status !== status) errors.push(`Phase ${idx} ("${actual.titre}") : status attendu "${status}", reçu "${actual.status}"`);
+    if (!actual.details?.hasRules) errors.push(`Phase ${idx} : details.hasRules manquant — pas de message d'unlock visible`);
+  });
+
+  if (errors.length > 0) {
+    console.error('  ❌ ÉCHEC IA :');
+    errors.forEach((e) => console.error(`     - ${e}`));
+    return false;
+  }
+  console.log('  ✅ Phase 1 (cas usage + données) = locked (Ch1 1/3 capsule vue)');
+  console.log('  ✅ Phase 2 (baseline) = locked (Ch2 0%)');
+  console.log('  ✅ Phase 3 (deep learning) = locked (Ch4 0% + CP1 planifie)');
+  console.log('  ✅ Toutes les phases ont des chapterChecks/casPratiqueChecks (messages clairs étudiant)');
+  return true;
+}
+
 /* ═══════════════════════════════════════════════════════════════════════════
    MAIN
 ═══════════════════════════════════════════════════════════════════════════ */
@@ -1743,7 +2225,15 @@ async function main() {
     }
 
     if (moduleSel === 'ia' || moduleSel === 'all') {
-      console.log('\n⏭  Module IA & Data Mining : non encore seedé (Phase 4 du plan).');
+      const result = await seedIaDataMiningModule();
+      const ok = await assertIaDataMiningExpectations(result);
+      console.log('\n📊 Récap IA & Data Mining :');
+      console.log(`  • ${result.chapters.length} chapitres, ${result.videos.length} capsules, ${result.qcms} QCM`);
+      console.log(`  • ${result.casPratiques.length} cas pratique : ${result.casPratiques.map((c) => c.statut).join(', ')}`);
+      console.log(`  • 1 projet 3 phases (${result.project._id})`);
+      console.log(`  • Progression assil : ${result.qcmAttempts} QCM tenté (état DÉBUT ~20%)`);
+      console.log(`  • URLs YouTube : ${result.youtube.valid}/15 valides, ${result.youtube.fallback}/15 fallback`);
+      if (!ok) allAssertOK = false;
     }
 
     if (!allAssertOK) {
