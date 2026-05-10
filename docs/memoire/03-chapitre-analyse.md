@@ -150,6 +150,12 @@ Les exigences fonctionnelles décrivent **ce que le système doit permettre de f
 
 **EF-PROJECT-6** — Le professeur doit pouvoir **évaluer un livrable** via la grille rubric configurable (critères × descripteurs niveau 1-5) et fournir un feedback texte.
 
+**EF-PROJECT-7** — Le professeur doit pouvoir **conditionner le déblocage de chaque phase** d'un Projet à la complétion d'un ou plusieurs chapitres et/ou cas pratiques (`phase.unlockRules`). Tant que les prérequis d'une phase ne sont pas satisfaits par un étudiant, cette phase reste verrouillée pour lui (statut `locked`), avec un message d'aide listant les éléments manquants et leur progression chiffrée. Cette mécanique de **déblocage progressif individuel** matérialise au niveau micro (par phase) la dépendance pédagogique formalisée au niveau macro par le Cycle d'Apprentissage Inversé (cf. § 4.3).
+
+**EF-PROJECT-8** — Lorsqu'une phase déclare un cas pratique source (`phase.sourceCasPratiqueId`), l'étudiant qui a obtenu une note pour ce cas pratique doit pouvoir **importer son livrable** directement comme point de départ de la nouvelle soumission, plutôt que de repartir d'une page blanche. Cette **réutilisation explicite** du travail déjà évalué incarne l'articulation entre l'étape 3 (Application — Cas pratique) et l'étape 4 (Production — Projet) du cycle, sans imposer un copier-coller manuel ni la perte du fil de pensée du précédent rendu.
+
+**EF-PROJECT-9** — Le professeur doit pouvoir **consulter une matrice de progression** affichant pour chaque étudiant inscrit dans un groupe son statut individuel sur chacune des phases du projet, parmi les cinq états visuels distincts : ✅ *validated*, ⚠️ *submitted* (en attente de validation), 🟡 *in-progress* (importé ou commencé), 🔓 *unlocked* (débloqué non commencé), 🔒 *locked* (verrouillé). Cette vue panoramique sert le double objectif de **diagnostic pédagogique** (qui décroche, qui avance, qui est en attente de retour) et d'**équité d'évaluation** (visibilité homogène du travail individuel au sein du groupe).
+
 ### 3.2.6 Domaine *Révision espacée (Decks et Cards)*
 
 **EF-DECK-1** — L'étudiant doit pouvoir **créer un deck** de flashcards manuellement (titre, description, catégorie, visibilité publique/privée).
@@ -195,6 +201,8 @@ Les exigences fonctionnelles décrivent **ce que le système doit permettre de f
 **EF-CAI-3** — Le système doit afficher au professeur une **page « Préparation classe »** présentant pour chaque vidéo du cours le nombre d'étudiants prêts (vidéo ≥ 80 % + QCM ≥ 60 %), partiels, ou non préparés, avec liste des emails des non préparés pour rappel groupé.
 
 **EF-CAI-4** — Le professeur doit pouvoir **envoyer un rappel groupé** aux étudiants non préparés (limite de 50 destinataires par appel, dédoublonnage horaire pour éviter le spam).
+
+**EF-CAI-5** — Le système doit assurer une **articulation explicite entre l'étape 3 (Application — Cas pratique) et l'étape 4 (Production — Projet)** : (a) chaque phase d'un Projet peut conditionner son déblocage à la complétion de chapitres et/ou à l'évaluation d'un cas pratique précédent (cf. EF-PROJECT-7), (b) après évaluation d'un cas pratique par le professeur, le système recalcule automatiquement et de manière non bloquante les statuts de phases pour chaque étudiant noté, (c) si une phase déclare un cas pratique source, l'étudiant peut importer son livrable comme point de départ de la nouvelle soumission (cf. EF-PROJECT-8). Cette articulation formalise au niveau du système la continuité pédagogique entre apprentissage en groupe court (cas pratique) et production individuelle ou collective sur la durée (projet), conformément à la progression spiralaire recommandée par Bruner (1960) et à la *Constructive Alignment* de Biggs (1996).
 
 ## 3.3 Exigences non fonctionnelles
 
@@ -314,6 +322,44 @@ Les cas d'utilisation suivants formalisent les interactions clés entre les acte
 | **Précondition** | Un Prosit existe au statut `aller` ; l'étudiant est membre d'un des groupes. |
 | **Scénario nominal** | 1. L'étudiant accède à la page du Prosit depuis *Prosits* ou *Mon Parcours*. 2. Si c'est sa première participation à un Prosit, une modale d'onboarding lui propose de lire la *Méthode Prosit* (5 minutes). 3. L'étudiant consulte l'énoncé, la grille d'évaluation, et identifie son rôle (par exemple *Animateur*). 4. **Phase Aller** (en présentiel) : le groupe se réunit, analyse le cas collectivement, l'animateur distribue la parole, le secrétaire note les contributions, le scribe remplit le tableau partagé. 5. Le professeur valide la fin de la phase Aller → bascule en *recherche*. 6. **Phase Recherche** (chez soi, ~7 jours) : chaque membre soumet ses contributions individuelles via l'interface. 7. **Phase Retour** (en présentiel) : le groupe présente sa solution au professeur. 8. Le professeur évalue le travail du groupe selon la grille et bascule le Prosit en `evalue`. 9. Une période de 3 jours s'ouvre pendant laquelle chaque membre peut **évaluer ses pairs** sur les cinq critères standardisés. 10. Le système calcule la note finale = 0.7 × note professeur + 0.3 × moyenne notes pairs. |
 | **Postcondition** | Note finale calculée et persistée. Statistique de rotation des rôles mise à jour pour chaque membre. |
+
+### 3.4.7 Cas d'utilisation : *Configurer les prérequis d'une phase de projet*
+
+| | |
+|---|---|
+| **Acteur principal** | Professeur titulaire d'un cours |
+| **Précondition** | Le cours dispose d'au moins un chapitre publié et/ou un cas pratique évalué. Le professeur est en cours de création ou d'édition d'un Projet. |
+| **Scénario nominal** | 1. Le professeur ouvre la page *Créer un projet* (`/professor/projects/create`) ou la page d'édition d'un projet existant. 2. Pour chaque phase, il déplie la section repliable « **Conditions de déblocage** ». 3. Il sélectionne dans une liste à cases à cocher les chapitres requis (récupérés dynamiquement via `GET /api/courses/:id/chapters`) et les études de cas requises (via `GET /api/cas-pratiques?courseId=:id`). 4. Il choisit le mode logique : *toutes obligatoires* (par défaut) ou *au moins une suffit*. 5. S'il souhaite permettre l'import du livrable d'un cas pratique précédent, il sélectionne ce cas pratique dans le sélecteur « Réutilisation du livrable » (champ `phase.sourceCasPratiqueId`). 6. Le système valide la cohérence : si un `sourceCasPratiqueId` est renseigné, ce cas pratique doit aussi figurer dans la liste des cas pratiques requis (sinon l'étudiant ne pourrait jamais atteindre la phase pour utiliser le bouton d'import). 7. Le professeur clique *Créer* / *Enregistrer* ; le payload soumis contient les sous-documents `unlockRules` enrichis. |
+| **Postcondition** | Les phases du projet sont configurées avec leurs prérequis individuels. Tout étudiant inscrit verra son statut de phase recalculé automatiquement à la première consultation (cf. UC 3.4.9). |
+| **Variante d'erreur** | Si `sourceCasPratiqueId` est sélectionné sans figurer dans `casPratiqueIds`, le formulaire se déplie sur la phase fautive en rouge et bloque la soumission jusqu'à correction. |
+
+### 3.4.8 Cas d'utilisation : *Importer le livrable d'un cas pratique dans une phase*
+
+| | |
+|---|---|
+| **Acteur principal** | Étudiant inscrit dans un groupe d'un Projet |
+| **Précondition** | Une phase du projet déclare un `sourceCasPratiqueId` ; l'étudiant a obtenu une note pour ce cas pratique (statut `evalue` + livrable individuel + note présents dans `Prosit.notes`) ; la phase est dans l'état `unlocked` ou `in-progress` pour l'étudiant. |
+| **Scénario nominal** | 1. L'étudiant consulte la page du Projet (`/projects/:id`). 2. La section « Mes étapes » affiche pour la phase concernée la carte 🔓 *unlocked* avec un bandeau d'information : « Tu as déjà rendu un livrable sur ce sujet *(titre du cas pratique)*. Tu peux l'importer comme point de départ et l'enrichir, ou repartir d'une page vide. » 3. L'étudiant clique *Importer et enrichir*. 4. Le frontend appelle `POST /api/projects/:id/phases/:phaseId/import-livrable` (sans corps de requête : la phase connaît elle-même son `sourceCasPratiqueId`). 5. Le contrôleur vérifie l'éligibilité, récupère le livrable de l'étudiant dans le cas pratique source, copie son `contenu` dans `studentProgress.submission` et marque `studentProgress.importedFromCasPratiqueId = sourceCasPratiqueId` à des fins de traçabilité. 6. La phase passe à 🟡 *in-progress* ; le formulaire d'édition se déplie pré-rempli avec un badge « Livrable importé depuis l'étude de cas *X* — tu peux l'enrichir ci-dessous ». |
+| **Postcondition** | L'étudiant peut éditer le livrable importé puis le soumettre normalement (cf. UC 3.4.10). Le champ `importedFromCasPratiqueId` reste persisté pour audit et reconnaissance pédagogique du travail antérieur. |
+| **Variante** | Si l'étudiant préfère ne pas importer (sujet abordé sous un angle différent), il clique *Repartir de zéro* — aucun appel API n'est effectué et le formulaire vide s'affiche. |
+
+### 3.4.9 Cas d'utilisation : *Consulter mon avancement par phase (vue étudiant)*
+
+| | |
+|---|---|
+| **Acteur principal** | Étudiant inscrit dans un groupe d'un Projet |
+| **Précondition** | L'étudiant est authentifié et est membre d'au moins un groupe sur le projet consulté. |
+| **Scénario nominal** | 1. L'étudiant ouvre la page du Projet (`/projects/:id`). 2. Le frontend déclenche `GET /api/projects/:id/my-phases`. 3. Le service `projectMilestoneService.computePhaseStatus` (cf. § 4.3.5) recalcule pour cet étudiant : (a) pour chaque phase non terminale, le statut résultant des règles `unlockRules` croisées avec sa progression chapitres et cas pratiques ; (b) les détails de progression (% capsules vues, % QCM passés, statut des cas pratiques requis) afin que l'interface puisse afficher des messages d'aide précis. 4. La page affiche un *header projet* (groupe, rôle, avancement `validatedCount / totalPhases · X %`, compte à rebours soutenance si applicable) suivi de la liste des phases sous forme de cartes individuelles à 5 états visuels distincts. 5. Pour chaque phase verrouillée, l'étudiant voit la liste des prérequis avec leur progression (par exemple : *« Chapitre 3 — actuellement à 60 % capsules, il te manque 1 capsule »*) et un bouton *Reprendre* qui le redirige vers la ressource à compléter. |
+| **Postcondition** | L'étudiant a une vue claire de son chemin pédagogique : ce qui est terminé, ce qu'il peut faire maintenant, ce qui reste à débloquer et comment. Le service met également à jour les sous-documents `studentProgress` correspondants en base (idempotence garantie : un appel sans changement ne modifie rien). |
+
+### 3.4.10 Cas d'utilisation : *Consulter la matrice de progression du groupe (vue professeur)*
+
+| | |
+|---|---|
+| **Acteur principal** | Professeur titulaire ou administrateur |
+| **Précondition** | Au moins un groupe est constitué sur le projet et au moins un étudiant a consulté sa propre vue (afin que `studentProgress` soit pré-calculé). |
+| **Scénario nominal** | 1. Le professeur ouvre la page de détail du Projet (`/projects/:id`). 2. En bas de page, la **matrice de progression** s'affiche automatiquement (composant `PhasesProgressionMatrix.jsx`). 3. La matrice présente une table : une ligne par étudiant inscrit (déduplication via `Map`), une colonne par phase. Chaque cellule contient une pastille colorée indiquant le statut individuel parmi les cinq états. 4. Au-dessus de la table, un compteur synthétique affiche *« N étudiants inscrits · M actifs sur K phases »* et la légende des cinq statuts colorés. 5. En vue mobile (≤ 720 px), la matrice bascule automatiquement en cartes verticales par étudiant, chaque carte listant les phases avec leur statut. |
+| **Postcondition** | Le professeur identifie en un coup d'œil les profils à risque (multiples *locked*), les soumissions en attente de validation (*submitted*), les imports actifs (*in-progress*) et les phases déjà validées. Il peut alors prioriser ses interventions (relance, validation, retour individuel). |
 
 ---
 

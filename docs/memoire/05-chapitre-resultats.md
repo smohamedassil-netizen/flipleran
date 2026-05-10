@@ -91,7 +91,15 @@ Les pages **`/prosits`** (liste) et **`/prosits/:id`** (détail) implémentent i
 
 La page de détail d'un Prosit présente l'énoncé complet, le cas d'entreprise (généralement contextualisé Algérie), les mots-clés, la grille d'évaluation, le calendrier, et les groupes constitués. Pour le membre d'un groupe en phase active, des sous-sections spécifiques s'affichent : espace de contributions individuelles, tableau partagé en lecture/écriture, liste des coéquipiers avec leurs rôles. À la première ouverture d'un Prosit par un nouvel utilisateur, une **modale d'onboarding** propose de lire le guide *Méthode Prosit* (page `/method-guide`, environ 7 sections pédagogiques détaillées sur la méthodologie CESI/APP).
 
-### 5.1.8 Quiz Battle — affrontement temps réel
+### 5.1.8 Page projet — vue étudiant à phases progressives
+
+La page **`/projects/:id`** présente, pour l'étudiant inscrit dans un groupe, une expérience profondément remaniée par la refonte de mai 2026 (cf. § 4.3.5). En tête de page s'affiche un **header projet** synthétique : le nom du module rattaché, le titre du projet, la composition du groupe avec mise en évidence du rôle propre, une barre de progression *Mon avancement* (`validatedCount/totalPhases · X %`) et, lorsqu'elle est dans les quatorze prochains jours, un compte à rebours de la date de soutenance.
+
+Sous ce header se déploie la liste des phases personnelles, chacune sous forme d'une **carte adaptée au statut** (composant `StudentPhaseCard.jsx`), parmi les cinq variantes visuelles formalisées en EF-PROJECT-9. Une phase **verrouillée** liste explicitement ses prérequis avec leur taux de complétion individuel (« Chapitre 3 — actuellement à 60 % capsules, il te manque 1 capsule ») et offre des boutons *Reprendre* qui redirigent vers la ressource manquante. Une phase **débloquée** dont la définition pointe vers un cas pratique évalué par l'étudiant propose un choix binaire : *Importer et enrichir* le livrable précédent, ou *Repartir de zéro*. Une phase **en cours** affiche le formulaire d'édition pré-rempli (avec un bandeau jaune *Livrable importé depuis l'étude de cas X — tu peux l'enrichir ci-dessous* lorsque l'option d'import a été retenue), un bouton *Sauvegarder brouillon* (persistance locale en `localStorage`) et un bouton *Soumettre* qui bascule la phase en *submitted*. Une phase **soumise** se met en lecture seule, en attente du retour professeur. Une phase **validée** affiche le feedback du professeur et un bouton *Voir mon livrable* qui ouvre une modale lecture seule.
+
+Cette interface incarne directement les principes de visibilité du parcours et de capitalisation des apprentissages successifs énoncés en § 4.3.5 — chaque écran rappelle où l'étudiant en est, ce qu'il peut faire maintenant, et comment ce qu'il a déjà investi continue à porter ses fruits dans la suite du module.
+
+### 5.1.9 Quiz Battle — affrontement temps réel
 
 La page **`/quiz-battle`** propose un affrontement compétitif entre deux étudiants. Le lobby affiche les salles disponibles et permet d'en créer une nouvelle (choix de la matière). Un match comporte 5 questions, avec un timer de 15 secondes par question. Trois **power-ups** sont à disposition de chaque joueur (utilisables une seule fois chacun) :
 
@@ -163,7 +171,15 @@ Les pages **`/prosits/new`** et **`/professor/projects/create`** permettent au p
 
 Pour les Projets, un bouton **« Partir d'un template »** ouvre la bibliothèque de quatorze templates officiels seedés (5 ISIL, 3 Management, 3 Finance, 3 PFE), avec énoncé contextualisé Algérie quand pertinent, phases pré-remplies adaptées au type, rubric d'évaluation suggérée. Le professeur peut tout éditer après l'instanciation.
 
-### 5.2.7 Gestion QCM et badges
+Pour chaque phase saisie ou pré-remplie, un **accordéon repliable « Conditions de déblocage »** offre la configuration des règles `unlockRules` (cf. § 4.2.3 et UC 3.4.7) : multi-sélections des chapitres requis et des cas pratiques requis (chargés dynamiquement depuis le module sélectionné via `GET /api/courses/:id/chapters` et `GET /api/cas-pratiques?courseId=:id`), drapeaux *toutes obligatoires* / *au moins une suffit*, et sélecteur du cas pratique source pour autoriser l'import du livrable précédent. Une **validation côté front** détecte le cas où le `sourceCasPratiqueId` n'est pas inclus dans `casPratiqueIds` et affiche un message rouge explicite tout en bloquant la soumission, garantissant la cohérence des règles avant persistance.
+
+### 5.2.7 Matrice de progression projet — vue prof
+
+En bas de chaque page de détail Projet, le professeur (uniquement) consulte la **matrice de progression** des étudiants inscrits, composant `PhasesProgressionMatrix.jsx` (cf. UC 3.4.10). Une table croise étudiants (lignes, dédupliquées via `Map` car un étudiant peut figurer dans plusieurs groupes, ce qui ne devrait pas se produire en pratique mais est défensif) et phases (colonnes), avec dans chaque cellule une pastille colorée matérialisant les cinq états (✅ validated, ⚠️ submitted, 🟡 in-progress, 🔓 unlocked, 🔒 locked). Un compteur synthétique en en-tête affiche *« N étudiants inscrits · M actifs sur K phases »*. Sur écran mobile (≤ 720 px), la table bascule en une suite de cartes par étudiant grâce à une *media query* CSS embarquée dans le composant — conformément à l'exigence ENF-ERGO-3 d'adaptation au mobile.
+
+Cette matrice répond directement à la critique fréquente des dispositifs PBL : la difficulté pour l'enseignant de discerner, dans un travail collectif, l'engagement et la progression individuelle de chaque membre (Helle, Tynjälä, & Olkinuora, 2006). En offrant une visibilité homogène en lecture, elle équilibre l'expérience d'évaluation et facilite les interventions ciblées (relance d'un étudiant en *locked* depuis trop longtemps, validation d'une soumission en *submitted*, retour individuel sur un *in-progress*).
+
+### 5.2.8 Gestion QCM et badges
 
 Les pages **`/professor/qcm`** (hub de tous les QCM) et **`/professor/badges`** complètent l'arsenal du professeur. Le hub QCM permet la création standalone (sans vidéo associée) ou à partir d'une vidéo existante. La page Badges propose la création de badges custom (titre, description, condition de déblocage, rareté Common/Rare/Épique/Légendaire) et l'attribution manuelle à un étudiant spécifique.
 

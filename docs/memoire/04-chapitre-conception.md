@@ -320,15 +320,35 @@ Le diagramme ERD ci-dessous présente les principales relations entre les collec
     dateDebut, dateFin: Date,
     weight: Number (0-100),                     // pondération dans note finale
     livrableSpec: { type, isRequired, consigne },
-    checklist: [{ texte, done, doneBy, doneAt }]
+    checklist: [{ texte, done, doneBy, doneAt }],
+    // Refonte 2026-05 — articulation Cas Pratique ↔ Projet (cf. § 4.3.5)
+    unlockRules: {
+      chapterIds: [ObjectId (ref Chapter)],     // chapitres requis pour débloquer
+      casPratiqueIds: [ObjectId (ref Prosit)],  // cas pratiques requis (statut evalue + note)
+      requiresAllChapters: Boolean (default true),       // tous OU au moins un
+      requiresAllCasPratiques: Boolean (default true)
+    },
+    sourceCasPratiqueId: ObjectId (ref Prosit), // pour le bouton "Importer livrable"
+    studentProgress: [{
+      studentId: ObjectId (ref User),
+      status: 'locked' | 'unlocked' | 'in-progress' | 'submitted' | 'validated',
+      submission: String,                        // texte du livrable étudiant
+      fichierUrl: String,                        // URL fichier joint (optionnel)
+      importedFromCasPratiqueId: ObjectId,       // traçabilité de l'import livrable
+      submittedAt, validatedAt: Date,
+      feedback: String                           // retour prof à validation
+    }]
   }],
-  livrables: [Livrable],                        // soumissions étudiants
+  livrables: [Livrable],                        // soumissions étudiants (canal legacy global)
   evaluations: [Evaluation],                    // notes prof
   rubric: [RubricCriterion],                    // grille évaluation transparente
   ideas: [Idea],                                // suggestions prof + étudiants
-  activity: [Activity]                          // feed événements
+  activity: [Activity],                         // feed événements
+  linkedCasPratiqueId: ObjectId (ref Prosit)    // lien CAI étape 3 → étape 4 (cf. § 4.3.5)
 }
 ```
+
+Les sous-documents `unlockRules`, `sourceCasPratiqueId` et `studentProgress` sont des **ajouts rétrocompatibles** introduits lors de la refonte de mai 2026 : un projet créé sans ces champs continue de fonctionner (statut par défaut `unlocked` pour toute phase sans règles déclarées). Cette extension par sous-document, plutôt que par création d'une nouvelle collection, respecte la philosophie *embedding-first* de MongoDB lorsque la cardinalité est bornée et la cohérence locale — toutes les phases d'un projet sont consultées ensemble (Banker, 2016, *MongoDB in Action*).
 
 ### 4.2.4 Indexation et performance
 
@@ -420,6 +440,24 @@ Le payload renvoyé est de la forme :
 Côté frontend, ce payload est consommé par deux interfaces principales :
 - la page **`/my-journey`** (composant `MyJourney.jsx` + sous-composant `JourneyStepCard.jsx`), qui présente le cycle complet pour chaque cours de l'étudiant ;
 - le composant **`CycleDiagram.jsx`** intégré au tableau de bord étudiant, qui visualise les cinq étapes sous forme d'un diagramme animé avec dropdown de sélection du cours.
+
+### 4.3.5 Articulation fine entre l'étape 3 (Application) et l'étape 4 (Production)
+
+Le verrouillage *macro* présenté en § 4.3.3 fonctionne au grain du cours : l'étape 4 est verrouillée tant qu'aucun Prosit du cours n'est terminé. Ce grain s'est révélé insuffisant à l'usage, car un projet de fin de module se compose de plusieurs phases dont chacune mobilise des concepts précis du cours et peut tirer parti d'un cas pratique antérieur précis. La refonte de mai 2026 a donc introduit un second niveau de verrouillage, *micro*, agissant **par phase** plutôt que par étape, et **par étudiant** plutôt que pour la cohorte.
+
+**a) Modèle de règles déclaratives.** Chaque phase d'un Projet peut déclarer un sous-document `unlockRules` (cf. § 4.2.3) listant les chapitres et les cas pratiques requis pour débloquer la phase, avec deux drapeaux booléens (`requiresAllChapters`, `requiresAllCasPratiques`) qui distinguent la conjonction stricte (« tous obligatoires ») de la disjonction (« au moins un suffit »). Le paramétrage par défaut est `true/true`, conformément au principe pédagogique de progression cumulative ; l'option permissive est offerte pour les cas où plusieurs cas pratiques préparent à un même type de production (l'étudiant a alors le choix de l'étude de cas qu'il prolonge).
+
+**b) Critère composite de complétion d'un chapitre.** La complétion d'un chapitre, condition centrale du déblocage, n'est pas réduite à un simple ratio de capsules vues. Le service `progressService.isChapterCompletedByUser(userId, chapterId)` croise deux indicateurs : (i) **% capsules complétées** (au sens `Video.watchedBy.completed === true`, c'est-à-dire visionnage à 80 % au moins) qui doit dépasser le seuil paramétrable `Chapter.completionThreshold` (par défaut 80 %) ; (ii) **% QCM-vidéo passés** (au sens `score ≥ 60 %`) qui doit dépasser 80 % des QCM rattachés aux capsules du chapitre. Ce critère composite, plus exigeant qu'un simple visionnage, traduit l'idée que la *préparation* d'une étape suivante demande non seulement d'avoir vu mais aussi d'avoir *compris* (vérification formative immédiate, Black & Wiliam, 1998). Le fallback est cependant explicite : si un chapitre ne dispose d'aucun QCM-vidéo, le critère se replie sur le seul taux de visionnage, évitant de bloquer l'étudiant pour un manque que ne lui est pas imputable.
+
+**c) Critère d'évaluation d'un cas pratique.** L'évaluation d'un cas pratique pour un étudiant donné, condition complémentaire, est définie par trois conjonctions : (i) le cas pratique est en statut `evalue` ; (ii) l'étudiant a soumis un livrable individuel (présent dans `Prosit.livrables`) ; (iii) l'étudiant a reçu une note du professeur (présente dans `Prosit.notes`). Cette triple conjonction garantit que le déblocage matérialise un *travail effectivement réalisé et reconnu*, et non une simple appartenance passive au groupe.
+
+**d) Service d'orchestration.** Le service `projectMilestoneService.computePhaseStatus(projectId, studentId)` lit le projet, vérifie que l'étudiant est inscrit dans un groupe, puis pour chaque phase évalue les règles via les deux fonctions précédentes et résout le statut résultant. Une règle d'**immutabilité des statuts terminaux** (`submitted`, `validated`) garantit qu'un travail soumis ou validé ne peut être rétrogradé par un changement ultérieur des prérequis. Les statuts intermédiaires (`unlocked`, `in-progress`) sont en revanche recalculables, à condition que l'étudiant ait effectivement commencé pour conserver `in-progress` (sinon il rebascule à `unlocked`).
+
+**e) Trigger après évaluation.** Lorsque le professeur soumet l'évaluation d'un cas pratique (`POST /api/cas-pratiques/:id/evaluate`), un trigger asynchrone non-bloquant appelle `recomputePhasesForStudentOnCourse(studentId, courseId)` pour chaque étudiant noté. Cette tâche en arrière-plan met à jour les statuts de phases dans tous les projets actifs du cours concerné, sans pénaliser le temps de réponse de la requête principale ni faire échouer l'évaluation en cas d'erreur de recalcul.
+
+**f) Réutilisation du livrable précédent.** Lorsqu'une phase déclare un cas pratique source (`sourceCasPratiqueId`), un endpoint dédié `POST /api/projects/:id/phases/:phaseId/import-livrable` permet à l'étudiant éligible de copier le contenu de son livrable du cas pratique dans la zone de soumission de la phase, et trace la provenance via le champ `studentProgress.importedFromCasPratiqueId`. Cette traçabilité sert deux finalités : (i) l'étudiant identifie sans ambiguïté ce qu'il enrichit (un bandeau jaune *« Livrable importé depuis l'étude de cas X »* surmonte le formulaire) ; (ii) le professeur peut, à la lecture du livrable final, mesurer l'apport propre à l'étudiant par delà la base réutilisée — cohérent avec la démarche d'**alignement constructif** de Biggs (1996), qui préconise de rendre visibles les apprentissages successifs plutôt que de les fragmenter en silos déconnectés.
+
+**g) Bénéfice pédagogique mesurable.** Cette mécanique évite à l'étudiant l'effet *page blanche* dans les phases finales d'un module (Lebrun, 2007, sur la *scénarisation pédagogique*), tout en préservant le contrôle du professeur (rien n'est imposé : l'option *Repartir de zéro* est toujours disponible). Elle rend en outre visible, dans les interfaces, la **continuité du parcours** : l'étudiant constate que ce qu'il a investi dans un cas pratique n'est pas *consommé* à l'évaluation mais *capitalisé* pour la suite, ce qui répond directement à la critique fréquente de la fragmentation des dispositifs en classe inversée (Akçayır, 2018).
 
 ## 4.4 Diagrammes UML
 
@@ -559,6 +597,136 @@ Côté frontend, ce payload est consommé par deux interfaces principales :
    │ - isAnonymous: bool     │         └─────────────────────────┘
    └─────────────────────────┘
 ```
+
+### 4.4.4 Diagramme de classes — Domaine *Apprentissage par projet (refonte 2026-05)*
+
+**Figure 4.7 — Classes du domaine Project enrichi (articulation CAI 3 → 4)**
+
+Le diagramme ci-dessous précise les sous-documents introduits par la refonte de mai 2026 (cf. § 4.2.3 et § 4.3.5) qui matérialisent l'articulation entre le cas pratique et le projet final.
+
+```
+   ┌───────────────────────────────────┐
+   │            Project                │
+   ├───────────────────────────────────┤
+   │ - titre, description, type        │
+   │ - courseId, modules[]             │
+   │ - createdBy, status               │
+   │ - dateDebut, dateFin, dateSout    │
+   │ - linkedCasPratiqueId  ─────────────────────► Prosit
+   ├───────────────────────────────────┤            (lien CAI étape 3 → 4)
+   │ + addPhase()                      │
+   │ + computeProjectGrade()           │
+   └───────────────────────────────────┘
+                  │ 1
+                  │ contient
+                  │ *
+                  ▼
+   ┌───────────────────────────────────┐
+   │             Phase                 │
+   ├───────────────────────────────────┤
+   │ - titre, description              │
+   │ - statut: a_faire|en_cours|term.  │
+   │ - dateDebut, dateFin, weight      │
+   │ - livrableSpec                    │
+   │ - sourceCasPratiqueId  ─────────────────────► Prosit
+   │ - checklist[]                     │            (cas pratique source pour
+   │ - unlockRules    ─┐               │             import livrable)
+   │ - studentProgress[] ─┐            │
+   ├───────────────────│──│────────────┤
+   │ + isUnlockedFor(  │  │            │
+   │       studentId)  │  │            │
+   └───────────────────│──│────────────┘
+                       │  │
+       ┌───────────────┘  └──────────────────┐
+       │ 1                                    │ * (1 par étudiant inscrit)
+       ▼                                      ▼
+┌──────────────────────────┐    ┌───────────────────────────────────┐
+│      UnlockRules         │    │      StudentProgress              │
+├──────────────────────────┤    ├───────────────────────────────────┤
+│ - chapterIds[] ──► Chap. │    │ - studentId  ─────────────────► User
+│ - casPratiqueIds[] ─► Pr.│    │ - status: locked | unlocked |     │
+│ - requiresAllChapters    │    │            in-progress |           │
+│ - requiresAllCasPrat.    │    │            submitted | validated  │
+└──────────────────────────┘    │ - submission: String              │
+                                │ - fichierUrl: String              │
+                                │ - importedFromCasPratiqueId ──► Prosit
+                                │ - submittedAt, validatedAt        │
+                                │ - feedback: String                │
+                                └───────────────────────────────────┘
+```
+
+**Lecture du diagramme.** Une `Phase` est un sous-document de `Project`, embarquant à la fois la définition pédagogique (titre, deadlines, poids dans la note) et la dimension *individuelle* via `studentProgress[]` — un sous-document distinct par étudiant inscrit dans un groupe du projet. Cette double couche traduit le besoin EF-PROJECT-9 (matrice de progression) sans dénormaliser : la lecture d'un projet rapatrie en une seule requête toutes les informations nécessaires à la matrice. La cardinalité `*` de `studentProgress` est bornée par le nombre d'étudiants effectivement inscrits dans les groupes (typiquement 5-25 par projet) ; ce volume reste largement compatible avec la limite des 16 Mo par document MongoDB.
+
+Le sous-document `unlockRules` est *singleton* sur la phase (toutes les règles s'appliquent à toutes les soumissions de la phase) ; à l'inverse, `studentProgress` est *multi-occurrences* (un statut par étudiant). Cette asymétrie reflète la différence entre la *définition* du parcours (commune au groupe) et son *parcours effectif* (individuel).
+
+### 4.4.5 Diagramme de séquence — Cas d'utilisation *Importer le livrable d'un cas pratique*
+
+**Figure 4.8 — Séquence Import livrable cas pratique → phase de projet**
+
+```
+  Étudiant     Front          Back              progressService     Project DB    Prosit DB
+     │           │              │                      │                 │            │
+     │ Click     │              │                      │                 │            │
+     │ "Importer"│              │                      │                 │            │
+     ├──────────►│              │                      │                 │            │
+     │           │ POST /api/projects/:id/             │                 │            │
+     │           │   phases/:phaseId/import-livrable   │                 │            │
+     │           ├─────────────►│                      │                 │            │
+     │           │              │ findById(projectId)  │                 │            │
+     │           │              ├──────────────────────────────────────►│            │
+     │           │              │  ◄────────── project (avec phases)    │            │
+     │           │              │                      │                 │            │
+     │           │              │ vérifie inscription  │                 │            │
+     │           │              │ (studentId ∈         │                 │            │
+     │           │              │  groupes[].membres)  │                 │            │
+     │           │              │                      │                 │            │
+     │           │              │ vérifie phase.       │                 │            │
+     │           │              │ sourceCasPratiqueId  │                 │            │
+     │           │              │ existe               │                 │            │
+     │           │              │                      │                 │            │
+     │           │              │ isCasPratiqueEvaluatedForUser(         │            │
+     │           │              │   studentId, sourceId)                 │            │
+     │           │              ├─────────────────────►│                 │            │
+     │           │              │                      │ findById(sourceId)           │
+     │           │              │                      ├────────────────────────────►│
+     │           │              │                      │ ◄── prosit (statut, livr., notes)
+     │           │              │                      │                 │            │
+     │           │              │                      │ check 3 conds : │            │
+     │           │              │                      │  statut=evalue, │            │
+     │           │              │                      │  livrable[my],  │            │
+     │           │              │                      │  notes[my]      │            │
+     │           │              │ ◄────── boolean true │                 │            │
+     │           │              │                      │                 │            │
+     │           │              │ findById(sourceId).livrables           │            │
+     │           │              │   .find(l.studentId === my)            │            │
+     │           │              ├──────────────────────────────────────────────────►│
+     │           │              │ ◄────── livrable { contenu, fichierUrl }           │
+     │           │              │                      │                 │            │
+     │           │              │ phase.studentProgress[my].submission   │            │
+     │           │              │   = livrable.contenu                   │            │
+     │           │              │ phase.studentProgress[my].importedFrom │            │
+     │           │              │   = sourceCasPratiqueId                │            │
+     │           │              │ phase.studentProgress[my].status       │            │
+     │           │              │   = 'in-progress'                      │            │
+     │           │              │                      │                 │            │
+     │           │              │ project.markModified('phases')         │            │
+     │           │              │ project.save()       │                 │            │
+     │           │              ├──────────────────────────────────────►│            │
+     │           │              │                      │                 │            │
+     │           │ 200 + payload│                      │                 │            │
+     │           │ phase mise à │                      │                 │            │
+     │           │ jour pour my │                      │                 │            │
+     │           │◄─────────────│                      │                 │            │
+     │ Affiche   │              │                      │                 │            │
+     │ formulaire│              │                      │                 │            │
+     │ pré-rempli│              │                      │                 │            │
+     │ + badge   │              │                      │                 │            │
+     │ "Importé" │              │                      │                 │            │
+     │◄──────────│              │                      │                 │            │
+     │           │              │                      │                 │            │
+```
+
+**Lecture du diagramme.** Le contrôleur `importPhaseLivrable` orchestre cinq vérifications successives — projet existant, phase existante, étudiant inscrit, cas pratique source déclaré, cas pratique évalué pour cet étudiant — avant la copie effective du contenu. Cette défense en profondeur (Saltzer & Schroeder, 1975, *defense in depth*) garantit qu'aucun étudiant ne peut récupérer le livrable d'un autre, même en construisant manuellement une requête HTTP. L'écriture finale en base est *idempotente* : un import déjà effectué, puis ré-effectué, écrasera la `submission` mais restera cohérent (seule l'horodatage `submittedAt` reste à `null` tant que la phase n'est pas réellement soumise).
 
 ## 4.5 Design des interfaces utilisateur
 
