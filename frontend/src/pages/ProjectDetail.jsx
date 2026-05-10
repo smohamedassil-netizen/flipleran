@@ -8,6 +8,7 @@ import CoachAIPanel from '../components/CoachAIPanel.jsx';
 import ProjectForum from '../components/ProjectForum.jsx';
 import ProjectPeerReviewPanel from '../components/ProjectPeerReviewPanel.jsx';
 import PhasesProgressionMatrix from '../components/PhasesProgressionMatrix.jsx';
+import StudentPhaseCard from '../components/StudentPhaseCard.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
 import api from '../utils/api.js';
 import { capitalizeWords, formatFullName } from '../utils/format.js';
@@ -260,6 +261,160 @@ function LivrableFeedbackBlock({ projectId, livrable, canEdit, onSaved }) {
   return null;
 }
 
+/* ─── Refonte 2026-05 — Section étudiant : header + liste StudentPhaseCard ─── */
+function StudentProjectSection({ project, myPhasesData, myPhasesLoading, myGroup, myMember, onRefresh }) {
+  const phases = myPhasesData?.phases || [];
+  const validatedCount = phases.filter(p => p.status === 'validated').length;
+  const submittedCount = phases.filter(p => p.status === 'submitted').length;
+  const inProgressCount = phases.filter(p => p.status === 'in-progress').length;
+  const totalCount = phases.length;
+  const progressPct = totalCount > 0 ? Math.round((validatedCount / totalCount) * 100) : 0;
+
+  // Compte à rebours soutenance (si dans les 14 prochains jours)
+  let daysUntilSoutenance = null;
+  if (project?.dateSoutenance) {
+    const diff = Math.ceil((new Date(project.dateSoutenance) - Date.now()) / (1000 * 60 * 60 * 24));
+    if (diff >= 0 && diff <= 14) daysUntilSoutenance = diff;
+  }
+
+  const courseTitre = typeof project?.courseId === 'object'
+    ? project.courseId?.titre
+    : null;
+  const courseIdStr = typeof project?.courseId === 'object'
+    ? project.courseId?._id
+    : project?.courseId;
+
+  // Membres du groupe formatés
+  const groupMembers = (myGroup?.membres || []).map(m => {
+    const u = m.userId;
+    const name = (typeof u === 'object')
+      ? `${u.prenom ?? ''} ${u.nom ?? ''}`.trim() || u.email || 'Membre'
+      : 'Membre';
+    return { name, role: m.role };
+  });
+
+  return (
+    <>
+      {/* ── Header projet ─────────────────────────────────────────────── */}
+      <div className="card" style={{
+        padding: 18,
+        background: 'linear-gradient(135deg, #EBF3FA, #F0F9FF)',
+        border: '1px solid #BFDBFE',
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6, fontSize: 11, fontWeight: 700, letterSpacing: '0.06em', color: '#1B4F72' }}>
+          🚀 {courseTitre ? `MODULE — ${courseTitre.toUpperCase()}` : 'PROJET'}
+        </div>
+        <h2 style={{ margin: '0 0 12px', fontSize: 18, fontWeight: 700, color: '#1E293B' }}>
+          {project.titre}
+        </h2>
+
+        {/* Groupe + rôle */}
+        <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginBottom: 14 }}>
+          {myGroup && (
+            <div style={{ flex: '1 1 280px' }}>
+              <p style={{ margin: '0 0 4px', fontSize: 11, fontWeight: 700, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                Mon groupe — {myGroup.nom}
+              </p>
+              <p style={{ margin: 0, fontSize: 13, color: '#1E293B', lineHeight: 1.5 }}>
+                {groupMembers.map((m, i) => (
+                  <span key={i}>
+                    {i > 0 && ', '}
+                    <span style={{ fontWeight: m.role === myMember?.role ? 700 : 500 }}>{m.name}</span>
+                  </span>
+                ))}
+              </p>
+            </div>
+          )}
+          {myMember?.role && (
+            <div>
+              <p style={{ margin: '0 0 4px', fontSize: 11, fontWeight: 700, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                Mon rôle
+              </p>
+              <span style={{
+                display: 'inline-block', padding: '4px 12px', borderRadius: 999,
+                background: '#1B4F72', color: '#fff',
+                fontSize: 12, fontWeight: 600, textTransform: 'capitalize',
+              }}>
+                {myMember.role}
+              </span>
+            </div>
+          )}
+        </div>
+
+        {/* Avancement global */}
+        {totalCount > 0 && (
+          <div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+              <span style={{ fontSize: 12, fontWeight: 600, color: '#475569' }}>
+                Mon avancement
+              </span>
+              <span style={{ fontSize: 12, color: '#1B4F72', fontWeight: 700 }}>
+                {validatedCount}/{totalCount} étape{totalCount > 1 ? 's' : ''} validée{validatedCount > 1 ? 's' : ''} · {progressPct}%
+              </span>
+            </div>
+            <div style={{ height: 8, background: '#E2E8F0', borderRadius: 999, overflow: 'hidden' }}>
+              <div style={{
+                height: '100%',
+                width: `${progressPct}%`,
+                background: 'linear-gradient(90deg, #15803D, #1B4F72)',
+                transition: 'width 400ms',
+              }} />
+            </div>
+            {(submittedCount > 0 || inProgressCount > 0) && (
+              <p style={{ margin: '6px 0 0', fontSize: 11.5, color: '#64748B' }}>
+                {submittedCount > 0 && `${submittedCount} en attente de validation`}
+                {submittedCount > 0 && inProgressCount > 0 && ' · '}
+                {inProgressCount > 0 && `${inProgressCount} en cours`}
+              </p>
+            )}
+          </div>
+        )}
+
+        {/* Compte à rebours soutenance */}
+        {daysUntilSoutenance !== null && (
+          <div style={{
+            marginTop: 12, padding: '8px 12px', borderRadius: 8,
+            background: '#FEF3C7', border: '1px solid #FDE68A',
+            fontSize: 13, color: '#78350F',
+          }}>
+            ⏰ Présentation finale dans <strong>{daysUntilSoutenance} jour{daysUntilSoutenance > 1 ? 's' : ''}</strong>.
+          </div>
+        )}
+      </div>
+
+      {/* ── Liste des phases (vue étudiant) ──────────────────────────── */}
+      <div className="card" style={{ padding: 18 }}>
+        <h3 style={{ margin: '0 0 14px', fontSize: 15, fontWeight: 700, color: '#1B4F72' }}>
+          Mes étapes ({totalCount})
+        </h3>
+
+        {myPhasesLoading && (
+          <p style={{ fontSize: 12.5, color: '#94A3B8', fontStyle: 'italic', margin: 0 }}>
+            Chargement de tes étapes…
+          </p>
+        )}
+
+        {!myPhasesLoading && totalCount === 0 && (
+          <p style={{ fontSize: 12.5, color: '#94A3B8', fontStyle: 'italic', margin: 0 }}>
+            Le professeur n'a pas encore défini d'étapes pour ce projet.
+          </p>
+        )}
+
+        {!myPhasesLoading && phases.map((phase, i) => (
+          <StudentPhaseCard
+            key={phase._id}
+            phase={phase}
+            projectId={project._id}
+            index={i}
+            onRefresh={onRefresh}
+            courseId={courseIdStr}
+          />
+        ))}
+      </div>
+    </>
+  );
+}
+
 /* ═══════════════════════════════════════════════════════════════════════════
    ProjectDetail
 ═══════════════════════════════════════════════════════════════════════════ */
@@ -308,10 +463,25 @@ export default function ProjectDetail() {
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState('');
 
+  /* Refonte 2026-05 — Articulation CAI : phases de l'étudiant connecté
+     calculées par projectMilestoneService.computePhaseStatus.
+     Chargées seulement pour les étudiants inscrits dans un groupe. */
+  const [myPhasesData, setMyPhasesData] = useState(null);
+  const [myPhasesLoading, setMyPhasesLoading] = useState(false);
+
   const refreshProject = () => {
     api.get(`/projects/${projectId}`)
       .then(({ data }) => setProject(data))
       .catch(() => { /* ignore */ });
+  };
+
+  const refreshMyPhases = () => {
+    if (isProfOrAdmin) return;
+    setMyPhasesLoading(true);
+    api.get(`/projects/${projectId}/my-phases`)
+      .then(({ data }) => setMyPhasesData(data))
+      .catch(() => setMyPhasesData(null))
+      .finally(() => setMyPhasesLoading(false));
   };
 
   useEffect(() => {
@@ -334,6 +504,20 @@ export default function ProjectDetail() {
   const myMember = myGroup?.membres?.find(m => (m.userId?._id ?? m.userId) === user?._id);
   const typeCfg = TYPE_BADGE[project?.type] ?? TYPE_BADGE.mono;
   const statusCfg = STATUS_BADGE[project?.status] ?? STATUS_BADGE.brouillon;
+
+  /* Refonte 2026-05 — Charger /my-phases pour un étudiant inscrit. Le côté
+     backend recalcule les statuts à chaque appel (idempotent), pas besoin
+     de polling. Refresh manuel via refreshMyPhases() après import/submit. */
+  useEffect(() => {
+    if (isProfOrAdmin) return;
+    if (!project) return;
+    if (!myGroup) {
+      setMyPhasesData(null);
+      return;
+    }
+    refreshMyPhases();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [project?._id, myGroup?._id, isProfOrAdmin]);
 
   const soutenancePhase = project?.phases?.find(p => p.titre?.toLowerCase().includes('soutenance'));
   const canEvaluate = !isProfOrAdmin && (
@@ -701,6 +885,35 @@ export default function ProjectDetail() {
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: 24, alignItems: 'start' }}>
         {/* ── Left column ────────────────────────────────────────────────── */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+
+          {/* ── Refonte 2026-05 — Vue étudiant : header + phases personnelles ──
+             Affiché si l'étudiant est inscrit dans un groupe. La donnée vient
+             de GET /my-phases (statut individuel par phase, pas le statut
+             global du projet). */}
+          {!isProfOrAdmin && myGroup && (
+            <StudentProjectSection
+              project={project}
+              myPhasesData={myPhasesData}
+              myPhasesLoading={myPhasesLoading}
+              myGroup={myGroup}
+              myMember={myMember}
+              onRefresh={refreshMyPhases}
+            />
+          )}
+
+          {/* Si pas inscrit dans un groupe, message dédié */}
+          {!isProfOrAdmin && !myGroup && project?.groupes?.length > 0 && (
+            <div className="card" style={{
+              padding: 18,
+              background: 'linear-gradient(135deg, #FFFBEB, #FEF3C7)',
+              border: '1px solid #FCD34D',
+            }}>
+              <p style={{ margin: 0, fontSize: 14, color: '#78350F' }}>
+                <strong>Tu n'es pas encore inscrit dans un groupe</strong> sur ce projet.
+                Demande à ton professeur de t'ajouter à un groupe pour démarrer.
+              </p>
+            </div>
+          )}
 
           {/* ── Progression globale ──────────────────────────────────────── */}
           <ProjectProgressWidget project={project} />

@@ -944,7 +944,8 @@ export const getProjectTemplate = async (req, res) => {
 export const getMyPhases = async (req, res) => {
   try {
     const { computePhaseStatus, isStudentEnrolledInProject } = await import('../services/projectMilestoneService.js');
-    const { projectId } = req.params;
+    // Route registered as /:id (cohérent avec le reste du fichier)
+    const projectId = req.params.id;
 
     if (req.user.role === 'professeur' || req.user.role === 'admin') {
       // Vue prof : retourne le projet + phases brut (sans recalcul individuel)
@@ -988,7 +989,9 @@ export const importPhaseLivrable = async (req, res) => {
   try {
     const { isCasPratiqueEvaluatedForUser } = await import('../services/progressService.js');
     const Prosit = (await import('../models/Prosit.js')).default;
-    const { projectId, phaseId } = req.params;
+    // Route registered as /:id/phases/:phaseId
+    const projectId = req.params.id;
+    const { phaseId } = req.params;
 
     const project = await Project.findById(projectId);
     if (!project) return res.status(404).json({ message: 'Projet introuvable.' });
@@ -1070,7 +1073,9 @@ export const importPhaseLivrable = async (req, res) => {
  */
 export const submitPhaseLivrable = async (req, res) => {
   try {
-    const { projectId, phaseId } = req.params;
+    // Route registered as /:id/phases/:phaseId
+    const projectId = req.params.id;
+    const { phaseId } = req.params;
     const { submission, fichierUrl } = req.body || {};
 
     const project = await Project.findById(projectId);
