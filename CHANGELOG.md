@@ -4,6 +4,17 @@ Historique des modifications par date de session.
 
 ---
 
+## 11 Mai 2026 — Rate-limit auth assoupli
+
+- **`backend/server.js`** — `authLimiter` (`/api/auth/login`,
+  `/api/auth/register`) : `skipSuccessfulRequests` passé à `true` pour
+  ne compter que les **échecs** (un utilisateur qui se connecte
+  correctement ne consomme plus son quota), et `max` bumpé de 10 → 15
+  pour laisser une marge de tolérance. La protection brute-force reste
+  intacte (15 échecs / 15 min / IP).
+
+---
+
 ## 8 Mai 2026 — Audit + correctifs Quiz Battle
 
 Session de debug + audit suite à un blocage rapporté sur le Quiz Battle.
