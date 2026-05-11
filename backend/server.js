@@ -217,20 +217,6 @@ const globalLimiter = rateLimit({
 });
 app.use('/api', globalLimiter);
 
-const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 15,
-  // Ne compter que les échecs : une connexion réussie ne consomme pas le quota,
-  // ce qui évite de bloquer un utilisateur légitime après plusieurs sessions
-  // tout en gardant la protection brute-force (15 échecs / 15 min / IP).
-  skipSuccessfulRequests: true,
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: { message: 'Trop de tentatives, réessayez dans 15 minutes.' },
-});
-app.use('/api/auth/login', authLimiter);
-app.use('/api/auth/register', authLimiter);
-
 // Rate limit dédié à /api/auth/status pour empêcher l'énumération massive d'emails
 const statusLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,

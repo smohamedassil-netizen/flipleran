@@ -4,14 +4,12 @@ Historique des modifications par date de session.
 
 ---
 
-## 11 Mai 2026 — Rate-limit auth assoupli
+## 11 Mai 2026 — Rate-limit auth retiré
 
-- **`backend/server.js`** — `authLimiter` (`/api/auth/login`,
-  `/api/auth/register`) : `skipSuccessfulRequests` passé à `true` pour
-  ne compter que les **échecs** (un utilisateur qui se connecte
-  correctement ne consomme plus son quota), et `max` bumpé de 10 → 15
-  pour laisser une marge de tolérance. La protection brute-force reste
-  intacte (15 échecs / 15 min / IP).
+- **`backend/server.js`** — `authLimiter` retiré de `/api/auth/login`
+  et `/api/auth/register` (premier essai d'assouplissement insuffisant
+  pour l'usage en démo / dev). Le `globalLimiter` (300 req / 15 min
+  sur tout `/api`) reste actif comme garde-fou général.
 
 ---
 
