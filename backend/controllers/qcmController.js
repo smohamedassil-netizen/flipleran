@@ -4,6 +4,7 @@ import User     from '../models/User.js';
 import Progress from '../models/Progress.js';
 import { addPoints, checkChampionBadge } from '../services/points.js';
 import { generateQuizQuestions } from '../services/chatbot.js';
+import { generateFromQcmResult } from '../services/qcmWrongAnswerCards.js';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    POST /api/qcm/create
@@ -347,6 +348,20 @@ export const submitQCM = async (req, res) => {
         { upsert: true }
       );
     }
+
+    /**
+     * Auto-flashcards depuis les questions ratées (score < 80%).
+     * Tient la promesse landing §4 : « Les erreurs alimentent la révision
+     * espacée, elles ne sanctionnent pas. »
+     * Non-bloquant : on log mais on n'interrompt pas la réponse HTTP.
+     */
+    generateFromQcmResult({ userId: req.user.id, qcm, gradedAnswers, score })
+      .then((r) => {
+        if (r?.createdCount > 0) {
+          console.log(`[qcm/submit] ${r.createdCount} flashcard(s) générée(s) depuis QCM raté pour user ${req.user.id} (score ${score}%)`);
+        }
+      })
+      .catch((err) => console.error('[qcm/submit] auto-flashcards failed:', err.message));
 
     // Réponse enrichie avec les bonnes réponses et explications
     const review = qcm.questions.map((q) => {

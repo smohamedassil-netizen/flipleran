@@ -1,197 +1,212 @@
-import Prosit, { PROSIT_ROLES } from '../models/Prosit.js';
+/**
+ * prositsSeed.js — Seed de Cas pratiques de démo, un par filière (L3).
+ *
+ * REFONTE 2026-05-12 :
+ *   - Utilise le schéma "Cas pratique" 2026-05 (contexte/problematique séparés,
+ *     groupMembers, resources, statut 'cadrage_en_cours').
+ *   - Filière corrigée : 'Finance & Comptabilité' (matche usersSeed.js).
+ *   - Cas algériens enrichis : contexte concret + 3 ressources documentaires
+ *     locales (OWASP, Banque d'Algérie, Yassir, etc.).
+ *   - Robust : crée un cours placeholder si aucun n'existe pour la filière.
+ *   - Idempotent : skip si un Cas pratique du même titre existe déjà.
+ *
+ * Sécurité production : peut être lancé sur la base de prod via
+ *   `npm run seed:prod` (les seeds sont gardés par titre, pas de doublon).
+ */
+
+import Prosit from '../models/Prosit.js';
 import User from '../models/User.js';
 import Course from '../models/Course.js';
 
-/**
- * Seed de Prosits de démo : 1 par filière (ISIL, Management, Finance) en L3.
- * Chaque Prosit est créé en phase 'aller' avec des groupes auto-formés
- * pour permettre une démo immédiate de l'UI complète (espace collaboratif,
- * rôles CESI, transitions, évaluation).
- *
- * Idempotent : ne duplique pas (matche par titre).
- */
-const PROSIT_SEED_DEFS = [
+/* ─────────────────────────────────────────────────────────────────────────
+   DÉFINITIONS DES 3 CAS PRATIQUES ALGÉRIENS
+   ───────────────────────────────────────────────────────────────────────── */
+
+const CAS_PRATIQUE_DEFS = [
+  // ════════════════════════════════════════════════════════════════════
+  // ISIL L3 — Cybersécurité d'une plateforme e-commerce algérienne
+  // ════════════════════════════════════════════════════════════════════
   {
-    titre: 'Sécuriser une application web algérienne contre les attaques OWASP',
-    description: 'Audit et durcissement d\'une plateforme e-commerce vulnérable.',
-    enonce: `Une startup algérienne vient de mettre en ligne une plateforme e-commerce. En 2 semaines, 3 incidents de sécurité ont été signalés : commandes passées avec des comptes piratés, dump de la base clients diffusé sur un forum, script malveillant injecté sur la page d'accueil.
+    titre: 'Sécurisation d\'une marketplace algérienne face à OWASP Top 10',
+    description: 'Audit et durcissement d\'une plateforme e-commerce locale exposée à des vulnérabilités critiques.',
+    contexte: `Une marketplace algérienne (équivalent local de Jumia.dz ou Ouedkniss) employant 25 personnes vient d'être victime de trois incidents en deux semaines :
 
-Ta mission : analyser les vulnérabilités, proposer des corrections, et prototyper une solution sécurisée.
+1. Plusieurs comptes clients ont été utilisés pour passer des commandes frauduleuses (vol de session).
+2. Un extrait de la base clients (12 000 lignes : noms, emails, adresses) a été retrouvé sur un forum de hacking maghrébin.
+3. Un script malveillant a été injecté dans la page d'accueil, redirigeant les utilisateurs vers un site de phishing.
 
-Contexte : Node.js/Express + MongoDB + React. Aucune revue de code n'a été faite.
-
-Livrables attendus :
-- Un rapport d'audit listant les vulnérabilités (OWASP Top 10)
-- Un proof-of-concept corrigé avec mesures de sécurité (hashing, validation, CSRF, XSS)
-- Une présentation de 10 min avec démo`,
-    motsCles: ['OWASP', 'XSS', 'SQL Injection', 'CSRF', 'bcrypt', 'JWT', 'HTTPS', 'CSP', 'Validation'],
-    objectifsApprentissage: [
-      'Identifier les vulnérabilités OWASP Top 10 dans une application web réelle',
-      'Mettre en place une authentification sécurisée (hashing, JWT, sessions)',
-      'Comprendre les mécanismes de défense en profondeur (validation, CSP, CSRF)',
-    ],
-    courseTitre: 'Cybersécurité',
+La plateforme tourne sur une stack Node.js / Express / MongoDB / React, hébergée sur un VPS algérien. Aucun audit de sécurité n'a jamais été réalisé.`,
+    problematique: `Comment identifier les vulnérabilités présentes selon le référentiel OWASP Top 10, prioriser les corrections en fonction du risque, et livrer un plan de remédiation crédible que la direction technique pourra défendre devant l'ARPCE ?`,
     filiere: 'ISIL',
     promotion: 'L3',
-    caseEntreprise: 'Startup e-commerce algérienne (PME locale)',
-  },
-  {
-    titre: 'Pivoter le modèle économique d\'une foodtech algérienne en perte de vitesse',
-    description: 'Cas stratégique d\'une startup en phase de pivot.',
-    enonce: `Une startup algérienne dans la foodtech (livraison de plats préparés à Alger) voit ses ventes chuter de 30% sur les 6 derniers mois. La concurrence s'intensifie (Yassir Express, Imou) et les marges sont fragiles.
-
-Ta mission : analyser la situation et proposer une stratégie de pivot ou de différenciation crédible.
-
-Contexte : 12 employés, levée de fonds limitée, présence uniquement à Alger Centre.
-
-Livrables attendus :
-- Analyse SWOT et 5 forces de Porter sur le marché de la foodtech à Alger
-- Proposition d'un nouveau modèle économique (canvas business model)
-- Plan d'action sur 6 mois avec KPIs et budget estimé
-- Présentation orale de 15 min`,
-    motsCles: ['Pivot', 'Business Model Canvas', 'SWOT', 'Porter', 'Foodtech', 'KPI'],
-    objectifsApprentissage: [
-      'Maîtriser les outils d\'analyse stratégique (SWOT, Porter, BMC)',
-      'Construire un plan d\'action commercial cohérent et chiffré',
-      'Apprendre à communiquer une recommandation stratégique en 15 min',
+    courseFallbackTitre: 'Administration et Sécurité Réseaux',
+    profEmail: 'omar.isil.l3@fliplearn.dz',
+    resources: [
+      { type: 'link',    title: 'OWASP Top 10 (édition 2021, version FR)',           url: 'https://owasp.org/Top10/fr/',                                  description: 'Référentiel officiel des 10 vulnérabilités web les plus critiques.' },
+      { type: 'link',    title: 'ARPCE — Régulation algérienne de la cybersécurité', url: 'https://www.arpce.dz/',                                        description: 'Autorité de régulation algérienne, lignes directrices conformité.' },
+      { type: 'article', title: 'Loi 18-07 sur la protection des données (DZ)',       url: 'https://www.joradp.dz/FTP/JO-FRANCAIS/2018/F2018034.pdf',       description: 'Cadre légal algérien sur le traitement des données personnelles.' },
     ],
-    courseTitre: 'Stratégie d\'entreprise',
+  },
+
+  // ════════════════════════════════════════════════════════════════════
+  // MANAGEMENT L3 — Pivot stratégique foodtech Alger
+  // ════════════════════════════════════════════════════════════════════
+  {
+    titre: 'Pivot stratégique d\'une foodtech algérienne face à Yassir Express',
+    description: 'Cas de pivot business model pour une startup en perte de vitesse sur le marché algérien de la livraison de repas.',
+    contexte: `Une foodtech algérienne ("BledFood", nom anonymisé) basée à Alger Centre voit ses ventes chuter de 32 % sur les six derniers mois. L'équipe : 14 personnes, levée de fonds limitée (40 millions DZD restants), opérations uniquement intra-muros à Alger.
+
+Le marché s'est durci : Yassir Express domine grâce à son écosystème intégré (VTC + paiement + livraison), Imou agrège les restos populaires, Glovo a fermé ses opérations algériennes en 2024 mais ses anciens utilisateurs sont volatils. BledFood n'a plus que 6 mois de trésorerie avant une décision capitale : pivoter, lever des fonds ou liquider.
+
+Le CEO sollicite un cabinet extérieur (vous) pour un diagnostic stratégique et une recommandation argumentée.`,
+    problematique: `Comment positionner BledFood pour reprendre une trajectoire de croissance soutenable dans les 12 prochains mois, en arbitrant entre pivot de modèle économique, diversification géographique (Oran, Constantine) ou spécialisation de niche (cuisine du terroir, B2B entreprises) ?`,
     filiere: 'Management',
     promotion: 'L3',
-    caseEntreprise: 'Startup foodtech à Alger',
-  },
-  {
-    titre: 'Choisir le mode de financement optimal pour une PME familiale en expansion',
-    description: 'Analyse comparative de 3 options de financement.',
-    enonce: `Une entreprise familiale algérienne (matériaux de construction, 15 ans d'existence, CA 200 millions DZD) souhaite financer son expansion vers l'Ouest du pays (ouverture de 2 nouvelles agences).
-
-Trois options sont à l'étude :
-1. Crédit bancaire classique (BNA, BEA, CPA) — taux 8%, 5 ans
-2. Murabaha islamique (Banque Al Salam) — marge 10%, 5 ans
-3. Levée de fonds privée (fonds d'investissement régional) — entrée au capital 30%
-
-Ta mission : analyser chaque option (coût total, risques, gouvernance) et recommander la meilleure.
-
-Livrables attendus :
-- Tableau comparatif chiffré des 3 options
-- Calculs de TRI / VAN sur 5 ans
-- Recommandation argumentée avec justification fiscale et éthique
-- Présentation orale de 12 min`,
-    motsCles: ['TRI', 'VAN', 'Murabaha', 'Crédit bancaire', 'Levée de fonds', 'Fiscalité', 'Gouvernance'],
-    objectifsApprentissage: [
-      'Comparer les modes de financement classiques et islamiques en contexte algérien',
-      'Maîtriser les indicateurs financiers TRI / VAN appliqués à des scénarios réels',
-      'Analyser les implications fiscales et de gouvernance d\'un choix de financement',
+    courseFallbackTitre: 'Stratégie d\'entreprise',
+    profEmail: 'fatima.manage.l3@fliplearn.dz',
+    resources: [
+      { type: 'link',    title: 'Yassir — page entreprise et chiffres-clés',           url: 'https://yassir.com/',                                           description: 'Site officiel de l\'écosystème Yassir, données sur leur intégration verticale.' },
+      { type: 'article', title: 'Business Model Canvas (modèle Strategyzer)',            url: 'https://www.strategyzer.com/library/the-business-model-canvas', description: 'Outil de référence pour cartographier un modèle économique.' },
+      { type: 'article', title: 'Analyse PESTEL appliquée au marché algérien (CREAD)',   url: 'https://www.cread.dz/',                                         description: 'Centre de recherche en économie appliquée pour le développement, études marché DZ.' },
     ],
-    courseTitre: 'Finance d\'entreprise',
-    filiere: 'Finance',
+  },
+
+  // ════════════════════════════════════════════════════════════════════
+  // FINANCE & COMPTABILITÉ L3 — FinTech algérienne face à la Banque d'Algérie
+  // ════════════════════════════════════════════════════════════════════
+  {
+    titre: 'Audit de conformité d\'une FinTech algérienne face à la Banque d\'Algérie',
+    description: 'Analyse de la conformité réglementaire d\'une startup de paiement mobile au cadre prudentiel algérien.',
+    contexte: `Une FinTech algérienne ("DZ-Pay", nom anonymisé) propose depuis 2024 une solution de paiement mobile interopérable, ciblant les commerces de proximité et les transferts P2P. 80 000 utilisateurs actifs mensuels, 4 millions DZD de volume traité par jour.
+
+La Banque d'Algérie a publié en mars 2026 une nouvelle circulaire imposant aux opérateurs de monnaie électronique : (1) un capital minimum de 1 milliard DZD, (2) une ségrégation stricte des fonds clients, (3) un reporting AML (anti-blanchiment) trimestriel, (4) une conformité IFRS pour les états financiers.
+
+DZ-Pay dispose actuellement de 250 millions DZD de capital, mélange ses fonds opérationnels et clients sur un compte unique, n'a pas de procédure AML formalisée, et tient ses comptes selon le PCN algérien (non-IFRS).`,
+    problematique: `Quelles sont les zones d'écart réglementaires entre la situation actuelle de DZ-Pay et les exigences de la nouvelle circulaire BA 2026 ? Quel plan de mise en conformité chiffré et calendaire la direction financière doit-elle présenter au conseil d'administration sous 60 jours ?`,
+    filiere: 'Finance & Comptabilité',
     promotion: 'L3',
-    caseEntreprise: 'PME familiale algérienne (matériaux de construction)',
+    courseFallbackTitre: 'Audit financier et conformité',
+    profEmail: 'nabil.finance.l3@fliplearn.dz',
+    resources: [
+      { type: 'link',    title: 'Banque d\'Algérie — Réglementation bancaire et changes', url: 'https://www.bank-of-algeria.dz/reglementation-bancaire-et-des-changes/', description: 'Portail officiel des circulaires et règlements de la BA.' },
+      { type: 'article', title: 'IFRS Foundation — Normes en français',                    url: 'https://www.ifrs.org/issued-standards/list-of-standards/',               description: 'Référentiel international des normes comptables.' },
+      { type: 'link',    title: 'GAFI — Lutte anti-blanchiment (recommandations)',         url: 'https://www.fatf-gafi.org/fr/',                                          description: 'Standards internationaux AML/CFT auxquels la BA s\'aligne.' },
+    ],
   },
 ];
 
-/* ─── Helpers ──────────────────────────────────────────────────────────── */
-
-function shuffle(arr) {
-  return [...arr].sort(() => Math.random() - 0.5);
-}
-
-function buildGroupesRandom(memberIds, { minMembres = 4, maxMembres = 8 } = {}) {
-  const shuffled = shuffle(memberIds);
-  const groupes = [];
-  let idx = 1;
-  while (shuffled.length > 0) {
-    const remaining = shuffled.length;
-    let take;
-    if (remaining <= maxMembres) {
-      take = remaining;
-    } else if (remaining < minMembres + maxMembres) {
-      take = Math.ceil(remaining / 2);
-    } else {
-      take = maxMembres;
-    }
-    const slice = shuffled.splice(0, take);
-    // Attribution simple (sans rotation rétroactive — c'est un seed d'illustration)
-    const roleCycle = [...PROSIT_ROLES];
-    const membres = slice.map((uid, i) => ({ userId: uid, role: roleCycle[i] || 'membre' }));
-    groupes.push({
-      nom: `Groupe ${idx++}`,
-      membres,
-      motsClesIdentifies: [],
-      hypotheses: [],
-    });
-  }
-  return groupes;
-}
+/* ─────────────────────────────────────────────────────────────────────────
+   HELPERS
+   ───────────────────────────────────────────────────────────────────────── */
 
 function inDays(n) {
   const d = new Date();
   d.setDate(d.getDate() + n);
+  d.setHours(9, 0, 0, 0);
   return d;
 }
 
-/* ─── Seed principal ──────────────────────────────────────────────────── */
+/**
+ * Construit la liste des groupMembers à partir des étudiants disponibles :
+ *   - 1er → animateur
+ *   - 2e  → scribe
+ *   - 3e+ → membre
+ *
+ * Si moins de 2 étudiants, on n'attribue que les rôles disponibles (utile
+ * pour Management/Finance L3 où il n'y a qu'1 étudiant seedé).
+ */
+function buildGroupMembers(students) {
+  return students.map((s, i) => ({
+    studentId: s._id,
+    role: i === 0 ? 'animateur' : i === 1 ? 'scribe' : 'membre',
+  }));
+}
+
+/**
+ * Trouve un cours pour la filière/promotion. Si aucun n'existe, en crée un
+ * placeholder rattaché au prof — assez pour que le Cas pratique soit affiché
+ * dans l'UI étudiant (qui requiert courseId pour la navigation).
+ */
+async function findOrCreatePlaceholderCourse(def, prof) {
+  // 1. Cours par titre exact
+  let course = await Course.findOne({ titre: def.courseFallbackTitre, filiere: def.filiere });
+  if (course) return course;
+
+  // 2. N'importe quel cours actif de la filière+promotion
+  course = await Course.findOne({ filiere: def.filiere, promotion: def.promotion, isActive: true });
+  if (course) return course;
+
+  // 3. Placeholder
+  console.log(`[prositsSeed] Création cours placeholder "${def.courseFallbackTitre}" pour ${def.filiere} ${def.promotion}`);
+  return Course.create({
+    titre: def.courseFallbackTitre,
+    description: 'Module support pour les cas pratiques pédagogiques.',
+    professorId: prof._id,
+    filiere: def.filiere,
+    promotion: def.promotion,
+    isActive: true,
+  });
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   SEED PRINCIPAL
+   ───────────────────────────────────────────────────────────────────────── */
 
 export async function seedProsits() {
-  const prof = await User.findOne({ role: 'professeur', status: { $ne: 'rejected' } });
-  if (!prof) {
-    console.warn('[prositsSeed] Aucun prof trouvé — skip');
-    return;
-  }
-
   let created = 0;
+  let skipped = 0;
 
-  for (const def of PROSIT_SEED_DEFS) {
+  for (const def of CAS_PRATIQUE_DEFS) {
+    // Idempotent : skip si déjà créé
     const existing = await Prosit.findOne({ titre: def.titre });
-    if (existing) continue;
-
-    const course = await Course.findOne({ titre: def.courseTitre, filiere: def.filiere });
-    if (!course) {
-      console.warn(`[prositsSeed] Cours "${def.courseTitre}" introuvable pour ${def.filiere} — skip "${def.titre}"`);
+    if (existing) {
+      skipped++;
       continue;
     }
 
-    // Étudiants éligibles (filière + promotion)
+    // Prof spécifique pour cette filière+promotion
+    const prof = await User.findOne({ email: def.profEmail, role: 'professeur' });
+    if (!prof) {
+      console.warn(`[prositsSeed] Prof "${def.profEmail}" introuvable — skip "${def.titre}"`);
+      continue;
+    }
+
+    // Cours (existant ou placeholder)
+    const course = await findOrCreatePlaceholderCourse(def, prof);
+
+    // Étudiants éligibles (max 6 pour un groupe lisible)
     const students = await User.find({
       role: 'etudiant',
       filiere: def.filiere,
       promotion: def.promotion,
       isActive: { $ne: false },
-    }).select('_id').limit(20);
+    })
+      .select('_id prenom nom')
+      .sort({ createdAt: 1 })
+      .limit(6)
+      .lean();
 
-    if (students.length < 4) {
-      console.warn(`[prositsSeed] Pas assez d'étudiants pour ${def.filiere} ${def.promotion} (${students.length}) — Prosit créé sans groupes`);
-    }
-
-    const groupesConfig = { minMembres: 4, maxMembres: 6, formationMode: 'random' };
-    const groupes = students.length >= 4 ? buildGroupesRandom(students.map(s => s._id), groupesConfig) : [];
+    const groupMembers = buildGroupMembers(students);
+    const statut = groupMembers.length >= 2 ? 'cadrage_en_cours' : 'planifie';
 
     await Prosit.create({
       titre: def.titre,
       description: def.description,
-      enonce: def.enonce,
-      motsCles: def.motsCles,
-      objectifsApprentissage: def.objectifsApprentissage,
+      contexte: def.contexte,
+      problematique: def.problematique,
       courseId: course._id,
       filiere: def.filiere,
       promotion: def.promotion,
-      caseEntreprise: def.caseEntreprise,
-      dateAller:  inDays(2),     // dans 2 jours
-      dateRetour: inDays(9),     // dans 9 jours (1 semaine de recherche)
-      dureeRechercheJours: 7,
+      resources: def.resources,
+      groupMembers,
       createdBy: prof._id,
-      status: groupes.length > 0 ? 'aller' : 'brouillon',
-      groupesConfig,
-      groupes,
-      grilleEvaluation: [
-        { critere: 'Pertinence des hypothèses',  poids: 25, description: 'Qualité et plausibilité des hypothèses formulées en phase Aller' },
-        { critere: 'Profondeur de la recherche', poids: 25, description: 'Sources, rigueur, citations' },
-        { critere: 'Qualité de la solution',     poids: 30, description: 'Exhaustivité, faisabilité, créativité' },
-        { critere: 'Présentation orale',         poids: 20, description: 'Clarté, structure, gestion du temps' },
-      ],
+      statut,
+      phaseCadrageDate: inDays(0),
+      phaseBilanDate:   inDays(14),
     });
     created++;
   }
 
-  console.log(`[prositsSeed] ${created} Prosit(s) de démo créé(s).`);
+  console.log(`[prositsSeed] ${created} cas pratique(s) créé(s), ${skipped} déjà existant(s).`);
+  return { created, skipped };
 }

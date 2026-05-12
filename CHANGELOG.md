@@ -4,6 +4,62 @@ Historique des modifications par date de session.
 
 ---
 
+## 12 Mai 2026 — Audit landing↔code + 3 corrections P0/P1
+
+Audit complet "promesses vs réalité" mené sur la page `/welcome` refondue.
+Verdict global : 75 % de fidélité landing↔code. Trois actions correctives
+livrées dans la foulée.
+
+### A1 — Cas pratiques algériens (P0) — `backend/services/prositsSeed.js`
+
+Refonte du seed Prosit pour aligner sur le schéma "Cas pratique 2026-05" :
+- 3 cas pratiques contextualisés Algérie, un par filière L3 :
+  1. **ISIL** — Sécurisation d'une marketplace algérienne face à OWASP Top 10
+     (ressources : OWASP FR, ARPCE, Loi 18-07 sur données personnelles DZ)
+  2. **Management** — Pivot stratégique d'une foodtech face à Yassir Express
+     (ressources : Yassir.com, Business Model Canvas, CREAD)
+  3. **Finance & Comptabilité** — Audit de conformité d'une FinTech face à la
+     Banque d'Algérie (ressources : BA, IFRS Foundation, GAFI)
+- Champs `contexte` et `problematique` séparés (nouveau schéma)
+- Filière `Finance` corrigée en `Finance & Comptabilité` (matche usersSeed.js)
+- groupMembers auto-construits depuis les étudiants disponibles (1 animateur,
+  1 scribe, reste = membres). Statut initial `cadrage_en_cours` si ≥2 étudiants.
+- Crée un cours placeholder si aucun cours n'existe pour la filière+promotion
+- Idempotent (skip si titre existant)
+- Ajouté à `backend/scripts/seed-prod.js` → lancement prod via `npm run seed:prod`
+
+### A2 — Audit erroné, déjà implanté
+
+Le composant `<VideoAnalysis>` est déjà rendu dans `WatchVideo.jsx:215` pour
+les étudiants, avec bouton "Générer le résumé IA" + 3 onglets (Résumé /
+Carte mentale / Concepts clés). Aucune modification nécessaire.
+
+### A3 — Auto-flashcards depuis QCM raté (P1) — `backend/services/qcmWrongAnswerCards.js`
+
+Nouveau service hooké dans `submitQCM` (`qcmController.js`) :
+- Déclenchement si **score < 80%**
+- Pour chaque question ratée → flashcard SM-2 :
+  - front = libellé de la question
+  - back = bonne réponse formatée + explication (💡)
+- Deck dédié par QCM : "Révision QCM — [titre]" (créé à la volée)
+- Tag `auto-qcm-wrong` pour filtrage UI
+- Déduplication par `frontHash` (SHA-1 court du libellé normalisé)
+- Non-bloquant : erreurs loggées, réponse HTTP du QCM jamais interrompue
+
+Tient la promesse landing §4 : « L'évaluation pour apprendre — les erreurs
+alimentent la révision espacée, elles ne sanctionnent pas. »
+
+### Procédure de déploiement prod (Render)
+
+```bash
+# Une fois après le déploiement :
+npm run seed:prod   # crée badges + rewards + 3 cas pratiques algériens
+```
+
+Idempotent — peut être relancé sans risque.
+
+---
+
 ## 12 Mai 2026 — Refonte page d'accueil (approche Marcel Lebrun)
 
 Page `/welcome` (`frontend/src/pages/LandingPage.jsx`) entièrement refondue

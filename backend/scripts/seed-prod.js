@@ -27,6 +27,7 @@ import mongoose from 'mongoose';
 import connectDB from '../config/db.js';
 import { seedBadges } from '../services/points.js';
 import { seedRewards } from '../services/rewardsSeed.js';
+import { seedProsits } from '../services/prositsSeed.js';
 
 async function main() {
   console.log('[seed:prod] Connexion à la base…');
@@ -37,6 +38,14 @@ async function main() {
 
   console.log('[seed:prod] seedRewards()…');
   await seedRewards();
+
+  /**
+   * Cas pratiques algériens — 1 par filière (ISIL, Management, Finance).
+   * Idempotents (skip si titre existe), production-safe. Référencés sur la
+   * landing page §8 ("Cas algériens contextualisés"). Voir prositsSeed.js.
+   */
+  console.log('[seed:prod] seedProsits() — cas pratiques algériens…');
+  await seedProsits();
 
   console.log('[seed:prod] Terminé. Fermeture de la connexion.');
   await mongoose.connection.close();
