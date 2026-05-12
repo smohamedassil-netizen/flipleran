@@ -4,6 +4,44 @@ Historique des modifications par date de session.
 
 ---
 
+## 12 Mai 2026 — Refonte page d'accueil (approche Marcel Lebrun)
+
+Page `/welcome` (`frontend/src/pages/LandingPage.jsx`) entièrement refondue
+pour adopter un ton pédagogique académique au lieu du précédent ton
+« startup tech ». Le **pourquoi pédagogique** est désormais placé avant
+le **comment technologique**, conformément à la posture de Marcel Lebrun.
+
+### Structure (9 sections numérotées §1 à §9)
+
+- **Hero** — Citation rotative en bandeau « fil pédagogique » (Lebrun,
+  Bergmann/Sams, Mazur) + accroche centrée sur le sens, pas sur les features.
+- **§1 Les fondements** — 4 constats scientifiques en chiffres romains :
+  Bergmann/Sams 2012, Freeman et al. PNAS 2014, Khan 2011, Wozniak 1994.
+- **§2 Les 3 niveaux Lebrun** — FLIP 1 (inverser le temps), FLIP 2 (inverser
+  les rôles), FLIP 3 (inverser la posture). Citation Lebrun 2014 en source.
+- **§3 Le cycle FlipLearn** — 5 étapes en timeline verticale (Préparation →
+  Rendez-vous → Application → Production → Consolidation) avec outils associés.
+- **§4 Notre posture** — 4 choix pédagogiques fondateurs (sur fond bleu nuit),
+  chacun référencé : Lebrun 2016, Mazur 1997, Black & Wiliam 1998, Bergmann/Sams 2012.
+- **§5/§6** — Outils étudiants / enseignants (grille 6 cards chacune).
+- **§7** — 3 filières EM Alger (ISIL, Management, Finance).
+- **§8** — Adaptation à l'université algérienne (3G/4G, classes 50+, cas locaux).
+- **§9** — Voix d'usage (3 témoignages étudiants).
+- **CTA + Footer** — Footer académique avec **bibliographie scientifique
+  numérotée** (6 références).
+
+### Visuel
+
+- Palette resserrée : bleu profond `#1B4F72` + accent ocre `#B45309` + jaune
+  doré `#FBBF24` pour les accents. Fini les gradients arc-en-ciel.
+- Typographie Georgia italic pour la numérotation (§1, I., II., III., IV.),
+  pour évoquer le papier académique.
+- Espacements généreux (88px padding section), borders fins, hover discrets.
+- Responsive testé desktop (1280×800) et mobile (375×812). « Se connecter »
+  masqué sous 640px pour alléger le nav.
+
+---
+
 ## 11 Mai 2026 — Rate-limit auth retiré
 
 - **`backend/server.js`** — `authLimiter` retiré de `/api/auth/login`
