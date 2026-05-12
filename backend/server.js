@@ -182,6 +182,43 @@ async function runL3IsilSeedIfEnabled() {
   }
 }
 
+/**
+ * Seeds production-safe lancés à chaque démarrage du serveur.
+ *
+ * Tous les seeds listés ici DOIVENT respecter trois propriétés :
+ *   1. Idempotents — skip silencieusement ce qui existe (par clé naturelle :
+ *      email pour User, titre pour Prosit, code pour Badge, slug pour Reward).
+ *   2. Non-destructifs — aucun deleteMany, aucun écrasement de données réelles.
+ *   3. Rapides — overhead < 2s total, exécuté à froid au boot.
+ *
+ * Permet à Render (et tout autre hébergement) d'avoir une base "prête à la
+ * démo" sans que l'opérateur ait besoin de lancer manuellement
+ * `npm run seed:prod` après chaque déploiement.
+ *
+ * Contenu (12 mai 2026) :
+ *   - seedUsers       : 1 admin + 9 profs + 9 étudiants couvrant ISIL/
+ *                       Management/Finance × L1/L2/L3 (usersSeed.js)
+ *   - seedBadges      : badges système gamification (points.js)
+ *   - seedRewards     : récompenses échangeables contre XP (rewardsSeed.js)
+ *   - seedProsits     : 3 cas pratiques algériens, un par filière L3
+ *                       (prositsSeed.js) — promesse landing §8
+ */
+async function runProductionSafeSeedsAtStartup() {
+  console.log('[startup-seeds] Lancement des seeds idempotents prod-safe…');
+  try {
+    const { seedRewards } = await import('./services/rewardsSeed.js');
+    const { seedBadges }  = await import('./services/points.js');
+
+    await seedUsers();
+    await seedBadges();
+    await seedRewards();
+    await seedProsits();
+    console.log('[startup-seeds] Terminé.');
+  } catch (err) {
+    console.error('[startup-seeds] Erreur (non-bloquant) :', err.message);
+  }
+}
+
 // En mode test (Jest), on n'établit pas la connexion DB / seeds / cron : l'app
 // Express est juste exportée pour être consommée par supertest. Les tests qui
 // touchent la DB devront mocker les models concernés.
@@ -191,6 +228,7 @@ if (process.env.NODE_ENV !== 'test') {
     await migrateChapters();
     await runDemoSeedsIfEnabled();
     await runL3IsilSeedIfEnabled();
+    await runProductionSafeSeedsAtStartup();
     startNotificationScheduler(io);
   });
 }

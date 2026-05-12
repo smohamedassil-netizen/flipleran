@@ -49,14 +49,14 @@ Nouveau service hooké dans `submitQCM` (`qcmController.js`) :
 Tient la promesse landing §4 : « L'évaluation pour apprendre — les erreurs
 alimentent la révision espacée, elles ne sanctionnent pas. »
 
-### Procédure de déploiement prod (Render)
+### Déploiement prod (Render) — auto
 
-```bash
-# Une fois après le déploiement :
-npm run seed:prod   # crée badges + rewards + 3 cas pratiques algériens
-```
+Les seeds idempotents (`seedUsers`, `seedBadges`, `seedRewards`, `seedProsits`)
+tournent désormais **automatiquement** à chaque démarrage du serveur via
+`runProductionSafeSeedsAtStartup()` dans `server.js`. Aucune action manuelle
+requise après déploiement : Render auto-deploy → server boot → seeds → prêt.
 
-Idempotent — peut être relancé sans risque.
+Le script `npm run seed:prod` reste disponible pour relancer manuellement.
 
 ---
 
