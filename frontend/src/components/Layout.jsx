@@ -36,10 +36,10 @@ import {
   Sparkles,
   Bot,
   Video,
-  Lightbulb,
+  FlaskConical,
   Compass,
-  Briefcase,
-  Notebook,
+  FolderKanban,
+  ListChecks,
   LineChart,
 } from 'lucide-react';
 
@@ -56,8 +56,8 @@ const NAV = {
     {
       section: 'Activités',
       items: [
-        { label: 'Cas pratiques',   icon: Lightbulb,       to: '/cas-pratiques' },
-        { label: 'Projets',         icon: Briefcase,       to: '/projects' },
+        { label: 'Cas pratiques',   icon: FlaskConical,    to: '/cas-pratiques' },
+        { label: 'Projets',         icon: FolderKanban,       to: '/projects' },
         { label: 'Mes flashcards',  icon: Layers,          to: '/decks' },
       ],
     },
@@ -65,7 +65,7 @@ const NAV = {
       section: 'Outils IA',
       items: [
         { label: 'Tuteur IA',           icon: Sparkles,        to: '/my-tutor', badge: 'IA' },
-        { label: 'Méthode Cas pratique', icon: Notebook,       to: '/method-guide' },
+        { label: 'Méthode Cas pratique', icon: ListChecks,       to: '/method-guide' },
       ],
     },
     {
@@ -97,8 +97,8 @@ const NAV = {
     {
       section: 'Activités',
       items: [
-        { label: 'Cas pratiques',       icon: Lightbulb,       to: '/cas-pratiques' },
-        { label: 'Projets',             icon: Briefcase,       to: '/projects' },
+        { label: 'Cas pratiques',       icon: FlaskConical,    to: '/cas-pratiques' },
+        { label: 'Projets',             icon: FolderKanban,       to: '/projects' },
       ],
     },
     {
