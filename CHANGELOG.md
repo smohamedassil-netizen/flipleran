@@ -4,6 +4,42 @@ Historique des modifications par date de session.
 
 ---
 
+## 16 Mai 2026 — Refonte page "Méthode Étude de cas"
+
+Refonte complète de `frontend/src/pages/CesiMethodGuide.jsx` pour pivoter
+l'angle éditorial : la page ne décrit plus la méthode de manière abstraite,
+elle présente **notre plus-value FlipLearn** sur la méthode classique de
+l'étude de cas.
+
+### Nouvelle structure
+
+- Titre simplifié : **"Étude de cas"** (sous-titre : pédagogie active, adaptée
+  sur FlipLearn)
+- Intro de positionnement : pourquoi adapter la méthode classique au contexte
+  universitaire algérien (promotions larges, encadrement prof unique)
+- Vue d'ensemble visuelle : 5 cartes "Pilier" avec icônes cliquables
+- **5 sections accordéon dépliables au clic** (une seule ouverte à la fois) :
+  1. Phases tracées avec validation prof
+  2. Rôles tournants automatisés (Animateur / Scribe / Membre)
+  3. Espace numérique unifié (énoncé, ressources, livrables, échanges)
+  4. Encadrement IA adaptatif (accompagnateur, pas correcteur)
+  5. Évaluation hybride 360° (individuelle + collective)
+- Chaque pilier contient un bloc visuel **"Méthode classique ❌ vs Sur
+  FlipLearn ✅"** pour matérialiser la plus-value
+- Tableau récapitulatif final : 5 verrous classiques → 5 réponses FlipLearn
+- CTA final vers `/cas-pratiques`
+
+### Positionnement pédagogique sur l'IA (Pilier 4)
+
+L'IA est explicitement cadrée comme **accompagnateur adaptatif** :
+- Aide à la problématisation, à l'exploration d'angles
+- Refuse de produire le livrable à la place de l'étudiant
+- Ce n'est *pas* un correcteur ni un prédicteur d'échec
+- Cohérent avec la vision éditoriale du mémoire (encadrement adaptatif
+  personnalisé, pas filtre d'élimination)
+
+---
+
 ## 12 Mai 2026 — Audit landing↔code + 3 corrections P0/P1
 
 Audit complet "promesses vs réalité" mené sur la page `/welcome` refondue.
