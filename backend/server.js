@@ -56,6 +56,7 @@ import { seedDemoContent } from './services/contentSeed.js';
 import { seedDemoData } from './services/demoSeed.js';
 import { seedProsits }  from './services/prositsSeed.js';
 import { seedUsers } from './services/usersSeed.js';
+import { USE_OPENAI } from './services/llm.js';
 
 // Migration : les comptes créés avant le système d'approval n'ont pas de status,
 // on les considère actifs par défaut (sinon ils ne pourraient plus se connecter).
@@ -300,6 +301,7 @@ app.get('/api/health', (_req, res) => {
     status:    'ok',
     uptime:    Math.round(process.uptime()),
     timestamp: new Date().toISOString(),
+    llm:       USE_OPENAI ? 'openai' : 'groq',
   });
 });
 
