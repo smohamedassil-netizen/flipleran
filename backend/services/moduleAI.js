@@ -1,4 +1,5 @@
 import Groq from 'groq-sdk';
+import { getLLM } from './llm.js';
 import Course from '../models/Course.js';
 import Video from '../models/Video.js';
 import VideoAnalysis from '../models/VideoAnalysis.js';
@@ -7,7 +8,7 @@ import QCM from '../models/QCM.js';
 
 let groq;
 function getGroq() {
-  if (!groq) groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+  if (!groq) groq = getLLM();
   return groq;
 }
 

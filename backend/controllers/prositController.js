@@ -1,5 +1,6 @@
 import mongoose from 'mongoose';
 import Groq from 'groq-sdk';
+import { getLLM } from '../services/llm.js';
 import Prosit, { PROSIT_ROLES } from '../models/Prosit.js';
 import User from '../models/User.js';
 import Course from '../models/Course.js';
@@ -8,7 +9,7 @@ import { finalizeProsit, canTransitionToEvalue } from '../services/prositXP.js';
 
 let groq;
 function getGroq() {
-  if (!groq) groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+  if (!groq) groq = getLLM();
   return groq;
 }
 

@@ -2,6 +2,7 @@ import Project from '../models/Project.js';
 import User from '../models/User.js';
 import { uploadBuffer } from '../config/cloudinary.js';
 import Groq from 'groq-sdk';
+import { getLLM } from '../services/llm.js';
 import { pushNotification } from '../services/notificationService.js';
 import { triggerAutoBadge, addPoints } from '../services/points.js';
 
@@ -50,7 +51,7 @@ async function notifyMembers(req, project, notif) {
 
 let groq;
 function getGroq() {
-  if (!groq) groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+  if (!groq) groq = getLLM();
   return groq;
 }
 

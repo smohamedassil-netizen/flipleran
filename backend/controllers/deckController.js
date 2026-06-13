@@ -2,6 +2,7 @@ import Deck from '../models/Deck.js';
 import Video from '../models/Video.js';
 import Card from '../models/Card.js';
 import Groq from 'groq-sdk';
+import { getLLM } from '../services/llm.js';
 
 export const getDecks = async (req, res) => {
   try {
@@ -73,7 +74,7 @@ export const generateFlashcardsAI = async (req, res) => {
     if (!video) return res.status(404).json({ message: 'Vidéo introuvable' });
 
     // Initialize Groq
-    const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+    const groq = getLLM();
 
     // Récupérer le transcript IA si disponible
     let transcript = '';

@@ -1,4 +1,5 @@
 import Groq from 'groq-sdk';
+import { getLLM } from './llm.js';
 import WeeklyQuest, { QUEST_TYPES } from '../models/WeeklyQuest.js';
 import User from '../models/User.js';
 import Progress from '../models/Progress.js';
@@ -21,7 +22,7 @@ import Progress from '../models/Progress.js';
 const MODEL = 'llama-3.3-70b-versatile';
 let groqClient;
 function getGroq() {
-  if (!groqClient) groqClient = new Groq({ apiKey: process.env.GROQ_API_KEY });
+  if (!groqClient) groqClient = getLLM();
   return groqClient;
 }
 

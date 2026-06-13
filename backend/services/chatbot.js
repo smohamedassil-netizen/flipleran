@@ -1,8 +1,9 @@
 import Groq from 'groq-sdk';
+import { getLLM } from './llm.js';
 
 let groq;
 function getGroq() {
-  if (!groq) groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+  if (!groq) groq = getLLM();
   return groq;
 }
 

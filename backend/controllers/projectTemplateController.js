@@ -1,4 +1,5 @@
 import Groq from 'groq-sdk';
+import { getLLM } from '../services/llm.js';
 import ProjectTemplate from '../models/ProjectTemplate.js';
 import { seedOfficialTemplates } from '../services/projectTemplatesSeed.js';
 import { getRubricTemplate } from '../services/projectTemplates.js';
@@ -15,7 +16,7 @@ import { getRubricTemplate } from '../services/projectTemplates.js';
 const MODEL = 'llama-3.3-70b-versatile';
 let groqClient;
 function getGroq() {
-  if (!groqClient) groqClient = new Groq({ apiKey: process.env.GROQ_API_KEY });
+  if (!groqClient) groqClient = getLLM();
   return groqClient;
 }
 

@@ -1,4 +1,5 @@
 import Groq from 'groq-sdk';
+import { getLLM } from './llm.js';
 
 /**
  * aiPlagiarismDetector — Détecte si un texte étudiant a probablement été
@@ -43,7 +44,7 @@ const MAX_TEXT_LENGTH_FOR_GROQ         = 4000;   // tronque pour économiser les
 
 let groqClient;
 function getGroq() {
-  if (!groqClient) groqClient = new Groq({ apiKey: process.env.GROQ_API_KEY });
+  if (!groqClient) groqClient = getLLM();
   return groqClient;
 }
 

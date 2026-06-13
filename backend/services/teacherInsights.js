@@ -1,4 +1,5 @@
 import Groq from 'groq-sdk';
+import { getLLM } from './llm.js';
 import Course from '../models/Course.js';
 import Video from '../models/Video.js';
 import QCM from '../models/QCM.js';
@@ -34,7 +35,7 @@ const insightsCache = new Map();           // courseId → { generatedAt, payloa
 
 let groqClient;
 function getGroq() {
-  if (!groqClient) groqClient = new Groq({ apiKey: process.env.GROQ_API_KEY });
+  if (!groqClient) groqClient = getLLM();
   return groqClient;
 }
 

@@ -1,4 +1,5 @@
 import Groq from 'groq-sdk';
+import { getLLM } from './llm.js';
 import Video from '../models/Video.js';
 import Course from '../models/Course.js';
 import VideoAnalysis from '../models/VideoAnalysis.js';
@@ -42,7 +43,7 @@ const MODEL = 'llama-3.3-70b-versatile';
 let groqClient;
 function getGroq() {
   if (!groqClient) {
-    groqClient = new Groq({ apiKey: process.env.GROQ_API_KEY });
+    groqClient = getLLM();
   }
   return groqClient;
 }
