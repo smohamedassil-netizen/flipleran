@@ -8,6 +8,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { io } from 'socket.io-client';
 import { SOCKET_URL, makeSocketConfig } from '../utils/socketConfig.js';
+import { logWarn } from '../utils/logger.js';
 
 const STORAGE_KEY = 'fliplearn_user';
 

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout.jsx';
 import api from '../utils/api.js';
+import { logError } from '../utils/logger.js';
 import { ArrowLeft, ClipboardList, Video, Plus, CheckCircle, ChevronRight, Edit, Trash2, AlertCircle, Sparkles } from 'lucide-react';
 
 export default function ProfessorQCMHub() {

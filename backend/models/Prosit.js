@@ -225,7 +225,7 @@ const prositSchema = new mongoose.Schema({
   chapterIds: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Chapter' }], // NEW
 
   // LEGACY (filtres anciens)
-  filiere:        { type: String, enum: ['ISIL', 'Management', 'Finance'] },
+  filiere:        { type: String, enum: ['ISIL', 'Management', 'Finance', 'Finance & Comptabilité'] },
   promotion:      { type: String, enum: ['L1', 'L2', 'L3'] },
   caseEntreprise: { type: String, default: '' },
 

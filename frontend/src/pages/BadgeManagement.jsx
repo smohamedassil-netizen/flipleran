@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout.jsx';
 import api from '../utils/api.js';
+import { logError } from '../utils/logger.js';
 import {
   ArrowLeft, Star, Award, Trophy, Zap, Target, BookOpen,
   Medal, Crown, Flame, Heart, Plus, Search, Gift, X,

@@ -149,7 +149,7 @@ const STUDENT_FEATURES = [
   { Icon: Video,     title: 'Capsules + analyse IA',   text: 'Transcription Whisper + résumé GPT-4o + concepts clés. Tu vas droit à l\'essentiel.' },
   { Icon: Layers,    title: 'Flashcards SM-2',         text: 'Révision espacée auto-générée à partir des capsules vues. Mémoire longue durée.' },
   { Icon: Trophy,    title: 'Quiz Battle',             text: 'Duels temps réel avec power-ups. Gamification au service de l\'engagement.' },
-  { Icon: Gift,      title: 'Récompenses concrètes',   text: 'Points XP échangeables contre des mois Premium FlipLearn et des certifications.' },
+  { Icon: Gift,      title: 'Récompenses concrètes',   text: 'Points XP échangeables contre des mois Premium FlipLearn.' },
 ];
 
 const PROF_FEATURES = [
@@ -180,7 +180,7 @@ const ALGERIA_FEATURES = [
 const TESTIMONIALS = [
   { name: 'Yasmine B.', role: 'L3 ISIL · EM Alger',     text: 'L\'assistant IA m\'a sauvé pendant les exams. Il connaît mes cours mieux que moi.' },
   { name: 'Mehdi S.',   role: 'L2 Management',           text: 'Les capsules courtes, c\'est génial. Je révise dix minutes dans le bus puis je fais le QCM.' },
-  { name: 'Amira H.',   role: 'L3 Finance',              text: 'J\'ai gagné ma première certification gratuite grâce aux points. Ça motive vraiment.' },
+  { name: 'Amira H.',   role: 'L3 Finance',              text: 'J\'ai gagné un mois Premium gratuit grâce aux points. Ça motive vraiment.' },
 ];
 
 /* ── Bibliographie footer ── */
