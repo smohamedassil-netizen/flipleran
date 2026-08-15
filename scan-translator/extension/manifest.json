@@ -1,0 +1,14 @@
+{
+  "manifest_version": 3,
+  "name": "Scan Translator FR",
+  "version": "0.1.0",
+  "description": "Traduit automatiquement en français les bulles de texte des scans (manga/comics) affichés dans la page.",
+  "permissions": ["activeTab", "scripting", "storage"],
+  "host_permissions": ["<all_urls>"],
+  "action": {
+    "default_popup": "popup.html"
+  },
+  "background": {
+    "service_worker": "background.js"
+  }
+}

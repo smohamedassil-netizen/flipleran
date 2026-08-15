@@ -1,0 +1,15 @@
+{
+  "name": "scan-translator-server",
+  "version": "1.0.0",
+  "description": "Serveur local qui OCR + traduit les bulles de scans (manga/comics) pour l'extension navigateur.",
+  "type": "module",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2"
+  }
+}
